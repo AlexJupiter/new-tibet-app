@@ -1,6 +1,6 @@
 # New Tibet integration setup
 
-The frontend is a static GitHub Pages app. The backend is a separate Node 24 service. The deployed frontend defaults to an explicit test mode: no uploads, messages, or identity approval. Selecting Blue Book identifies a supporter application; it must not be used as evidence of Tibetan nationality.
+The frontend is a static GitHub Pages app. The backend is a separate Node 24 service. The deployed frontend defaults to an explicit test mode: no uploads, messages, or identity approval. The optional real ZKPassport request connects to its bridge, but the preview cannot verify the returned proof. Selecting Blue Book identifies a supporter application; it must not be used as evidence of Tibetan nationality.
 
 ## GitHub Pages
 
@@ -9,14 +9,16 @@ The repository is `AlexJupiter/new-tibet-app`. The workflow builds the static ap
 ## Private Google Drive and Sheets
 
 1. Create a Google Cloud project; enable the Drive and Sheets APIs. Create a service account for this backend and supply its JSON credential file through your host's secret-file facility. Set `GOOGLE_APPLICATION_CREDENTIALS` to its path. Do not commit it.
-2. Use a Workspace **Shared Drive** (recommended). Create a restricted `Identity photos` folder and a spreadsheet with an `Applications` tab. Add the service account as a contributor and only authorized reviewers as members. A service account cannot rely on personal Drive storage quota; use a Shared Drive or a separately implemented Workspace delegated identity.
+2. Use a Workspace **Shared Drive** (recommended). Create a restricted `Identity review media` folder and a spreadsheet with an `Applications` tab. Add the service account as a contributor and only authorized reviewers as members. A service account cannot rely on personal Drive storage quota; use a Shared Drive or a separately implemented Workspace delegated identity.
 3. Set the folder and spreadsheet IDs in the backend environment. Folder permissions must be restricted. The backend never makes uploaded files public. Reviewer links open Google's authenticated file viewer.
-4. Initialize the header once: `node --env-file=.env backend/initialize-sheet.mjs`. This writes only `Applications!A1:R1`; back up an existing table first.
-5. Connect this Sheet to AppSheet. Use `Reference` as its text key. Set `PhotoURL` to type URL so a signed-in reviewer can open the private Drive photo. Name, Email, WhatsApp, Book, passkey fields, consent, timestamps, and message fields are read-only. Hide passkey fields from reviewer views. **Do not turn private Drive photos into public image URLs.**
+4. Initialize the header once: `node --env-file=.env backend/initialize-sheet.mjs`. For an existing table, add the new S:Y columns and regenerate the AppSheet schema. This writes only `Applications!A1:Y1`; back up an existing table first.
+5. Connect this Sheet to AppSheet. Use `Reference` as its text key. Set `PhotoURL`, `BookFrontURL`, `BookBackURL`, `ChallengePhotoURL`, and `VideoURL` to type URL so a signed-in reviewer can open the private Drive photos and video. Name, Email, WhatsApp, Book, all media URLs, ChallengeCode, PassportCountry, PassportVerified, passkey fields, consent, timestamps, and message fields are read-only. Hide passkey fields from reviewer views. **Do not turn private Drive photos into public image URLs.**
 
 ## AppSheet reviewer app
 
 Create a queue view using the `Applications` table, and a pending slice `[Status] = "pending"`. Require sign-in, restrict users to the reviewer allowlist, and disable public access. Apply a security filter such as `IN(USEREMAIL(), LIST("reviewer1@example.org", "reviewer2@example.org"))`. Configure `ReviewedBy` as email and `ReviewedAt` as datetime.
+
+The reviewer must check all four photos, ensure the handwritten number matches `ChallengeCode`, listen to the video message for the same code, and compare the visible face and book details. `PassportVerified` must be true. The random challenge is checked manually, not through OCR or automated face recognition in this app. Videos are bounded by size and format in the backend; duration and spoken content must also be checked by the reviewer.
 
 Keep `Status`, `ReviewedBy`, and `ReviewedAt` non-editable directly; let controlled Accept and Decline actions change them only while `[Status] = "pending"`. Each action sets `Status` to `accepted` or `declined`, `ReviewedBy` to `USEREMAIL()`, and `ReviewedAt` to `NOW()`. Let reviewers supply `ReviewNote` before declining. AppSheet users must not have access to edit the app or its webhook secret. Restrict direct Sheet edit access to administrators where possible.
 
@@ -55,11 +57,29 @@ Registration messages are queued after documents and records are stored. Decisio
 
 For failed jobs, an administrator can POST `{"reference":"NT-..."}` to `/api/reviews/retry` using the review authorization header. Monitor backend error logs and the Sheet's RegistrationMessage/DecisionMessage columns. A successful message can be sent on the next worker tick (15 seconds).
 
+## ZKPassport
+
+The SDK is pinned to 0.18.2. The browser requests a real (non-dev) proof with age `gte 18`, nationality disclosed as a three-letter country code, a session nonce bound as `custom_data`, and strict ZKPassport face matching. It uses the fixed scope `new-tibet-identity-v1` and a non-salted scoped identifier. Do not change the domain or scope after enrollment without migrating duplicate detection. The SDK's identifier is per document, domain, and scope: it detects reuse of the same passport, not one unique human across multiple passports.
+
+The live backend rebuilds the expected query and verifies cryptographically with the full SDK in `verifierMode: 'local'`. Browser callbacks and browser-provided verification flags are never trusted. It rejects dev/mock identifiers, age below 18, failed face checks, wrong session bindings, extra personal disclosures, missing identifiers, and duplicate identifiers. Optional `ZKPASSPORT_RPC_URL` should be an Ethereum mainnet RPC. No API/dashboard secret is needed for this self-served request flow. Verification artifacts are cached under `DATA_DIR/passport-artifacts`; use an encrypted persistent disk with room for SDK circuit artifacts. Supply outbound HTTPS access to the registry/circuit/IPFS services configured by the SDK (`certificates.zkpassport.id`, `circuits2.zkpassport.id`, `ipfs.zkpassport.id`) and your mainnet RPC; the browser connects to `wss://bridge.zkpassport.id`. This backend does not forward proofs to the verifier API.
+
+The database stores cryptographic proofs, an HMAC of the SDK's scoped identifier, proof timestamps, and nationality. No raw passport, passport name, passport number, birth date, or passport face image is accepted or stored by New Tibet through this check. The Sheet receives only `PassportCountry` and `PassportVerified` from the passport result. The book photos, name, contacts, challenge code, and video remain separate personal information used for manual review; do not describe the entire application as storing no personal information.
+
+An unsubmitted proof reserves its identifier for one hour. A submitted application permanently claims it, including declined applications; changes need an explicit operator recovery procedure, not removal through public endpoints. The nonce-bound proof must be verified and submitted within one hour. The session and handwritten-code challenge last 24 hours. Requests are rate-limited. Reloading loses the page's session, so a new attempt with the same document may need to wait for an unsubmitted reservation to expire.
+
+Test the QR link using a physical NFC phone, a supported biometric passport, and the ZKPassport app. Confirm a genuine proof verifies with the backend, face checking works, age disclosure is absent, and a second session with the same passport is rejected. Cryptographic verification tests use injected verifier responses; they cannot replace this physical-passport launch check.
+
+## Book photos and video
+
+Four JPEGs are required: front cover, back cover, photo/identity page, and open book with a paper showing the server-generated six-digit code. Capture requests browser camera permission; photos are resized and re-encoded without EXIF. A 5–30 second video asks for camera and microphone access. The applicant holds the book and code and says: “I am applying for New Tibet. My verification code is [code].” A file picker supports phones/browsers where direct recording is unavailable.
+
+Live submission uploads media separately to bounded authenticated endpoints after explicit consent and both contact verifications. Each photo is at most 3 MB and video at most 20 MB (WebM or MP4/QuickTime container). Configure any reverse proxy to accept at least 20 MB binary bodies and 4.5 MB JSON proof bodies. All five private Drive files must exist before a Sheet row or registration message is created. Content-based upload keys make retries idempotent and allow retakes; reconcile abandoned/replaced private files through your retention procedure. No media is stored on a blockchain.
+
 ## Hosting the backend and enabling live mode
 
 Use a single Node 24 process on a host with an **encrypted persistent disk**, TLS, and a secrets facility. Build with `backend/Dockerfile` or run `npm ci --omit=dev` and `node backend/server.mjs`. Mount a persistent volume at `DATA_DIR`; the SQLite database contains sessions, application records, credentials, rate limits, and the message outbox. Do not use an ephemeral or autoscaling multi-instance deployment with this storage model. Set a backup and retention policy. Never expose the database directory as static files.
 
-Copy `.env.example` into the host's secret configuration. Generate separate secrets of at least 32 random characters for session hashing and the review webhook. Configure `REVIEWER_EMAILS`. Set `FRONTEND_ORIGIN=https://alexjupiter.github.io` (an origin has no path) and `RP_ID=alexjupiter.github.io`. Enable `TRUST_PROXY=1` only when the host reliably overwrites `X-Forwarded-For`; otherwise leave it off. Set `APP_MODE=live` after all providers are configured. `/health` reports the mode.
+Copy `.env.example` into the host's secret configuration. Generate separate secrets of at least 32 random characters for session hashing, the review webhook, and passport uniqueness. Back up `PASSPORT_UNIQUENESS_SECRET` securely and keep it stable: changing it breaks detection against existing HMAC identifiers and requires an explicit migration. Configure `REVIEWER_EMAILS`. Set `FRONTEND_ORIGIN=https://alexjupiter.github.io` (an origin has no path) and `RP_ID=alexjupiter.github.io`. Enable `TRUST_PROXY=1` only when the host reliably overwrites `X-Forwarded-For`; otherwise leave it off. Set `APP_MODE=live` after all providers are configured. `/health` reports the mode.
 
 Then change `public/config.js`:
 
@@ -78,4 +98,4 @@ Sessions last 24 hours and remain in page memory. Reloading clears the frontend 
 
 ## Verification before launch
 
-Run `npm test` and `npm run check`. Test camera access on an HTTPS phone browser; verify both real OTP channels; register a real passkey; confirm the private Drive image and Sheet row; accept and decline separate test applications in AppSheet; confirm both WhatsApp notifications. Try a duplicate webhook and a callback without its secret. Test a provider failure and retry, and back up the database.
+Run `npm test` and `npm run check`. Test camera access on an HTTPS phone browser; verify both real OTP channels; register a real passkey; confirm all five private Drive media files and the Sheet row; accept and decline separate test applications in AppSheet; confirm both WhatsApp notifications. Try a duplicate webhook and a callback without its secret. Test a provider failure and retry, and back up the database.

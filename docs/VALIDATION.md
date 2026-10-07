@@ -1,6 +1,6 @@
 # Validation performed
 
-- Seven Node tests passed: contact validation, OTP recipient binding/expiry/replay and guess limits, consent and verified contacts at submission, image envelope validation, final/idempotent manual decisions, spreadsheet text protection, and the complete live API with mocked external providers.
+- Ten Node tests passed: contact validation, OTP recipient binding/expiry/replay and guess limits, consent and verified contacts at submission, image envelope validation, final/idempotent manual decisions, spreadsheet text protection, the complete live API with mocked external providers, and recovery after a messaging provider failure, private multipart Drive uploads, and idempotent Google retries.
 - Chromium at 390px and 1440px passed Green/Blue Book selection, fake browser camera capture, wrong/correct email and WhatsApp codes, submission, and decision views without script errors or horizontal overflow.
 - A virtual browser WebAuthn authenticator created a resident, user-verified passkey, and the real SimpleWebAuthn backend validated its challenge, origin, and RP ID in the browser flow.
 - Syntax checks and static build passed.

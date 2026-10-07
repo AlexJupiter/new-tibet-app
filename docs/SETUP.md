@@ -72,6 +72,8 @@ window.NEW_TIBET_CONFIG = {
 
 Commit and let Pages redeploy. The GitHub frontend origin is shared across all your Pages projects; use a dedicated custom domain and its RP ID before large-scale passkey enrollment. Passkeys registered for an RP ID do not automatically transfer to a new unrelated domain. The browser creates a resident credential with required user verification; the backend verifies the registration challenge, origin, RP ID, and attestation using SimpleWebAuthn. Only public key data and the credential ID are stored. PRF support is recorded when available; no PRF secret, wallet seed, private key, wallet address, token balance, or token issuance is created here. Future wallet design needs separate key derivation, recovery, chain, and distribution decisions.
 
+Submission retries reuse the application reference and check existing Drive/Sheet records to reduce duplicates. An interrupted upload may leave a restricted document without a completed application; reconcile and remove abandoned records according to your retention policy.
+
 Sessions last 24 hours and remain in page memory. Reloading clears the frontend session; applicants can contact support with their reference. Passkey sign-in and account recovery are future work, separate from the requested enrollment flow. Publish the final retention period, privacy notice, and reviewer operating procedures before collecting actual identity documents.
 
 ## Verification before launch

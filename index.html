@@ -2,31 +2,29 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <meta name="theme-color" content="#f7f4ee"/>
+  <meta name="theme-color" content="#ffffff"/>
   <meta name="description" content="Begin your New Tibet identity application with your Green Book or Blue Book. Verify your contacts and secure your account with a passkey."/>
   <title>New Tibet · Your digital identity</title>
-  <link rel="icon" href="./public/favicon.svg"/><link rel="stylesheet" href="./public/styles.css"/>
+  <link rel="icon" href="./public/favicon.svg"/>
+  <link rel="stylesheet" href="./public/fonts.css"/><link rel="stylesheet" href="./public/styles.css"/>
   <script src="./public/config.js" defer></script><script type="module" src="./public/app.js"></script>
 </head>
 <body class="showing-splash">
-  <header class="header"><a class="brand" href="./" aria-label="New Tibet home"><img src="./public/favicon.svg" alt=""/><span>NEW TIBET<small>A SHARED FUTURE. A SOVEREIGN IDENTITY.</small></span></a><a href="https://www.newtibet.com/" target="_blank" rel="noopener">About New Tibet <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></a></header>
+  <header class="header"><div class="header-inner"><a class="brand" href="./" aria-label="New Tibet home"><img src="./public/assets/new-tibet-logo-blue.svg" width="152" height="64" alt="New Tibet"/></a><a class="about-link" href="https://newtibet.com/" target="_blank" rel="noopener">About</a></div></header>
   <div class="mode-banner" id="mode-banner"></div>
   <main>
     <section id="splash" class="splash" aria-labelledby="splash-title">
-      <img class="splash-logo" src="./public/favicon.svg" alt="New Tibet"/>
-      <p class="eyebrow">NEW TIBET IDENTITY</p>
-      <h1 id="splash-title">Your New Tibet identity<br/> starts here.</h1>
-      <p class="splash-description">Verify your Green or Blue Book and prove your age privately.<br class="desktop-break"/> Your first step into New Tibet.</p>
-      <button id="get-started" class="primary">Get Started <span aria-hidden="true">→</span></button>
-      <p class="splash-ready">Have your book, passport, phone, email, and WhatsApp number ready.</p>
+      <p class="splash-kicker">New Tibet Identity</p>
+      <h1 id="splash-title">Your identity.<br/>Your future.</h1>
+      <p class="splash-description">A simple first step into New Tibet.<br/>Start with your Green or Blue Book.</p>
+      <button id="get-started" class="primary">Get started</button>
+      <p class="under-button">About 10 minutes · Private by design</p>
+      <p class="splash-ready">Have your book, passport, email<br/>and WhatsApp number ready.</p>
     </section>
     <div id="signup" class="workspace" hidden>
-    <aside class="journey"><div><p class="eyebrow">NEW TIBET IDENTITY</p><h1>Your heritage.<br/>Your identity.<br/><em>Your future.</em></h1><p class="intro">A simple first step toward your place in the digital Tibetan nation.</p><ol id="steps" class="steps"></ol></div>
-      <div class="landscape" aria-hidden="true"><svg viewBox="0 0 420 145"><circle cx="315" cy="42" r="28" fill="#e8d7ae"/><path d="M0 144 99 49 150 104 236 15 360 144" fill="#d4d3c2"/><path d="m190 68 46-53 54 58-36-15-19 7-19-14z" fill="#fffaf0"/><path d="M0 145 118 93 205 142 296 74 420 145" fill="#b8c1b1"/><path d="M0 145 100 128 177 145 288 117 420 145" fill="#929f8c"/></svg><span>Rooted in Tibet. Connected everywhere.</span></div>
-    </aside>
-    <section class="surface" aria-labelledby="screen-title"><div class="surface-top"><span id="step-label" class="eyebrow"></span><span class="private-badge"><span aria-hidden="true">◇</span> Private by design</span></div><div id="screen"></div><div id="notice" role="status" aria-live="polite"></div></section>
+    <section class="surface" aria-labelledby="screen-title"><div class="surface-top"><span id="step-label"></span><div id="progress" class="progress" role="progressbar" aria-label="Application progress" aria-valuemin="0" aria-valuemax="6" aria-valuenow="0"><span id="progress-fill"></span></div></div><div id="screen"></div><div id="notice" role="status" aria-live="polite"></div></section>
     </div>
   </main>
-  <footer><span>© <span id="year"></span> New Tibet</span><span>Your documents are never published on a blockchain.</span><button class="text-button" id="privacy">How we use your information</button></footer>
+  <footer><span>© <span id="year"></span> New Tibet</span><button class="text-button" id="privacy">Privacy</button></footer>
   <dialog id="privacy-dialog"><button class="dialog-close" id="close-privacy" aria-label="Close">×</button><p class="eyebrow">YOUR INFORMATION</p><h2>Your identity stays private.</h2><p>In live mode, New Tibet collects your name, four book photos, a challenge code, video message, email, WhatsApp number, and passkey public key to process your application. Only authorized reviewers can access your documents and video. These are separate from the private passport check.</p><p>The ZKPassport check stores cryptographic proofs, a private identifier that prevents duplicate passport use, and your country of nationality. New Tibet does not receive or store your passport scan, passport name, passport number, date of birth, or passport face image. ZKPassport performs the face check on your phone. The age check proves age 18 or older without disclosing your date of birth. Duplicate-passport protection cannot guarantee one account per human across multiple passports.</p><p>Email and WhatsApp codes establish access to your contacts. A manual review determines identity approval. Status messages go to your WhatsApp number.</p><p>A passkey keeps its private key in your device or password manager. Only its public key is stored by New Tibet. This version does not create a crypto wallet or issue tokens.</p><p>In test mode, book photos, videos, and contacts stay in this page’s memory and are cleared on reload. A ZKPassport request connects to its service if you choose to start it, but the preview has no backend to verify or store returned proofs. No messages are sent. Use sample book photos and videos in this preview.</p><p>Contact <a href="mailto:hello@newtibet.com">hello@newtibet.com</a> about your application or deletion. The operator must set a retention period and publish the final privacy notice before live collection.</p></dialog>
 </body></html>

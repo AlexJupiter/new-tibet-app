@@ -9,4 +9,14 @@
 
 Google Drive/Sheets, Resend, Meta WhatsApp, AppSheet, and cryptographic verifier responses were mocked for automated tests. The production backend uses the complete ZKPassport SDK for local verification. Real provider accounts, approved templates, a physical NFC phone/passport with strict face checking, delivery to a phone, actual AppSheet automation, and mobile Safari recording still require the launch checks in SETUP.md.
 
-The exact current New Tibet logo is pending because direct access to newtibet.com and its asset host is blocked in this environment. The existing mountain symbol is a placeholder, not an official logo.
+The interface now uses the supplied blue/white New Tibet SVG logos and a mobile-first, single-column design. The accepted state shows an identity profile with the applicant’s name, book type, actual application reference, initials, contacts, and their existing verification state. Demo profiles are explicitly labeled as previews.
+
+Additional profile validation (October 2026):
+
+- Chromium at 320, 390, 430, 768, and 1440px: acceptance, decline, return to review, and acceptance again show distinct screens, reset scroll to the top, and focus the result heading. The selected preview outcome is disabled. No horizontal overflow or failed asset requests occurred.
+- The complete 390px demo used four actual browser camera captures with fake hardware, a five-second recording, both displayed demo OTPs, submission, and acceptance to reach a Blue Book supporter profile.
+- Long Tibetan names, HTML-like user input, long email addresses, and a full UUID reference rendered without HTML execution or horizontal overflow at 320px.
+- A mocked live status response opened the accepted profile. Live mode ignores the demo preview URL and exposes no simulation controls; calling the client simulation function cannot change live status. No actual provider approval was exercised.
+- Both the repository-root static fallback and `dist/` loaded the profile, brand assets, and fonts. Syntax checks, static build, and whitespace checks passed.
+
+Session browser checks are in `/private/tmp/new-tibet-profile-qa.cjs`; profile screenshots are in `/private/tmp/new-tibet-profile-preview/`. These tests do not replace the live provider and physical-passport launch checks described above.

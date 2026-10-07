@@ -1,0 +1,14 @@
+{
+  "name": "new-tibet-identity",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node backend/server.mjs",
+    "start": "node backend/server.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "check": "node --check public/app.js && node --check backend/server.mjs && node --check backend/core.mjs && node --check backend/google.mjs",
+    "build": "node scripts/build.mjs"
+  },
+  "dependencies": {"@simplewebauthn/server": "13.2.2"},
+  "engines": {"node": ">=24"}
+}

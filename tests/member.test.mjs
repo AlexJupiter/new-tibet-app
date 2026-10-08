@@ -5,21 +5,21 @@ const applicant=(book='green',status='accepted')=>({book,status,name:'Tenzin Dol
 test('petitions require an accepted Green Book application for creation and support',()=>{
  for(const state of [applicant('blue'),applicant('green','pending'),applicant('green','declined')]){
   assert.equal(canUsePetitions(state),false);
-  assert.throws(()=>supportPetition(state,'language'));
+  assert.throws(()=>supportPetition(state,samplePetitions[0].id));
   assert.throws(()=>createPetition(state,{title:'Community learning',body:'Expand community language learning for young people.',goal:1000}));
  }
 });
 test('Blue Book, pending and declined members can read petitions and results without voting',()=>{
  for(const state of [applicant('blue'),applicant('green','pending'),applicant('green','declined')]){
-  const petitions=petitionsFor(state);assert.equal(petitions.length,3);
-  assert.equal(petitions[0].title,'Support Tibetan language education');
+  const petitions=petitionsFor(state);assert.equal(petitions.length,5);
+  assert.equal(petitions[0].title,'English access to CTA documents and sessions');
   assert.equal(supporterCount(petitions[0],state),1842);
   assert.throws(()=>supportPetition(state,petitions[0].id),/Supporting petitions/);
   assert.equal(supporterCount(petitions[0],state),1842);assert.deepEqual(state.petitionSignatures,[]);
  }
 });
 test('support is counted once and a new petition starts with zero supporters',()=>{
- const state=applicant();assert.equal(supportPetition(state,'language'),true);assert.equal(supportPetition(state,'language'),false);
+ const state=applicant();assert.equal(supportPetition(state,samplePetitions[0].id),true);assert.equal(supportPetition(state,samplePetitions[0].id),false);
  assert.equal(supporterCount(samplePetitions[0],state),1843);
  const petition=createPetition(state,{title:'Community learning',body:'Expand community language learning for young people.',goal:1000});
  assert.equal(petition.supporters,0);assert.equal(state.createdPetitions[0].id,petition.id);

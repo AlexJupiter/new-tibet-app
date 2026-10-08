@@ -1,4 +1,4 @@
-export const memberTabs=['announcements','petitions','chat','wallet','ecosystem','profile'];
+export const memberTabs=['profile','wallet','chat','ecosystem','announcements'];
 export const samplePetitions=Object.freeze([
  {id:'english-access',category:'Accessibility',title:'English access to CTA documents and sessions',summary:'Guarantee English access to official documents and parliamentary sessions through translations and subtitles.',body:'Do you think the CTA should guarantee that all official documents and parliamentary sessions are accessible in English, for example by providing translations and subtitles?',supporters:1842,goal:2500},
  {id:'charter-reform',category:'Governance',title:'Clarify the separation of powers in the Tibetan Charter',summary:'Revise the Tibetan Charter to clearly define the separation of powers and introduce conflict resolution mechanisms.',body:'Do you think the Tibetan Charter should be revised to more clearly define the separation of powers and to introduce conflict resolution mechanisms?',supporters:936,goal:1500},

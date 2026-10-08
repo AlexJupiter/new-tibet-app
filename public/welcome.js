@@ -1,8 +1,8 @@
 const slides=[
  {tab:'profile',title:'Your digital ID',description:'A New Tibet membership card, with a QR code for in-person checks.'},
  {tab:'wallet',title:'Your $TIBET wallet',description:'Hold, send and swap New Tibet Coin.'},
- {tab:'petitions',title:'Petitions',description:'Read community proposals. Verified Green Book members can support them.'},
  {tab:'chat',title:'Community chat',description:'A preview of the planned Bluetooth mesh messenger.'},
+ {tab:'ecosystem',title:'Explore the ecosystem',description:'See examples of how New Tibet ID could connect with other Tibetan services.'},
  {tab:'announcements',title:'Updates in the app',description:'Application decisions and New Tibet announcements in one channel.'}
 ];
 const arrow=direction=>`<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${direction==='left'?'m15 5-7 7 7 7':'m9 5 7 7-7 7'}"/></svg>`;

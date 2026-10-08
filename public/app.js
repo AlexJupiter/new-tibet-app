@@ -11,7 +11,7 @@ import {mountWelcomeSlideshow} from './welcome.js';
 import {recordApplicationEvent,inboxItems,unreadCount,saveDemoInbox,restoreDemoInbox,clearDemoInbox} from './inbox-model.js';
 const config = window.NEW_TIBET_CONFIG || {mode:'demo',apiBase:''};
 const showcaseTab=new URLSearchParams(location.search).get('showcase');
-const showcase=['profile','wallet','petitions','chat','announcements'].includes(showcaseTab);
+const showcase=['profile','wallet','petitions','chat','ecosystem','announcements'].includes(showcaseTab);
 const demo = showcase || config.mode !== 'live';
 const steps=Object.freeze({document:0,photos:1,video:2,passport:3,security:4,contacts:5,account:6});
 const initialState = () => ({step:-1,book:'green',name:'',email:'',whatsapp:'',verified:{},codes:{},photo:null,photos:{},photoKind:'front',challenge:null,video:null,videoURL:'',passport:null,passportRequest:null,passkey:null,consent:false,reference:'',status:'pending',messages:[],demoSkipped:{contacts:false,passport:false},demoSampleApplicant:false,demoVideo:false,appTab:'announcements',applicationCreatedAt:'',inboxEvents:[],inboxItems:[],inboxRead:[],inboxExpanded:'',inboxLoading:false,inboxError:'',petitionSignatures:[],createdPetitions:[],petitionView:'list',petitionDraft:{title:'',body:'',goal:'1000'},chatMessages:[],chatDrafts:{},chatConversation:'community',chatOpen:false,chatSearch:'',wallet:null,walletMethod:'passkey',recoveryStage:'',walletPrfSalt:'',walletDemo:null,walletRewardRead:false,walletView:'home',walletQuote:null,walletReceipt:null,walletSwapInput:'',walletWithdrawInput:'',walletSendInput:'',walletSendSearch:'',walletSendRecipient:''});

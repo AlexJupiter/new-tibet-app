@@ -1,0 +1,13 @@
+# Welcome slideshow
+
+The welcome screen uses a mobile phone slideshow of the current application, rather than exported screenshots. `public/welcome.js` loads the same page with `?showcase=profile`, `wallet`, `petitions`, `chat`, or `announcements` into a 390 × 760 CSS viewport. The normal application renderers, fonts, logos, QR generation and stylesheet are reused. Updating those screens updates the welcome preview when the page is refreshed; no screenshot regeneration or separate image designs are needed.
+
+Use `?preview=welcome` to view the welcome page when this browser already has a saved demo application receipt. This leaves that receipt intact.
+
+Showcase mode uses the fictional Tenzin Dolma applicant, a clearly marked accepted demo profile and demo balances. It is read-only (inert frames and document, no pointer or keyboard access to app controls), starts directly in the chosen screen and never creates a nested slideshow. It does not restore or persist the viewer's inbox, read their session bearer, initialize camera or passport capture, or call the backend, even when the outer site uses live configuration. Its demo footer and simulation review controls are hidden inside the phone preview. Real onboarding, profile and wallet behavior is unchanged.
+
+The first and next screens load initially; additional screens load as needed. Autoplay advances every 5.5 seconds while the welcome screen is visible. It pauses when offscreen, when the browser page is hidden, on focus/hover, on manual navigation, or when the user requests reduced motion. Controls support screen dots, previous/next, pause/play, arrow/Home/End keys and horizontal swipe. The phone scales to mobile widths without changing its internal viewport or displaying a desktop sidebar.
+
+The welcome copy highlights privacy, security and cryptocurrency and includes the requested verification reward of 100 $TIBET coins. This describes the intended offer; token issuance has not been implemented. The wallet remains a demo, with its existing illustrative portfolio balance. No coins are issued by opening the preview or completing the demo verification.
+
+Ecosystem sites are examples of possible integrations, with no signed partnership agreements and no connected New Tibet ID sign-in. The sign-in illustration uses the familiar compact-logo and outlined-button layout with New Tibet's own identity and website font. Its design reference is [Google's sign-in button guide](https://developers.google.com/identity/branding-guidelines); it is not a Google or Facebook authentication button.

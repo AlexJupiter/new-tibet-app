@@ -14,14 +14,28 @@
   <header class="header"><div class="header-inner"><a class="brand" href="./" aria-label="New Tibet home"><img src="./assets/new-tibet-logo-blue.svg" width="152" height="64" alt="New Tibet"/></a><div class="header-actions"><span class="mode-banner" id="mode-banner" title="Demo: documents, messages and transactions stay in this page."></span><a class="about-link" href="https://newtibet.com/" target="_blank" rel="noopener">About</a></div></div></header>
   <main>
     <section id="splash" class="splash" aria-labelledby="splash-title">
-      <p class="splash-kicker">Identity application</p>
-      <h1 id="splash-title" tabindex="-1">Apply to<br/>New Tibet.</h1>
-      <p class="splash-description">Apply with your Green Book<br/>or Blue Book.</p>
-      <button id="get-started" class="primary">Get started</button>
-      <p class="under-button">Takes about 10 minutes</p>
-      <p class="splash-ready">Choose a display name. A pseudonym is welcome.<br/>Email and phone number are optional.<br/>Receive updates in the app.<br/>Book photos and video are required for verification.</p>
-      <button class="text-button" id="sign-in" type="button">Return to your inbox</button>
-      <p class="section-note" id="signin-status" role="status"></p>
+      <div class="splash-copy">
+       <div class="splash-intro">
+        <p class="splash-kicker">New Tibet membership</p>
+        <h1 id="splash-title" tabindex="-1">Join<br/>New Tibet.</h1>
+        <p class="splash-description">Join with your Green Book or Blue Book.</p>
+        <p class="splash-feature-labels"><span>Privacy</span><span>Security</span><span>Cryptocurrency</span></p>
+        <p class="splash-reward">Upon verification you receive <strong>100 $TIBET coins</strong></p>
+        <button id="get-started" class="primary">Join New Tibet</button>
+        <p class="under-button">Takes about 10 minutes</p>
+       </div>
+       <div class="splash-supporting">
+        <ul class="splash-benefits">
+          <li><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="m12 3 9 4v5c0 5-9 9-9 9s-9-4-9-9V7Z"/><path d="m8 12 3 3 5-6"/></svg><div><h2>Privacy</h2><p>A pseudonym is welcome. Email and phone number are optional.</p></div></li>
+          <li><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3m-4 5v2"/></svg><div><h2>Security</h2><p>Protect access with a passkey, unlocked by biometrics or a PIN.</p></div></li>
+          <li><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 9h8m-4 0v8m-4-4h8"/></svg><div><h2>Cryptocurrency</h2><p>Hold, send and swap New Tibet Coin, $TIBET, in your wallet.</p></div></li>
+        </ul>
+        <p class="splash-ready">Book photos and a video are required for verification. Receive your application updates in the app.</p>
+        <button class="text-button" id="sign-in" type="button">Return to your inbox</button>
+        <p class="section-note" id="signin-status" role="status"></p>
+       </div>
+      </div>
+      <div id="welcome-slideshow" class="welcome-slideshow" role="region" aria-roledescription="carousel" aria-label="Explore the New Tibet app" tabindex="0"></div>
     </section>
     <div id="signup" class="workspace" hidden>
     <section class="surface" aria-labelledby="screen-title"><div class="surface-top"><span id="step-label"></span><div id="progress" class="progress" role="progressbar" aria-label="Application progress" aria-valuemin="0" aria-valuemax="6" aria-valuenow="0"><span id="progress-fill"></span></div></div><div id="screen"></div><div id="notice" role="status" aria-live="polite"></div></section>

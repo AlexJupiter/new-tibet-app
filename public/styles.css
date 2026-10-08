@@ -41,14 +41,43 @@ h3 { font-size: 17px; line-height: 1.4; font-weight: 600; }
 p.description { font-size: 16px; line-height: 1.55; color: var(--muted); margin: 0 0 28px; }
 .eyebrow { font-size: 12px; color: var(--muted); margin: 0 0 18px; }
 
-/* The entire welcome screen has one headline and one action. */
+/* Membership introduction and current mobile app screens. */
 .showing-splash main { display: flex; align-items: center; }
-.splash { width: 100%; max-width: 540px; margin: auto; padding: 44px 24px 52px; text-align: center; }
+.splash { display: grid; gap: 36px; width: 100%; max-width: 1120px; margin: auto; padding: 32px 24px 44px; text-align: center; }
+.splash-copy { display: contents; }
+.splash-intro, .splash-supporting { width: 100%; max-width: 450px; margin: auto; }
+.splash-intro { order: 1; }
+.splash-supporting { order: 3; }
+.splash-feature-labels { display: flex; justify-content: center; gap: 18px; margin: 0 0 18px; font-size: 12px; font-weight: 500; color: var(--lapis); }
 .splash-kicker { font-size: 14px; font-weight: 500; color: var(--muted); margin: 0 0 18px; }
-.splash-description { color: var(--muted); font-size: 18px; line-height: 1.55; margin: 24px 0 32px; }
+.splash-description { color: var(--muted); font-size: 18px; line-height: 1.55; margin: 20px 0; }
+.splash-reward { font-size: 14px; line-height: 1.65; margin: 0 0 24px; color: var(--lapis); }
+.splash-reward strong { white-space: nowrap; }
 .splash .primary { width: 100%; max-width: 280px; margin: auto; border-radius: 999px; }
 .splash .under-button { font-size: 12px; margin-top: 16px; }
-.splash-ready { font-size: 12px; line-height: 1.6; color: var(--muted); margin: 32px 0 0; }
+.splash-ready { font-size: 12px; line-height: 1.6; color: var(--muted); margin: 24px 0 6px; }
+.splash-benefits { display: grid; gap: 18px; margin: 28px 0 0; padding: 0; list-style: none; text-align: left; }
+.splash-benefits li { display: flex; align-items: flex-start; gap: 12px; }
+.splash-benefits svg { flex-shrink: 0; margin-top: 1px; color: var(--lapis); }
+.splash-benefits h2 { font-size: 14px; line-height: 1.5; letter-spacing: 0; margin: 0 0 3px; }
+.splash-benefits p { font-size: 13px; line-height: 1.6; margin: 0; }
+.welcome-slideshow { order: 2; width: 100%; max-width: 350px; margin: auto; outline-offset: 8px; }
+.welcome-phone { width: 100%; max-width: 300px; margin: auto; padding: 8px; border-radius: 36px; background: #1d1d1f; box-shadow: 0 18px 40px #1b2a5b14; }
+.welcome-phone-screen { position: relative; width: 100%; aspect-ratio: 390 / 760; border-radius: 28px; overflow: hidden; background: #fff; touch-action: pan-y; }
+.welcome-slide { position: absolute; inset: 0; }
+.welcome-slide iframe { position: absolute; top: 0; left: 0; width: 390px; height: 760px; border: 0; background: #fff; transform: scale(var(--preview-scale,1)); transform-origin: top left; pointer-events: none; }
+.welcome-slide-caption { margin-top: 24px; min-height: 90px; }
+.welcome-slide-caption h2 { margin: 0 0 8px; font-size: 18px; line-height: 1.4; letter-spacing: -.4px; }
+.welcome-slide-caption p { font-size: 13px; line-height: 1.6; margin: 0; }
+.welcome-slide-caption > span { display: block; margin-top: 8px; font-size: 11px; }
+.welcome-slide-controls { display: flex; justify-content: center; align-items: center; margin-top: 10px; }
+.welcome-slide-controls > button { display: grid; place-items: center; flex-shrink: 0; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 50%; color: var(--lapis); background: transparent; }
+.welcome-slide-controls button:hover { background: var(--soft); }
+.welcome-slide-dots { display: flex; }
+.welcome-slide-dots button { display: grid; place-items: center; width: 28px; min-height: 44px; padding: 0; border: 0; border-radius: 8px; background: transparent; }
+.welcome-slide-dots span { width: 6px; height: 6px; border-radius: 50%; background: #1d1d1f; }
+.welcome-slide-dots button[aria-current='true'] span { width: 16px; border-radius: 4px; background: var(--lapis); }
+#welcome-pause { font-size: 18px; }
 
 /* Every device gets the same single-column flow. */
 .workspace { width: 100%; max-width: 520px; margin: 24px auto 36px; padding: 0 24px; }
@@ -268,8 +297,10 @@ body.demo-mode.showing-account footer { bottom: calc(72px + env(safe-area-inset-
 .sidebar-brand, .sidebar-note, .onboarding-nav { display: none; }
 /* Partner directory with locally served website imagery. */
 .ecosystem-intro.description { margin-bottom: 20px; }
-.ecosystem-signin { margin: 0 0 24px; padding: 20px; border-radius: 16px; background: var(--soft); text-align: center; }
-.ecosystem-signin-image { display: block; width: 100%; max-width: 360px; height: auto; margin: auto; font-family: var(--font-sans); }
+.ecosystem-signin { margin: 0 0 24px; padding: 20px 16px; border-radius: 16px; background: var(--soft); text-align: center; }
+.ecosystem-signin-button { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; max-width: 310px; min-height: 48px; margin: auto; padding: 10px 12px; border: 1px solid #747775; border-radius: 6px; background: #fff; color: #1f1f1f; font-size: 14px; line-height: 20px; font-weight: 500; }
+.ecosystem-signin-button img { width: 24px; height: 24px; flex-shrink: 0; }
+.ecosystem-signin-button span { white-space: nowrap; }
 .ecosystem-signin figcaption { margin-top: 12px; font-size: 12px; line-height: 1.5; }
 .ecosystem-benefits { display: grid; gap: 18px; margin: 0; padding: 0; list-style: none; }
 .ecosystem-benefits li { display: flex; gap: 12px; align-items: flex-start; }
@@ -298,6 +329,7 @@ body.demo-mode.showing-account footer { bottom: calc(72px + env(safe-area-inset-
 .ecosystem-partner-copy svg { width: 18px; height: 18px; flex-shrink: 0; color: var(--lapis); }
 .ecosystem-partner-copy p { margin: 10px 0 14px; font-size: 13px; line-height: 1.6; }
 .ecosystem-domain { font-size: 12px; color: var(--lapis); overflow-wrap: anywhere; }
+.ecosystem-example { display: inline-block; margin-bottom: 10px; padding: 4px 7px; border-radius: 5px; background: var(--soft); font-size: 10px; }
 .section-note { font-size: 12px; color: var(--muted); line-height: 1.65; }
 .section-note a { white-space: nowrap; }
 .petition-list { display: grid; gap: 16px; margin-top: 22px; }
@@ -423,6 +455,13 @@ body.demo-mode.showing-account footer { bottom: calc(72px + env(safe-area-inset-
 .send-estimate { margin: 0 0 18px; }
 
 @media (min-width: 900px) {
+ .splash { grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 72px; padding: 40px; text-align: left; }
+ .splash-copy { display: block; width: 100%; max-width: 450px; margin: 0; }
+ .splash-intro, .splash-supporting { margin: 0; }
+ .splash-feature-labels { justify-content: flex-start; }
+ .splash .primary { margin: 0; }
+ .splash .under-button { text-align: left; }
+ .welcome-slideshow { order: 0; text-align: center; }
  body.showing-account, body.showing-onboarding { margin-left: 224px; padding-bottom: 0; }
  .showing-account .header, .showing-onboarding .header { border-bottom: 1px solid var(--line); }
  .showing-account .header-inner, .showing-onboarding .header-inner { justify-content: flex-end; }
@@ -462,6 +501,7 @@ body.demo-mode.showing-account footer { bottom: calc(72px + env(safe-area-inset-
 
 footer { width: 100%; max-width: 520px; margin: 0 auto; padding: 8px 24px max(8px, env(safe-area-inset-bottom)); color: var(--ink); font-size: 11px; }
 body.demo-mode footer { position: sticky; bottom: 0; z-index: 5; border-top: 1px solid var(--line); background: #fff; }
+body.demo-mode.showing-splash footer { position: static; max-width: 1120px; }
 .footer-meta, .demo-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .demo-footer { min-height: 44px; }
 .demo-footer .text-button { color: var(--lapis); font-size: 14px; font-weight: 500; }
@@ -579,3 +619,7 @@ body.showing-account:is([data-app-tab='chat'],[data-app-tab='announcements']) { 
  .channel-heading { padding-left: 24px; padding-right: 24px; }
  .channel-feed { padding: 24px 40px 32px; }
 }
+
+/* Read-only welcome frames reuse real screens with fictional data. */
+.showcase-mode footer, .showcase-mode .demo-review { display: none; }
+.showcase-mode:is([data-app-tab='announcements'],[data-app-tab='chat']) .workspace { bottom: calc(72px + env(safe-area-inset-bottom)); }

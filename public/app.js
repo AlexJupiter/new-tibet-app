@@ -6,15 +6,18 @@ import {renderAccountTabs,renderPetitions,renderChat} from './account.js';
 import {renderWallet} from './wallet.js';
 import {renderAnnouncements} from './announcements.js';
 import {renderEcosystem} from './ecosystem.js';
+import {mountWelcomeSlideshow} from './welcome.js';
 import {recordApplicationEvent,inboxItems,unreadCount,saveDemoInbox,restoreDemoInbox,clearDemoInbox} from './inbox-model.js';
 const config = window.NEW_TIBET_CONFIG || {mode:'demo',apiBase:''};
-const demo = config.mode !== 'live';
+const showcaseTab=new URLSearchParams(location.search).get('showcase');
+const showcase=['profile','wallet','petitions','chat','announcements'].includes(showcaseTab);
+const demo = showcase || config.mode !== 'live';
 const steps=Object.freeze({document:0,photos:1,video:2,passport:3,security:4,contacts:5,account:6});
 const initialState = () => ({step:-1,book:'green',name:'',email:'',whatsapp:'',verified:{},codes:{},photo:null,photos:{},photoKind:'front',challenge:null,video:null,videoURL:'',passport:null,passportRequest:null,passkey:null,consent:false,reference:'',status:'pending',messages:[],demoSkipped:{contacts:false,passport:false},demoSampleApplicant:false,demoVideo:false,appTab:'announcements',applicationCreatedAt:'',inboxEvents:[],inboxItems:[],inboxRead:[],inboxExpanded:'',inboxLoading:false,inboxError:'',petitionSignatures:[],createdPetitions:[],petitionView:'list',petitionDraft:{title:'',body:'',goal:'1000'},chatMessages:[],chatDrafts:{},chatConversation:'community',chatOpen:false,chatSearch:'',wallet:null,walletMethod:'passkey',recoveryStage:'',walletPrfSalt:'',walletDemo:null,walletView:'home',walletQuote:null,walletReceipt:null,walletSwapInput:'',walletWithdrawInput:'',walletSendInput:'',walletSendSearch:'',walletSendRecipient:''});
 const state = initialState();
 const accountLayout=matchMedia('(min-width: 900px)');
 accountLayout.addEventListener('change',()=>document.querySelector('.app-tabs')?.setAttribute('aria-orientation',accountLayout.matches?'vertical':'horizontal'));
-let recorder, recordingTimer, passportClient, passportGeneration=0;
+let recorder, recordingTimer, passportClient, passportGeneration=0,welcomeSlideshow;
 let stream, busy = false, sessionToken = '';
 const screen = document.querySelector('#screen');
 const icons = {
@@ -39,6 +42,7 @@ function render(){
  document.body.classList.toggle('showing-account',state.step===6&&Boolean(state.reference));
  document.body.classList.toggle('showing-onboarding',state.step>=0&&state.step<=5);
  document.body.dataset.appTab=state.appTab;
+ if(state.step===-1&&!showcase){welcomeSlideshow||=mountWelcomeSlideshow(document.querySelector('#welcome-slideshow'));welcomeSlideshow.setActive(true);}else welcomeSlideshow?.setActive(false);
  renderDemoFooter();
  document.querySelector('.surface-top').hidden=state.step===6;
  document.querySelector('#signup').classList.toggle('profile-view',state.step===6&&Boolean(state.reference));
@@ -314,7 +318,7 @@ function profileInitials(name){
  const parts=String(name).trim().split(/\s+/u).filter(Boolean);
  return (parts.length>1?[parts[0],parts.at(-1)]:parts).map(part=>Array.from(part)[0]).join('').toLocaleUpperCase()||'NT';
 }
-function persistInbox(){if(demo)try{saveDemoInbox(localStorage,state);}catch{}}
+function persistInbox(){if(demo&&!showcase)try{saveDemoInbox(localStorage,state);}catch{}}
 function selectAppTab(tab){state.appTab=tab;notice();renderAcceptedAccount();window.scrollTo(0,0);screen.querySelector('#screen-title')?.focus({preventScroll:true});}
 function applyInboxData(data){
  state.inboxItems=(Array.isArray(data.items)?data.items:[]).filter(item=>['application','announcement'].includes(item.kind)&&typeof item.id==='string'&&Number.isFinite(Date.parse(item.createdAt)));
@@ -459,10 +463,15 @@ document.querySelector('#sign-in').onclick=signIn;
 document.querySelector('#demo-next').onclick=demoNext;
 // Demo-only entry points let the profile and review states be inspected without new media captures.
 const preview=new URLSearchParams(location.search).get('preview');
-let savedInbox=null;if(demo&&!preview)try{savedInbox=restoreDemoInbox(localStorage);}catch{}
+let savedInbox=null;if(demo&&!preview&&!showcase)try{savedInbox=restoreDemoInbox(localStorage);}catch{}
 if(savedInbox)Object.assign(state,savedInbox,{step:6,appTab:'announcements',demoSkipped:{contacts:true,passport:true}});
-if(demo&&['profile','review','announcements'].includes(preview)){
+if(demo&&!showcase&&['profile','review','announcements'].includes(preview)){
  Object.assign(state,{step:6,name:sampleApplicant.name,email:sampleApplicant.email,whatsapp:sampleApplicant.whatsapp,demoSampleApplicant:true,reference:'NT-DEMO-0001',status:preview==='review'?'pending':'accepted',appTab:preview==='profile'?'profile':'announcements',passport:{verified:false,preview:true},messages:['New Tibet: We received demo application NT-DEMO-0001.']});recordApplicationEvent(state,'pending');if(state.status==='accepted')recordApplicationEvent(state,'accepted');
+}
+if(showcase){
+ Object.assign(state,{step:6,name:sampleApplicant.name,demoSampleApplicant:true,reference:'NT-SHOWCASE-0001',status:'accepted',appTab:showcaseTab,chatOpen:true,passport:{verified:false,preview:true}});
+ recordApplicationEvent(state,'pending');recordApplicationEvent(state,'accepted');
+ document.body.classList.add('showcase-mode');document.body.inert=true;
 }
 window.addEventListener('pagehide',stopCamera);document.querySelector('#year').textContent=new Date().getFullYear();document.querySelector('#privacy').onclick=()=>document.querySelector('#privacy-dialog').showModal();document.querySelector('#close-privacy').onclick=()=>document.querySelector('#privacy-dialog').close();render();resumeLiveSession();
 setInterval(()=>{if(!demo&&state.step===6&&state.reference&&!document.hidden)refreshInbox();},30000);

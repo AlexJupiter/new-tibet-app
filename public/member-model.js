@@ -27,7 +27,7 @@ export function createPetition(state,{title,body,goal}){
 
 // A local demo ledger. Amounts are integers; no chain, exchange or bank is contacted.
 export const demoRateCents=12;
-export const initialDemoBalances=()=>({tibetUnits:125000,usdCents:0,processed:[],transactions:[{id:'allocation',type:'allocation',tibetUnits:125000,label:'Sample allocation'}]});
+export const initialDemoBalances=()=>({tibetUnits:125000,usdCents:0,recipientCredits:{},gasSpentUnits:0,processed:[],transactions:[{id:'allocation',type:'allocation',tibetUnits:125000,label:'Sample allocation'}]});
 export const formatTokens=units=>new Intl.NumberFormat('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}).format(units/100);
 export const formatDollars=cents=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(cents/100);
 export function parseAmount(value){
@@ -56,4 +56,35 @@ export function withdrawDemoBalance(wallet,usdCents,id){
  if(!Number.isSafeInteger(usdCents)||usdCents<=0)throw new Error('Enter a valid dollar amount.');
  if(usdCents>wallet.usdCents)throw new Error('This amount exceeds your demo USD balance.');
  return {...wallet,usdCents:wallet.usdCents-usdCents,processed:[...wallet.processed,id],transactions:[{id,type:'withdrawal',usdCents,label:'Withdrawal to sample bank',bank:'•••• 0421'},...wallet.transactions]};
+}
+
+// Fictional registered recipients for the local send demonstration.
+export const demoSendGasUnits=25;
+export const demoWalletMembers=Object.freeze([
+ {id:'demo-sonam',username:'sonam.tsering',name:'Sonam Tsering',initials:'ST'},
+ {id:'demo-pema',username:'pema.dolkar',name:'Pema Dolkar',initials:'PD'},
+ {id:'demo-lobsang',username:'lobsang.norbu',name:'Lobsang Norbu',initials:'LN'}
+].map(member=>Object.freeze(member)));
+const normalizeUsername=value=>String(value??'').trim().replace(/^@/,'').toLowerCase();
+export const findDemoRecipient=username=>demoWalletMembers.find(member=>member.username===normalizeUsername(username));
+export function searchDemoRecipients(query){
+ const text=normalizeUsername(query);
+ return demoWalletMembers.filter(member=>member.username.includes(text));
+}
+export function quoteDemoSend(wallet,username,value){
+ const recipient=findDemoRecipient(username);
+ if(!recipient)throw new Error('Choose a registered username from the sample directory.');
+ const tibetUnits=parseAmount(value),totalUnits=tibetUnits+demoSendGasUnits;
+ if(totalUnits>wallet.tibetUnits)throw new Error('Your balance must cover the amount plus the 0.25 $TIBET gas fee.');
+ return {recipientId:recipient.id,username:recipient.username,name:recipient.name,tibetUnits,gasUnits:demoSendGasUnits,totalUnits};
+}
+export function sendDemoBalance(wallet,quote,id){
+ checkTransaction(wallet,id);
+ if(!Number.isSafeInteger(quote?.tibetUnits)||quote.tibetUnits<=0)throw new Error('Enter a valid $TIBET amount.');
+ const checked=quoteDemoSend(wallet,quote.username,(quote.tibetUnits/100).toFixed(2));
+ if(['recipientId','username','name','gasUnits','totalUnits'].some(key=>quote[key]!==checked[key]))throw new Error('The recipient or fee changed. Review the send again.');
+ return {...wallet,tibetUnits:wallet.tibetUnits-checked.totalUnits,
+  recipientCredits:{...wallet.recipientCredits,[checked.recipientId]:(wallet.recipientCredits[checked.recipientId]||0)+checked.tibetUnits},
+  gasSpentUnits:wallet.gasSpentUnits+checked.gasUnits,processed:[...wallet.processed,id],
+  transactions:[{id,type:'send',...checked,label:'Sent to @'+checked.username},...wallet.transactions]};
 }

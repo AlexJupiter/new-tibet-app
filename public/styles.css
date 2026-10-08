@@ -371,8 +371,9 @@ body.demo-mode.showing-account footer { bottom: calc(72px + env(safe-area-inset-
 .wallet-balance > strong { display: block; font-size: 38px; letter-spacing: -1px; line-height: 1.2; margin: 26px 0 8px; color: var(--lapis); }
 .wallet-balance > strong small { display: block; font-size: 14px; letter-spacing: 0; font-weight: 500; margin-top: 8px; }
 .wallet-balance > p { font-size: 12px; color: var(--muted); margin: 0; }
-.wallet-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 26px; }
-.wallet-actions button { font-size: 14px; min-height: 48px; }
+.wallet-actions { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; margin-top: 26px; }
+.wallet-actions button { flex-direction: column; gap: 8px; min-width: 0; padding: 14px 6px; font-size: 13px; min-height: 74px; }
+.wallet-actions button > svg { flex-shrink: 0; }
 .usd-balance { display: flex; gap: 20px; align-items: center; justify-content: space-between; padding: 24px 0; border-bottom: 1px solid var(--line); }
 .usd-balance > div { display: flex; flex-direction: column; gap: 6px; }
 .usd-balance strong { font-size: 16px; }
@@ -401,6 +402,25 @@ body.demo-mode.showing-account footer { bottom: calc(72px + env(safe-area-inset-
 .transaction-review > div { display: flex; align-items: baseline; justify-content: space-between; gap: 20px; padding: 18px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
 .transaction-review dt { color: var(--muted); }
 .transaction-review dd { margin: 0; text-align: right; font-weight: 500; }
+.transaction-review dd { overflow-wrap: anywhere; min-width: 0; }
+.transaction-review dt { flex-shrink: 0; }
+.wallet-recipient-list { list-style: none; padding: 0; margin: 18px 0 0; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.wallet-recipient-list li + li { border-top: 1px solid var(--line); }
+.wallet-recipient { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 76px; padding: 14px; border: 0; text-align: left; color: var(--ink); background: #fff; }
+.wallet-recipient:hover { background: var(--soft); }
+.wallet-recipient:focus-visible { outline-offset: -4px; }
+.wallet-member-avatar { display: grid; place-items: center; flex-shrink: 0; width: 38px; height: 38px; border-radius: 50%; color: var(--lapis); background: #edf0f6; font-size: 12px; font-weight: 600; }
+.wallet-member-copy { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.wallet-member-copy strong { font-size: 14px; font-weight: 500; }
+.wallet-member-copy > span { font-size: 12px; color: var(--lapis); }
+.wallet-member-arrow { color: var(--lapis); }
+.wallet-selected-recipient { display: flex; align-items: center; gap: 12px; padding: 16px 0; border-bottom: 1px solid var(--line); }
+.wallet-selected-recipient .text-button { flex-shrink: 0; }
+.wallet-search-empty { padding: 18px 0; font-size: 14px; line-height: 1.6; }
+.send-review-username { display: block; margin-top: 6px; font-size: 12px; color: var(--lapis); }
+.transaction-review .send-total { font-weight: 600; }
+.transaction-review .send-total dd { font-weight: 600; }
+.send-estimate { margin: 0 0 18px; }
 
 @media (min-width: 900px) {
  body.showing-account, body.showing-onboarding { margin-left: 224px; padding-bottom: 0; }
@@ -438,8 +458,6 @@ body.demo-mode.showing-account footer { bottom: calc(72px + env(safe-area-inset-
  .chat-room-heading { padding: 14px 20px; }
  .chat-compose { padding: 12px 14px; }
  .chat-message { max-width: 84%; }
- .wallet-actions { flex-direction: row; }
- .wallet-actions button { flex: 1; padding-left: 10px; padding-right: 10px; }
 }
 
 footer { width: 100%; max-width: 520px; margin: 0 auto; padding: 8px 24px max(8px, env(safe-area-inset-bottom)); color: var(--ink); font-size: 11px; }

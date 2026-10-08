@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {canUsePetitions,petitionsFor,createPetition,supportPetition,supporterCount,samplePetitions,initialDemoBalances,parseAmount,quoteDemoSwap,swapDemoBalance,withdrawDemoBalance} from '../public/member-model.js';
+import {canUsePetitions,petitionsFor,createPetition,supportPetition,supporterCount,samplePetitions,initialDemoBalances,parseAmount,quoteDemoSwap,swapDemoBalance,withdrawDemoBalance,searchDemoRecipients,findDemoRecipient,quoteDemoSend,sendDemoBalance} from '../public/member-model.js';
 const applicant=(book='green',status='accepted')=>({book,status,name:'Tenzin Dolma',createdPetitions:[],petitionSignatures:[]});
 test('petitions require an accepted Green Book application for creation and support',()=>{
  for(const state of [applicant('blue'),applicant('green','pending'),applicant('green','declined')]){
@@ -44,4 +44,37 @@ test('sample bank withdrawals debit once and cannot overdraw or use fractional c
  const wallet=withdrawDemoBalance(swapped,5000,'withdraw-1');assert.equal(wallet.usdCents,10000);assert.equal(wallet.transactions[0].bank,'•••• 0421');
  for(const amount of [10001,0,-1,0.5,NaN])assert.throws(()=>withdrawDemoBalance(wallet,amount,'withdraw-2'));
  assert.throws(()=>withdrawDemoBalance(wallet,5000,'withdraw-1'));assert.equal(swapped.usdCents,15000);
+});
+test('send search normalizes usernames and quotes require an exact registered recipient',()=>{
+ assert.equal(searchDemoRecipients(' @SONAM ').length,1);
+ assert.equal(findDemoRecipient(' @SONAM.TSERING ').username,'sonam.tsering');
+ assert.equal(searchDemoRecipients('missing').length,0);
+ assert.equal(findDemoRecipient('sonam'),undefined);
+ for(const username of ['sonam','not-registered','__proto__',''])assert.throws(()=>quoteDemoSend(initialDemoBalances(),username,'10'),/registered username/);
+});
+test('demo sends debit amount plus gas, credit only the recipient amount, and conserve the ledger',()=>{
+ const original=initialDemoBalances(),quote=quoteDemoSend(original,'@sonam.tsering','100');
+ assert.equal(quote.tibetUnits,10000);assert.equal(quote.gasUnits,25);assert.equal(quote.totalUnits,10025);
+ assert.equal(original.tibetUnits,125000);assert.deepEqual(original.recipientCredits,{});
+ const sent=sendDemoBalance(original,quote,'send-1');assert.equal(sent.tibetUnits,114975);assert.equal(sent.usdCents,0);
+ assert.equal(sent.recipientCredits['demo-sonam'],10000);assert.equal(sent.gasSpentUnits,25);assert.equal(sent.transactions[0].username,'sonam.tsering');
+ const next=sendDemoBalance(sent,quoteDemoSend(sent,'pema.dolkar','12.34'),'send-2');
+ assert.equal(next.recipientCredits['demo-pema'],1234);assert.equal(next.gasSpentUnits,50);
+ assert.equal(next.tibetUnits+Object.values(next.recipientCredits).reduce((a,b)=>a+b,0)+next.gasSpentUnits,125000);
+ assert.deepEqual(original.recipientCredits,{});assert.equal(original.gasSpentUnits,0);assert.equal(sent.recipientCredits['demo-pema'],undefined);
+});
+test('send maximum reserves gas and refuses even a one-unit overdraft or invalid amount',()=>{
+ const wallet=initialDemoBalances(),max=quoteDemoSend(wallet,'sonam.tsering','1249.75');
+ assert.equal(sendDemoBalance(wallet,max,'max-send').tibetUnits,0);
+ for(const amount of ['1250','1249.76'])assert.throws(()=>quoteDemoSend(wallet,'sonam.tsering',amount),/gas fee/);
+ for(const amount of ['0','-1','1.001','1e2','NaN','Infinity'])assert.throws(()=>quoteDemoSend(wallet,'sonam.tsering',amount));
+ const tiny={...wallet,tibetUnits:26};assert.equal(sendDemoBalance(tiny,quoteDemoSend(tiny,'pema.dolkar','0.01'),'tiny-send').tibetUnits,0);
+ assert.throws(()=>quoteDemoSend({...wallet,tibetUnits:25},'pema.dolkar','0.01'));
+});
+test('send confirmation rejects replay, changed fees, changed recipients and stale balances',()=>{
+ const wallet=initialDemoBalances(),quote=quoteDemoSend(wallet,'sonam.tsering','100'),sent=sendDemoBalance(wallet,quote,'send-1');
+ assert.throws(()=>sendDemoBalance(sent,quote,'send-1'),/already been completed/);
+ for(const changed of [{gasUnits:0},{totalUnits:10000},{recipientId:'demo-pema'},{username:'pema.dolkar'},{name:'Different person'},{tibetUnits:10000.5},{tibetUnits:-1}])assert.throws(()=>sendDemoBalance(wallet,{...quote,...changed},'altered-send'));
+ assert.throws(()=>sendDemoBalance({...wallet,tibetUnits:10000},quote,'stale-send'),/gas fee/);
+ assert.equal(sent.tibetUnits,114975);assert.equal(wallet.tibetUnits,125000);
 });

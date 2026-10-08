@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="referrer" content="no-referrer" />
+  <meta name="description" content="Explore how to integrate Sign in with New Tibet ID. Button assets, a privacy-focused authentication flow and server-side implementation examples." />
+  <title>Sign in with New Tibet ID · Developer guide</title>
+  <link rel="icon" href="./favicon.svg" />
+  <link rel="preload" href="./assets/fonts/inter-latin-variable.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="./fonts.css" />
+  <link rel="stylesheet" href="./assets/integration/new-tibet-signin.css" />
+  <link rel="stylesheet" href="./developers.css" />
+  <script type="module" src="./developers.js"></script>
+</head>
+<body>
+  <a class="docs-skip" href="#overview">Skip to guide</a>
+  <header class="docs-header">
+    <div class="docs-header-inner">
+      <a class="docs-brand" href="./" aria-label="New Tibet app"><img src="./assets/new-tibet-logo-blue.svg" width="92" height="39" alt="New Tibet" /><span>Developers</span></a>
+      <a class="docs-back" href="./">Back to app <span aria-hidden="true">↗</span></a>
+    </div>
+  </header>
+  <div class="docs-layout">
+    <aside class="docs-sidebar">
+      <details class="docs-contents" open>
+        <summary>On this page <span aria-hidden="true">⌄</span></summary>
+        <nav aria-label="Developer guide sections">
+          <a href="#overview" aria-current="location">Overview</a>
+          <a href="#register">1. Register your application</a>
+          <a href="#button">2. Add the sign-in button</a>
+          <a href="#authentication">3. Handle authentication</a>
+          <a href="#membership">4. Read membership status</a>
+          <a href="#launch">Prepare for launch</a>
+        </nav>
+      </details>
+      <div class="docs-sidebar-note"><strong>Integration preview</strong><p>Button assets are ready to use. Partner authentication is a proposed implementation.</p></div>
+    </aside>
+    <main class="docs-main">
+      <section id="overview" class="docs-section docs-overview" aria-labelledby="overview-title">
+        <p class="docs-eyebrow">NEW TIBET ID · DEVELOPER GUIDE</p>
+        <h1 id="overview-title" tabindex="-1">Sign in with<br />New Tibet ID.</h1>
+        <p class="docs-lead">Connect your application to verified New Tibet members, with a familiar sign-in and less personal data to manage.</p>
+        <div class="docs-hero-actions"><a class="docs-primary" href="#register">Start building <span aria-hidden="true">↓</span></a><a class="docs-link" href="#button">Get the button assets <span aria-hidden="true">→</span></a></div>
+        <div class="docs-status"><span class="docs-status-label">Integration preview</span><p>New Tibet has not enabled partner sign-in or issued client credentials. This guide illustrates the intended integration using OpenID Connect. Issuer details, scopes and membership claims will be confirmed during onboarding.</p></div>
+        <ul class="docs-benefits">
+          <li><span aria-hidden="true">01</span><h2>Privacy</h2><p>Request membership status without receiving book photos or passport scans.</p></li>
+          <li><span aria-hidden="true">02</span><h2>Security</h2><p>Members authenticate with New Tibet. Your application never handles their passkey.</p></li>
+          <li><span aria-hidden="true">03</span><h2>Verified membership</h2><p>Distinguish verified Green Book members from Blue Book supporters when needed.</p></li>
+        </ul>
+        <h2 class="docs-flow-heading">How sign-in would work</h2>
+        <ol class="docs-flow" aria-label="Proposed sign-in flow">
+          <li><span class="docs-flow-number">1</span><strong>Your application</strong><p>A member chooses Sign in with New Tibet ID.</p><span class="docs-flow-arrow" aria-hidden="true">→</span></li>
+          <li><span class="docs-flow-number">2</span><strong>New Tibet</strong><p>They unlock with their passkey and approve the information shared.</p><span class="docs-flow-arrow" aria-hidden="true">→</span></li>
+          <li><span class="docs-flow-number">3</span><strong>Your server</strong><p>Exchange a one-time code, validate the response, and create a session.</p></li>
+        </ol>
+        <p class="docs-caption">An account identifier and approved membership status are shared. Identity evidence stays with New Tibet; private passkey material stays on the member’s device or password manager.</p>
+      </section>
+
+      <section id="register" class="docs-section" aria-labelledby="register-title">
+        <p class="docs-step">STEP 1</p><h2 id="register-title">Register your application</h2>
+        <p>Contact New Tibet with your application’s name, website, privacy policy and exact HTTPS callback URL. Explain whether you need sign-in only or verified membership access.</p>
+        <dl class="docs-registration">
+          <div><dt>Application</dt><dd>Your service name and public website</dd></div>
+          <div><dt>Callback</dt><dd><code>https://your-app.example/auth/new-tibet/callback</code></dd></div>
+          <div><dt>Permissions</dt><dd>Sign-in; membership status only if your service needs it</dd></div>
+        </dl>
+        <p>Once onboarding is available, New Tibet would supply an issuer URL, client ID, server secret and approved scopes. Separate test and production registrations. These values are placeholders:</p>
+        <div class="docs-code"><div class="docs-code-bar"><span>Server environment</span><button type="button" data-copy="config-code" hidden>Copy</button></div><pre tabindex="0" aria-label="Server environment example"><code id="config-code" data-code-file="configuration.env.example">Loading example…</code></pre><a class="docs-code-download" href="./assets/integration/configuration.env.example" download>Download environment example</a></div>
+        <p class="docs-note">Keep the secret in server configuration. Your browser bundle, repository and button markup must never contain it.</p>
+        <a class="docs-link" href="mailto:hello@newtibet.com?subject=New%20Tibet%20ID%20integration%20enquiry">Discuss an integration <span aria-hidden="true">↗</span></a>
+      </section>
+
+      <section id="button" class="docs-section" aria-labelledby="button-title">
+        <p class="docs-step">STEP 2</p><h2 id="button-title">Add the sign-in button</h2>
+        <p>Use a clear label, the New Tibet symbol and a high-contrast outline. The button should open a route on your server that starts authentication.</p>
+        <figure class="docs-button-preview"><div class="docs-preview-label">BUTTON PREVIEW</div><div class="new-tibet-signin" role="img" aria-label="Sign in with New Tibet ID button preview"><img src="./assets/new-tibet-symbol.svg" width="24" height="24" alt="" /><span>Sign in with New Tibet ID</span></div><figcaption>48px minimum height · Visible keyboard focus · Mobile friendly</figcaption></figure>
+        <div class="docs-downloads"><a href="./assets/integration/new-tibet-signin.html" download>HTML <span aria-hidden="true">↓</span></a><a href="./assets/integration/new-tibet-signin.css" download>CSS <span aria-hidden="true">↓</span></a><a href="./assets/new-tibet-symbol.svg" download>SVG symbol <span aria-hidden="true">↓</span></a></div>
+        <div class="docs-code"><div class="docs-code-bar"><span>HTML</span><button type="button" data-copy="button-code" hidden>Copy</button></div><pre tabindex="0" aria-label="Sign-in button HTML"><code id="button-code" data-code-file="new-tibet-signin.html">Loading example…</code></pre></div>
+        <details class="docs-expand"><summary>View button CSS</summary><div class="docs-code"><div class="docs-code-bar"><span>CSS</span><button type="button" data-copy="css-code" hidden>Copy</button></div><pre tabindex="0" aria-label="Sign-in button CSS"><code id="css-code" data-code-file="new-tibet-signin.css">Loading example…</code></pre></div></details>
+        <p class="docs-note">Download all three files, serve the CSS and SVG from your application’s <code>/assets/</code> directory, and adjust the paths to match your project. Preserve the symbol and full button label.</p>
+      </section>
+
+      <section id="authentication" class="docs-section" aria-labelledby="authentication-title">
+        <p class="docs-step">STEP 3</p><h2 id="authentication-title">Handle authentication on your server</h2>
+        <p>The proposed flow uses OpenID Connect Authorization Code with PKCE. The Node.js example below uses <a href="https://github.com/panva/openid-client" target="_blank" rel="noopener noreferrer">openid-client v6</a> to discover the provider and validate the response.</p>
+        <ol class="docs-server-steps">
+          <li><strong>Start sign-in.</strong> Generate a fresh verifier, state and nonce. Save them in a short-lived server-side session before redirecting the member.</li>
+          <li><strong>Handle the callback.</strong> Exchange the code, check state and nonce, and require a validated ID token. Consume the sign-in attempt once, including on failure.</li>
+          <li><strong>Create your session.</strong> Find or create a local user using the issuer and subject together. Rotate the session ID after authentication.</li>
+        </ol>
+        <div class="docs-route"><code>GET /auth/new-tibet</code><span>Start sign-in</span></div><div class="docs-route"><code>GET /auth/new-tibet/callback</code><span>Validate and sign in</span></div>
+        <div class="docs-code"><div class="docs-code-bar"><span>Node.js · Server example</span><button type="button" data-copy="auth-code" hidden>Copy</button></div><pre class="docs-long-code" tabindex="0" aria-label="Server-side authentication example"><code id="auth-code" data-code-file="oidc-example.mjs">Loading example…</code></pre><a class="docs-code-download" href="./assets/integration/oidc-example.mjs" download>Download server example</a></div>
+        <p class="docs-note">This is a framework-independent template, not a hosted sign-in service. Wire the exported functions to your routes, persist the per-browser session before redirects and after callbacks, and handle provider errors without creating a session. Use a trusted, configured callback URL rather than request Host headers.</p>
+        <p>Use a server-side session store and a <code>Secure</code>, <code>HttpOnly</code>, <code>SameSite=Lax</code> session cookie. Show a safe retry message for cancelled or expired sign-ins. Keep tokens out of URLs, browser storage and logs.</p>
+      </section>
+
+      <section id="membership" class="docs-section" aria-labelledby="membership-title">
+        <p class="docs-step">STEP 4</p><h2 id="membership-title">Read only the status you need</h2>
+        <p>Use an app-specific subject to link a local account, rather than a name, email address or public member reference. The intended design uses pairwise subjects to reduce tracking across applications.</p>
+        <div class="docs-claim-grid"><article><h3>Sign-in only</h3><p>An issuer and subject identify the returning account. No contact details or membership status are needed.</p><code>openid</code></article><article><h3>Membership access</h3><p>Request approved membership status if your application needs to distinguish Green and Blue Book holders.</p><code>openid membership</code><small>Proposed scope</small></article></div>
+        <p class="docs-note">Membership scopes, the namespaced claim below and pairwise subjects are proposed. They are not implemented or an available API contract.</p>
+        <div class="docs-code"><div class="docs-code-bar"><span>Illustrative claims · Not a signed token</span><button type="button" data-copy="claims-code" hidden>Copy</button></div><pre tabindex="0" aria-label="Proposed membership claims"><code id="claims-code" data-code-file="claims.example.json">Loading example…</code></pre><a class="docs-code-download" href="./assets/integration/claims.example.json" download>Download illustrative claims</a></div>
+        <p>Allow a Green Book feature only after your server validates authentication and confirms both <code>verified: true</code> and <code>book_type: "green"</code>. Missing, unverified or Blue Book status must not unlock that feature. General content can remain visible to everyone.</p>
+        <p>Claims reflect membership at issuance. Require a fresh sign-in for sensitive membership actions and define a short session policy; a saved claim cannot guarantee that membership is still active.</p>
+        <div class="docs-privacy"><h3>Keep identity evidence out of your application</h3><p>The intended partner response excludes book photos, passport scans, video, biometrics, private keys and wallet recovery words. Request the minimum permissions and obtain clear member consent. Do not treat a display name as a legal identity.</p></div>
+      </section>
+
+      <section id="launch" class="docs-section" aria-labelledby="launch-title">
+        <h2 id="launch-title">Prepare for launch</h2>
+        <p>Once partner authentication is enabled, test the complete flow with New Tibet before enabling it for your users.</p>
+        <ul class="docs-launch-list">
+          <li>Confirm the issuer, scopes, claim names, token authentication method and exact callback registration.</li>
+          <li>Test cancelled sign-ins, expired codes, wrong state or nonce, replayed callbacks and invalid tokens.</li>
+          <li>Check Green Book, Blue Book and missing membership status; enforce restricted actions on the server.</li>
+          <li>Confirm that consent, session expiry, sign-out and membership changes behave as users expect.</li>
+          <li>Test keyboard access and the complete redirect flow on iPhone and Android.</li>
+        </ul>
+        <div class="docs-contact"><div><h3>Building a Tibetan application?</h3><p>Share your use case with New Tibet.</p></div><a class="docs-primary" href="mailto:hello@newtibet.com?subject=New%20Tibet%20ID%20integration%20enquiry">Get in touch <span aria-hidden="true">↗</span></a></div>
+        <div class="docs-references"><h3>Technical references</h3><p>This implementation blueprint follows <a href="https://openid.net/specs/openid-connect-core-1_0.html" target="_blank" rel="noopener noreferrer">OpenID Connect Core</a> and <a href="https://www.rfc-editor.org/rfc/rfc9700.html" target="_blank" rel="noopener noreferrer">OAuth security best practices</a>. The example uses the documented <a href="https://github.com/panva/openid-client/blob/main/examples/oidc.ts" target="_blank" rel="noopener noreferrer">openid-client authorization flow</a>.</p></div>
+      </section>
+      <footer class="docs-footer"><span>© New Tibet</span><a href="#overview">Back to top ↑</a></footer>
+    </main>
+  </div>
+  <div id="docs-copy-status" class="docs-sr-only" role="status" aria-live="polite"></div>
+</body>
+</html>

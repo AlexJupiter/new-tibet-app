@@ -307,6 +307,13 @@ body.demo-mode.showing-account footer { bottom: calc(72px + env(safe-area-inset-
 .ecosystem-benefits li > svg { flex-shrink: 0; margin-top: 2px; color: var(--lapis); }
 .ecosystem-benefits h3 { margin: 0 0 4px; font-size: 14px; }
 .ecosystem-benefits p { margin: 0; font-size: 13px; line-height: 1.6; }
+.ecosystem-developer { margin-top: 26px; padding: 22px 20px; border: 1px solid #cbd2e2; border-radius: 16px; background: #f7f8fb; }
+.ecosystem-developer-label { display: block; margin-bottom: 10px; color: var(--lapis); font-size: 12px; font-weight: 600; }
+.ecosystem-developer h3 { margin: 0 0 10px; font-size: 20px; line-height: 1.35; letter-spacing: -.4px; }
+.ecosystem-developer p { margin: 0 0 18px; font-size: 14px; line-height: 1.6; }
+.ecosystem-developer .primary { width: 100%; min-height: 48px; padding: 12px; font-size: 14px; border-radius: 10px; }
+.ecosystem-developer .primary svg { width: 16px; height: 16px; flex-shrink: 0; }
+.ecosystem-developer small { display: block; margin-top: 12px; font-size: 11px; line-height: 1.6; }
 .ecosystem-preview-note { margin: 20px 0 28px; font-size: 12px; line-height: 1.6; }
 .ecosystem-partner-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
 .ecosystem-partner-heading h3 { margin: 0; font-size: 18px; }

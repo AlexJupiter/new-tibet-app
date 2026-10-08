@@ -1,0 +1,9 @@
+{
+  "iss": "https://identity.newtibet.example",
+  "sub": "example-app-specific-member-id",
+  "aud": "example-client-id",
+  "https://newtibet.com/claims/membership": {
+    "verified": true,
+    "book_type": "green"
+  }
+}

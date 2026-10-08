@@ -1,6 +1,9 @@
+import {sampleApplicant} from './demo-profile.js';
+import {passportDiagram,walletDiagram} from './diagrams.js';
+import {renderAccountTabs,renderPetitions,renderChat,walletSummary} from './account.js';
 const config = window.NEW_TIBET_CONFIG || {mode:'demo',apiBase:''};
 const demo = config.mode !== 'live';
-const initialState = () => ({step:-1,book:'green',name:'',email:'',whatsapp:'',verified:{},codes:{},photo:null,photos:{},photoKind:'front',challenge:null,video:null,videoURL:'',passport:null,passportRequest:null,passkey:null,consent:false,reference:'',status:'pending',messages:[],demoSkipped:{contacts:false,passport:false}});
+const initialState = () => ({step:-1,book:'green',name:'',email:'',whatsapp:'',verified:{},codes:{},photo:null,photos:{},photoKind:'front',challenge:null,video:null,videoURL:'',passport:null,passportRequest:null,passkey:null,consent:false,reference:'',status:'pending',messages:[],demoSkipped:{contacts:false,passport:false},demoSampleApplicant:false,appTab:'profile',petitionSignatures:[],chatMessages:[],chatDraft:'',wallet:null,walletMethod:'passkey',recoveryStage:'',walletPrfSalt:''});
 const state = initialState();
 let recorder, recordingTimer, passportClient, passportGeneration=0;
 let stream, busy = false, sessionToken = '';
@@ -17,13 +20,14 @@ const from64=(str)=>Uint8Array.from(atob(str.replace(/-/g,'+').replace(/_/g,'/')
 async function api(path, body){const res=await fetch(config.apiBase.replace(/\/$/,'')+'/api/'+path,{method:body?'POST':'GET',headers:{'Content-Type':'application/json',...(sessionToken?{Authorization:'Bearer '+sessionToken}:{})},...(body?{body:JSON.stringify(body)}:{})});const data=await res.json();if(!res.ok)throw new Error(data.error||'Something went wrong. Please try again.');return data;}
 async function session(){if(!sessionToken){const data=await api('session',{});sessionToken=data.token;}}
 function stopCamera(){if(recorder?.state==='recording'){recorder.onstop=null;recorder.stop();}recorder=null;clearInterval(recordingTimer);if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;}
-function navigate(step){stopCamera();if(state.step===4&&step!==4){passportGeneration++;passportClient?.clearAllRequests();state.passportRequest=null;}state.step=step;notice();render();window.scrollTo(0,0);document.querySelector(step===-1?'#splash-title':'#screen-title')?.focus({preventScroll:true});}
+function navigate(step){if(state.step===5&&step!==5&&state.wallet?.words){state.wallet.words.fill('');state.wallet=null;state.recoveryStage='';}stopCamera();if(state.step===4&&step!==4){passportGeneration++;passportClient?.clearAllRequests();state.passportRequest=null;}state.step=step;notice();render();window.scrollTo(0,0);document.querySelector(step===-1?'#splash-title':'#screen-title')?.focus({preventScroll:true});}
 function render(){
  document.querySelector('#mode-banner').hidden=!demo;document.querySelector('#mode-banner').textContent=demo?'Demo · Nothing is uploaded or sent.':'';
  document.querySelector('#splash').hidden=state.step!==-1;
  document.querySelector('#signup').hidden=state.step===-1;
  document.body.classList.toggle('showing-splash',state.step===-1);
  document.body.classList.toggle('demo-mode',demo);
+ document.body.classList.toggle('showing-account',state.step===6&&state.status==='accepted');
  renderDemoFooter();
  document.querySelector('.surface-top').hidden=state.step===6;
  document.querySelector('#signup').classList.toggle('profile-view',state.step===6&&state.status==='accepted');
@@ -57,9 +61,9 @@ async function demoNext(){
  if(state.step===3){
   state.demoSkipped.contacts=!contactsReady();
   // Sample values populate the presentation; they do not count as verified contacts or consent.
-  if(!state.name.trim())state.name='Tenzin Demo';
-  if(!state.email.trim())state.email='sample@example.com';
-  if(!state.whatsapp.trim())state.whatsapp='+44 7700 900123';
+  if(!state.name.trim())state.name=sampleApplicant.name;
+  if(!state.email.trim())state.email=sampleApplicant.email;
+  if(!state.whatsapp.trim())state.whatsapp=sampleApplicant.whatsapp;
   return navigate(4);
  }
  if(state.step===4){
@@ -87,7 +91,9 @@ async function uploadDemoSamples(){
   if(step===1){
    await ensureChallenge();
    if(state.step!==step)return;
-   for(const kind of photoKinds){if(!state.photos[kind])state.photos[kind]=samplePhoto(state.book,kind,state.challenge.code);}
+   for(const kind of photoKinds){if(state.photos[kind])continue;const photo=await samplePhoto(state.book,kind,state.challenge.code);if(state.step!==step)return;if(!state.photos[kind])state.photos[kind]=photo;}
+   state.demoSampleApplicant=true;
+   for(const factor of ['name','email','whatsapp']){if(!state[factor].trim())state[factor]=sampleApplicant[factor];}
    render();notice('Sample photos added for this demo.');
   }else{
    const video=await sampleVideo();
@@ -108,7 +114,7 @@ const photoNames={front:'Front cover',back:'Back cover',identity:'Photo / identi
 async function ensureChallenge(){if(state.challenge)return;try{if(demo)state.challenge={code:String(crypto.getRandomValues(new Uint32Array(1))[0]%900000+100000)};else{await session();state.challenge=await api('media/challenge',{});}if(state.step===1)render();}catch(e){notice(e.message);}}
 function renderPhoto(){
  const kind=state.photoKind,photo=state.photos[kind];
- screen.innerHTML=heading('Photograph your book.','Take four clear photos of your '+bookLabel()+'.')+`<div class="photo-tabs" role="group" aria-label="Required book photos">${photoKinds.map(k=>`<button class="secondary ${kind===k?'active':''}" data-photo="${k}" aria-pressed="${kind===k}">${state.photos[k]?'✓ ':''}${({front:'Front',back:'Back',identity:'Photo page',challenge:'Code'})[k]}</button>`).join('')}</div><h3>${photoNames[kind]}</h3>${kind==='challenge'?`<div class="challenge-card"><small>YOUR RANDOM VERIFICATION CODE</small><strong>${state.challenge?esc(state.challenge.code):'Preparing…'}</strong><p>Write this code on paper. Photograph it beside your open book, with both clearly readable.</p></div>`:`<p class="description">${kind==='identity'?'Open the page showing your photograph, name, and book number.':'Photograph the '+(kind==='front'?'front':'back')+' cover, including all four corners.'}</p>`}<div class="capture" id="capture">${photo?`<img src="${photo}" alt="${photoNames[kind]}"/>`:`<div class="empty">${svg('camera')}<p>Keep the whole page in view.</p></div>`}</div><div class="capture-label">${Object.keys(state.photos).length} of 4 required photos ready</div><div class="capture-actions"><button class="${photo?'secondary':'primary'}" id="camera">${svg('camera')} ${photo?'Retake photo':'Turn on camera'}</button><button class="text-button" id="upload">Choose a photo instead</button></div><input type="file" id="file" accept="image/jpeg,image/png,image/webp" hidden/><div class="actions navigation"><button class="secondary" id="back">Back</button><button class="primary" id="use-photo" ${!photo?'hidden':''}>${photoKinds.every(k=>state.photos[k])?'Continue to video →':'Next photo →'}</button></div>`;
+ screen.innerHTML=heading('Photograph your book.','Take four clear photos of your '+bookLabel()+'.')+`<div class="photo-tabs" role="group" aria-label="Required book photos">${photoKinds.map(k=>`<button class="secondary ${kind===k?'active':''}" data-photo="${k}" aria-pressed="${kind===k}">${state.photos[k]?'✓ ':''}${({front:'Front',back:'Back',identity:'Photo page',challenge:'Code'})[k]}</button>`).join('')}</div><h3>${photoNames[kind]}</h3>${kind==='challenge'?`<div class="challenge-card"><small>YOUR RANDOM VERIFICATION CODE</small><strong>${state.challenge?esc(state.challenge.code):'Preparing…'}</strong><p>Write this code on paper. Photograph it beside your open book, with both clearly readable.</p></div>`:`<p class="description">${kind==='identity'?'Open the page showing your photograph, name, and book number.':'Photograph the '+(kind==='front'?'front':'back')+' cover, including all four corners.'}</p>`}<div class="capture" id="capture">${photo?`<img src="${photo}" alt="${photoNames[kind]}"/>`:`<div class="empty">${svg('camera')}<p>Keep the whole page in view.</p></div>`}</div><div class="capture-label">${Object.keys(state.photos).length} of 4 required photos ready${demo&&state.demoSampleApplicant?'<br/>Sample applicant: Tenzin Dolma · Fictional':''}</div><div class="capture-actions"><button class="${photo?'secondary':'primary'}" id="camera">${svg('camera')} ${photo?'Retake photo':'Turn on camera'}</button><button class="text-button" id="upload">Choose a photo instead</button></div><input type="file" id="file" accept="image/jpeg,image/png,image/webp" hidden/><div class="actions navigation"><button class="secondary" id="back">Back</button><button class="primary" id="use-photo" ${!photo?'hidden':''}>${photoKinds.every(k=>state.photos[k])?'Continue to video →':'Next photo →'}</button></div>`;
  screen.querySelectorAll('[data-photo]').forEach(b=>b.onclick=()=>{stopCamera();state.photoKind=b.dataset.photo;render();});
  document.querySelector('#back').onclick=()=>navigate(0);document.querySelector('#camera').onclick=startCamera;document.querySelector('#upload').onclick=()=>document.querySelector('#file').click();document.querySelector('#file').onchange=e=>loadPhoto(e.target.files[0]);document.querySelector('#use-photo').onclick=()=>{if(!state.photos[kind])return;if(photoKinds.every(k=>state.photos[k]))return navigate(2);state.photoKind=photoKinds.find(k=>!state.photos[k]);render();};ensureChallenge();
 }
@@ -119,8 +125,21 @@ function renderVideo(){screen.innerHTML=heading('Video verification.','Hold your
 async function loadVideo(file){if(!file)return;try{if(file.size>20*1024*1024)throw new Error('Choose a video smaller than 20 MB.');if(!['video/webm','video/mp4','video/quicktime'].includes(file.type))throw new Error('Choose a WebM or MP4 video.');const url=URL.createObjectURL(file);const v=document.createElement('video');try{v.src=url;await new Promise((r,j)=>{v.onloadedmetadata=r;v.onerror=()=>j(new Error('This video could not be opened.'));});if(!Number.isFinite(v.duration)||v.duration<5||v.duration>30.5)throw new Error('Choose a video lasting 5–30 seconds.');}finally{URL.revokeObjectURL(url);}if(state.step!==2)return false;setVideo(file);render();notice();return true;}catch(e){notice(e.message);return false;}}
 
 async function startVideo(){stopCamera();notice();try{if(!window.MediaRecorder||!navigator.mediaDevices?.getUserMedia)throw new Error('Recording is unavailable in this browser. Record a video on your phone and choose that file.');stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:640},height:{ideal:480}},audio:true});const capture=document.querySelector('#capture');capture.innerHTML='<video autoplay playsinline muted aria-label="Video recording preview"></video>';const preview=capture.querySelector('video');preview.srcObject=stream;await preview.play();const mime=['video/webm;codecs=vp8,opus','video/webm','video/mp4'].find(t=>MediaRecorder.isTypeSupported(t));if(!mime)throw new Error('This browser cannot record WebM or MP4. Choose a video file instead.');const chunks=[];let bytes=0,tooLarge=false;const started=Date.now();const activeRecorder=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:1200000});recorder=activeRecorder;activeRecorder.ondataavailable=e=>{bytes+=e.data.size;if(bytes>20*1024*1024){tooLarge=true;if(activeRecorder.state==='recording')activeRecorder.stop();}else chunks.push(e.data);};activeRecorder.onstop=()=>{clearInterval(recordingTimer);stream?.getTracks().forEach(t=>t.stop());stream=null;recorder=null;if(state.step!==2)return;if(tooLarge){render();return notice('The video exceeded 20 MB. Try again.');}if(Date.now()-started<5000){render();return notice('Record at least 5 seconds so the reviewer can hear your message.');}setVideo(new Blob(chunks,{type:mime.split(';')[0]}));render();};activeRecorder.start(500);const button=document.querySelector('#record');button.textContent='Stop recording';button.disabled=true;button.onclick=()=>activeRecorder.stop();document.querySelector('#video-next').disabled=true;document.querySelector('#video-upload').disabled=true;recordingTimer=setInterval(()=>{const seconds=Math.floor((Date.now()-started)/1000);document.querySelector('#recording-status').textContent=`Recording · ${seconds} / 30 seconds`;button.disabled=seconds<5;if(seconds>=30&&activeRecorder.state==='recording')activeRecorder.stop();},250);}catch(e){stopCamera();render();notice(e.name==='NotAllowedError'?'Allow both camera and microphone access in your browser, or choose a video.':e.message);}}
-function renderPassport(){const verified=state.passport?.verified;screen.innerHTML=heading('Passport verification.','Use ZKPassport on your phone to prove you are 18 or older without sending New Tibet your passport details.')+`<div class="security-card">${svg('shield')}<h3>${verified?'Passport proof verified':'Private passport check'}</h3><p>We store cryptographic proofs and a private identifier to prevent the same passport being used twice. The only passport detail we store is your country of nationality.</p><div class="benefit">${svg('check')}<span>Age 18 or older, without your date of birth</span></div><div class="benefit">${svg('check')}<span>Private duplicate-passport check</span></div><div class="benefit">${svg('check')}<span>Face check inside ZKPassport</span></div>${verified?`<span class="tag">✓ Verified · ${esc(state.passport.country)}</span>`:''}</div><details class="details"><summary>Privacy and requirements</summary><p class="description">New Tibet never receives or stores your passport scan, passport number, name, birth date, or passport face image from this check. Your book photos, video, name, and contacts are collected separately for manual review.</p><p class="under-button">An NFC-enabled phone and a supported biometric passport are needed. Duplicate-passport protection does not rule out a person using multiple passports.</p></details>${state.passportRequest?`<div class="passport-qr"><img src="${state.passportRequest.qr}" alt="Scan to open your private passport check in ZKPassport" width="256" height="256"/><p id="passport-progress" role="status">Open the link on your phone or scan this code with ZKPassport.</p><a class="primary" href="${esc(state.passportRequest.url)}" target="_blank" rel="noopener">Open ZKPassport ↗</a></div>`:''}${!verified?`<div class="actions"><button class="primary" id="start-passport">${state.passportRequest?'Start a new passport check':'Verify with ZKPassport'}</button></div>`:''}${demo?'<div class="helper">'+svg('info')+'<span>This public preview has no verification backend. You can generate a real ZKPassport request, but it cannot approve an application or enforce uniqueness here.</span></div>':''}<div class="actions"><button class="secondary" id="back">Back</button>${verified?'<button class="primary" id="passport-next">Continue →</button>':''}</div>`;document.querySelector('#back').onclick=()=>navigate(3);if(!verified)document.querySelector('#start-passport').onclick=startPassport;document.querySelector('#passport-next')?.addEventListener('click',()=>navigate(5));}
-async function startPassport(){if(busy)return;busy=true;notice();const generation=++passportGeneration;const button=document.querySelector('#start-passport');button.disabled=true;button.textContent='Preparing secure request…';try{const {ZKPassport,NullifierType,qr}=await import('./passport-sdk.js');let challenge;if(demo)challenge={nonce:crypto.randomUUID(),domain:location.hostname,scope:'new-tibet-identity-v1'};else{await session();challenge=await api('passport/challenge',{});}if(generation!==passportGeneration||state.step!==4)return;passportClient?.clearAllRequests();passportClient=new ZKPassport(challenge.domain);const builder=await passportClient.request({name:'New Tibet Identity',logo:new URL('./assets/new-tibet-symbol.svg',import.meta.url).href,purpose:'Prove age 18+ and prevent duplicate passport registration. Only nationality is disclosed.',scope:challenge.scope,devMode:false,validity:3600,uniqueIdentifierType:NullifierType.NON_SALTED});const request=builder.gte('age',18).disclose('nationality').bind('custom_data',challenge.nonce).facematch('strict').done();const image=await qr(request.url);if(generation!==passportGeneration||state.step!==4){passportClient.clearAllRequests();return;}state.passportRequest={url:request.url,qr:image};render();const progress=text=>{if(generation===passportGeneration&&state.step===4){const p=document.querySelector('#passport-progress');if(p)p.textContent=text;}};request.onRequestReceived(()=>progress('Request opened. Follow the instructions on your phone.'));request.onGeneratingProof(()=>progress('Generating your private proofs on your phone…'));request.onReject(()=>progress('You declined the request. Start a new check when ready.'));request.onError(()=>progress('The passport check could not complete. Start a new check and try again.'));request.onSuccess(async({proofs,result})=>{if(generation!==passportGeneration||state.step!==4)return false;if(demo){progress('Proofs received. This preview has no backend to verify them; your passport is still unverified. Nothing has been stored.');return false;}try{progress('Checking cryptographic proofs and duplicate-passport protection…');const verified=await api('passport/verify',{proofs,result});if(generation!==passportGeneration||state.step!==4)return false;state.passport={verified:true,country:verified.country};render();notice('Your age and passport proofs were verified.');return true;}catch(e){progress(e.message);return false;}});}catch(e){notice('Unable to start ZKPassport. '+e.message);}finally{busy=false;if(state.step===4)document.querySelector('#start-passport')?.removeAttribute('disabled');}}
+function renderPassport(){
+ const verified=state.passport?.verified;
+ screen.innerHTML=heading('Passport verification.','Use your phone and passport with ZKPassport.')+passportDiagram()+`
+ <div class="privacy-note">${svg('shield')}<div><strong>Passport details stay on your phone.</strong><p>No passport scan, name, number, date of birth, or face image is sent to New Tibet. We receive only cryptographic proofs and a private identifier for duplicate-passport checks.</p></div></div>
+ <details class="details"><summary>How it works</summary><p>Open ZKPassport on an NFC-enabled phone. Scan your passport’s photo page, hold the phone against its chip, and complete the face check. Your phone generates a proof that you are 18 or older without sharing your date of birth.</p><p>New Tibet verifies the proof and checks whether the same passport has already been registered. Your book photos and contact details are collected separately for application review.</p></details>
+ ${verified?`<span class="tag">✓ Passport proof verified</span>`:''}
+ ${state.passportRequest?`<div class="passport-qr"><img src="${state.passportRequest.qr}" alt="Scan to open ZKPassport" width="256" height="256"/><p id="passport-progress" role="status">Open the link on your phone or scan this code with ZKPassport.</p><a class="primary" href="${esc(state.passportRequest.url)}" target="_blank" rel="noopener">Open ZKPassport ↗</a></div>`:''}
+ ${!verified?`<div class="actions"><button class="primary" id="start-passport">${state.passportRequest?'Start a new passport check':'Verify with ZKPassport'}</button></div>`:''}
+ ${demo?'<p class="under-button">Demo · Use Skip to continue without passport verification.</p>':''}
+ <div class="actions"><button class="secondary" id="back">Back</button>${verified?'<button class="primary" id="passport-next">Continue →</button>':''}</div>`;
+ document.querySelector('#back').onclick=()=>navigate(3);
+ if(!verified)document.querySelector('#start-passport').onclick=startPassport;
+ document.querySelector('#passport-next')?.addEventListener('click',()=>navigate(5));
+}
+async function startPassport(){if(busy)return;busy=true;notice();const generation=++passportGeneration;const button=document.querySelector('#start-passport');button.disabled=true;button.textContent='Preparing secure request…';try{const {ZKPassport,NullifierType,qr}=await import('./passport-sdk.js');let challenge;if(demo)challenge={nonce:crypto.randomUUID(),domain:location.hostname,scope:'new-tibet-identity-v1'};else{await session();challenge=await api('passport/challenge',{});}if(generation!==passportGeneration||state.step!==4)return;passportClient?.clearAllRequests();passportClient=new ZKPassport(challenge.domain);const builder=await passportClient.request({name:'New Tibet Identity',logo:new URL('./assets/new-tibet-symbol.svg',import.meta.url).href,purpose:'Prove age 18+ and prevent duplicate passport registration. No passport details are disclosed.',scope:challenge.scope,devMode:false,validity:3600,uniqueIdentifierType:NullifierType.NON_SALTED});const request=builder.gte('age',18).bind('custom_data',challenge.nonce).facematch('strict').done();const image=await qr(request.url);if(generation!==passportGeneration||state.step!==4){passportClient.clearAllRequests();return;}state.passportRequest={url:request.url,qr:image};render();const progress=text=>{if(generation===passportGeneration&&state.step===4){const p=document.querySelector('#passport-progress');if(p)p.textContent=text;}};request.onRequestReceived(()=>progress('Request opened. Follow the instructions on your phone.'));request.onGeneratingProof(()=>progress('Generating your private proofs on your phone…'));request.onReject(()=>progress('You declined the request. Start a new check when ready.'));request.onError(()=>progress('The passport check could not complete. Start a new check and try again.'));request.onSuccess(async({proofs,result})=>{if(generation!==passportGeneration||state.step!==4)return false;if(demo){progress('Proofs received. This preview has no backend to verify them; your passport is still unverified. Nothing has been stored.');return false;}try{progress('Checking cryptographic proofs and duplicate-passport protection…');await api('passport/verify',{proofs,result});if(generation!==passportGeneration||state.step!==4)return false;state.passport={verified:true};render();notice('Your age and passport proofs were verified.');return true;}catch(e){progress(e.message);return false;}});}catch(e){notice('Unable to start ZKPassport. '+e.message);}finally{busy=false;if(state.step===4)document.querySelector('#start-passport')?.removeAttribute('disabled');}}
 function renderContacts(){screen.innerHTML=heading('Contact details.','Verify your email and WhatsApp to receive updates.')+`<label class="field"><span>Name on your book</span><input id="name" autocomplete="name" value="${esc(state.name)}" maxlength="100" placeholder="Your full name"/></label>${contactField('email','Email address','email','you@example.com','We’ll send a one-time verification code.')}${contactField('whatsapp','WhatsApp number','tel','+91 98765 43210','Include your country code. Status updates will be sent here.')}<label class="checkbox"><input id="contact-consent" type="checkbox" ${state.consent?'checked':''}/><span>I agree to receive verification codes and application status messages on WhatsApp and email, and to have my document reviewed by New Tibet.</span></label><div class="actions"><button class="secondary" id="back">Back</button><button class="primary" id="next" ${!contactsReady()?'disabled':''}>Continue ${svg('arrow')}</button></div>`;
  document.querySelector('#name').oninput=e=>{state.name=e.target.value;updateNext();};document.querySelector('#contact-consent').onchange=e=>{state.consent=e.target.checked;updateNext();};for(const factor of ['email','whatsapp']){document.querySelector('#'+factor).oninput=e=>{state[factor]=e.target.value;if(state.verified[factor]!==normalize(factor,state[factor])){delete state.verified[factor];state.passkey=null;const tag=document.querySelector('#verified-'+factor);if(tag)tag.remove();document.querySelector('#send-'+factor)?.removeAttribute('disabled');}updateNext();};document.querySelector('#send-'+factor).onclick=()=>sendCode(factor);if(document.querySelector('#verify-'+factor))document.querySelector('#verify-'+factor).onclick=()=>verifyCode(factor);}
  document.querySelector('#back').onclick=()=>navigate(2);document.querySelector('#next').onclick=()=>{if(contactsReady())navigate(4);};}
@@ -130,10 +149,83 @@ function contactsReady(){return state.name.trim().length>=2&&state.consent&&['em
 function updateNext(){document.querySelector('#next').disabled=!contactsReady();}
 async function sendCode(f){if(busy)return;const value=normalize(f,state[f]);if(f==='email'?!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value):!/^\+[1-9]\d{7,14}$/.test(value))return notice(f==='email'?'Enter a valid email address.':'Enter your WhatsApp number with a country code, for example +919876543210.');if(!state.consent)return notice('Please agree to receive verification and status messages first.');busy=true;const button=document.querySelector('#send-'+f);button.disabled=true;button.textContent='Sending…';try{if(demo){const code=String(crypto.getRandomValues(new Uint32Array(1))[0]%900000+100000);state.codes[f]={code,value,expires:Date.now()+600000,attempts:0};}else{await session();await api('otp/send',{factor:f,value,consent:true});state.codes[f]={value};}render();notice(demo?'A test code is shown below the field. No message was sent.':'Your verification code has been sent. It expires in 10 minutes.');}catch(e){notice(e.message);button.disabled=false;button.textContent='Send code';}finally{busy=false;}}
 async function verifyCode(f){if(busy)return;const code=document.querySelector('#code-'+f).value;if(!/^\d{6}$/.test(code))return notice('Enter the 6-digit code.');busy=true;try{const value=normalize(f,state[f]);if(demo){const challenge=state.codes[f];challenge.attempts++;if(challenge.attempts>5||Date.now()>challenge.expires)throw new Error('This code expired. Request a new code.');if(challenge.value!==value||challenge.code!==code)throw new Error('That code does not match. Please try again.');}else await api('otp/verify',{factor:f,value,code});state.verified[f]=value;render();notice();}catch(e){notice(e.message);}finally{busy=false;}}
-function renderSecurity(){screen.innerHTML=heading('Add a passkey.','Use a passkey to sign in with your face, fingerprint or device PIN.')+`<div class="security-card">${svg('key')}<h3>${state.passkey?'Passkey added':'Passkey sign-in'}</h3><p>${state.passkey?'Your passkey is stored by your device or password manager.':'Your passkey stays in your device or password manager.'}</p>${state.passkey?'<span class="tag">✓ Passkey created</span>':''}</div>${!state.passkey?'<div class="actions"><button class="primary" id="passkey">Create a passkey</button></div>':''}<div class="actions"><button class="secondary" id="back">Back</button><button class="${state.passkey?'primary':'secondary'}" id="submit" style="flex:1">Submit application</button></div>`;document.querySelector('#back').onclick=()=>navigate(4);if(!state.passkey)document.querySelector('#passkey').onclick=addPasskey;document.querySelector('#submit').onclick=submit;}
-async function addPasskey(){if(busy)return;busy=true;document.querySelector('#passkey').disabled=true;notice();try{if(!window.PublicKeyCredential||!window.isSecureContext)throw new Error('Passkeys need HTTPS and a supported browser. You can continue without one.');let options;if(demo){options={challenge:b64(crypto.getRandomValues(new Uint8Array(32))),rp:{name:'New Tibet'},user:{id:b64(crypto.getRandomValues(new Uint8Array(32))),name:state.email,displayName:state.name},pubKeyCredParams:[{type:'public-key',alg:-7},{type:'public-key',alg:-257}],authenticatorSelection:{residentKey:'required',userVerification:'required'},attestation:'none',timeout:60000,extensions:{prf:{}}};}else options=await api('passkey/options',{});const cred=await navigator.credentials.create({publicKey:{...options,challenge:from64(options.challenge),user:{...options.user,id:from64(options.user.id)}}});if(!cred)throw new Error('Passkey creation was cancelled.');const credential={id:cred.id,rawId:b64(cred.rawId),type:cred.type,response:{clientDataJSON:b64(cred.response.clientDataJSON),attestationObject:b64(cred.response.attestationObject),transports:cred.response.getTransports?.()||[]},clientExtensionResults:cred.getClientExtensionResults()};if(!demo)await api('passkey/verify',{credential});state.passkey={id:cred.id,prfSupported:Boolean(credential.clientExtensionResults.prf?.enabled)};render();notice(demo?'Test passkey created for this site. It is not registered with New Tibet’s live backend.':'Your passkey has been registered securely.');}catch(e){notice(e.name==='NotAllowedError'?'Passkey setup was cancelled or unavailable. Try again or continue without a passkey.':e.message);render();}finally{busy=false;}}
+function renderSecurity(){
+ const ready=state.wallet?.ready;
+ if(state.walletMethod==='recovery-phrase'&&state.wallet?.words){renderRecoveryWords();return;}
+ screen.innerHTML=heading('Wallet security.','Choose how to access your Ethereum wallet.')+walletDiagram()+`
+ <div class="wallet-explanation"><h3>What is a passkey?</h3><p>A key in your device or password manager, unlocked with Face ID, a fingerprint, or PIN.</p></div>
+ ${ready?`<div class="wallet-setup-ready"><span class="tag">✓ ${state.wallet.method==='passkey'?'Passkey wallet protected':'12-word backup confirmed'}</span><p class="wallet-address">${esc(state.wallet.address)}</p></div>`:`${state.passkey?'<p class="section-note">✓ Passkey added for account sign-in.</p>':''}<div class="capture-actions">${!state.passkey||demo?`<button class="primary" id="passkey">${state.passkey?'Protect wallet with passkey':'Create with a passkey'}</button>`:''}<button class="text-button" id="use-words" ${!demo?'disabled':''}>Record 12 recovery words instead</button></div>`}
+ <p class="under-button">Ethereum · ${demo?'Demo wallet, no funds or transfers':'Wallet activation not available yet'}</p>
+ <details class="details"><summary>How passkeys help prevent lost access</summary><p>On a supported device the passkey encrypts your wallet key. Your biometrics stay on your device. A synced passkey can be recovered through your password manager, reducing reliance on handwritten words. Wallet recovery also needs its encrypted backup and depends on your passkey provider.</p><p>You can record 12 recovery words instead. Anyone with the phrase can restore the wallet; losing it can mean losing access.</p><p>The demo holds wallet material only in this page’s memory. Reloading clears it. Token access and transfers are unavailable.</p></details>
+ <div class="actions"><button class="secondary" id="back">Back</button><button class="${ready?'primary':'secondary'}" id="submit" style="flex:1">Submit application</button></div>`;
+ document.querySelector('#back').onclick=()=>navigate(4);
+ document.querySelector('#passkey')?.addEventListener('click',addPasskey);
+ document.querySelector('#use-words')?.addEventListener('click',startRecoveryWallet);
+ document.querySelector('#submit').onclick=submit;
+}
+async function startRecoveryWallet(){
+ if(!demo||busy)return;
+ busy=true;notice();
+ const button=document.querySelector('#use-words');button.disabled=true;button.textContent='Preparing wallet…';
+ try{
+  const {createRecoveryWallet}=await import('./wallet-sdk.js');
+  if(state.step!==5)return;
+  state.wallet=createRecoveryWallet();state.walletMethod='recovery-phrase';state.recoveryStage='words';render();
+ }catch(error){notice(error.message);button.disabled=false;button.textContent='Record 12 recovery words instead';}
+ finally{busy=false;}
+}
+function renderRecoveryWords(){
+ const confirming=state.recoveryStage==='confirm';
+ screen.innerHTML=heading(confirming?'Confirm your backup.':'Record your 12 words.',confirming?'Enter the requested words from your written backup.':'Write these words down in order and keep them private.')+`
+ <p class="section-note">Demo Ethereum wallet · No funds or token transfers.</p>
+ ${confirming?`<form id="confirm-recovery">${[2,6,10].map(index=>`<label class="field"><span>Word ${index+1}</span><input id="recovery-${index}" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" required/></label>`).join('')}<div class="actions"><button type="button" class="secondary" id="show-words">Back</button><button class="primary" type="submit">Confirm backup</button></div></form>`:`<ol class="recovery-words">${state.wallet.words.map((word,index)=>`<li><span>${index+1}</span><strong>${esc(word)}</strong></li>`).join('')}</ol><p class="description recovery-description">These words restore this Ethereum wallet without a passkey. Losing the backup can mean losing access; anyone with it can access the wallet.</p><div class="actions"><button class="secondary" id="use-passkey">Use a passkey</button><button class="primary" id="recorded-words">I recorded these words</button></div>`}`;
+ document.querySelector('#use-passkey')?.addEventListener('click',()=>{state.wallet.words.fill('');state.wallet=null;state.walletMethod='passkey';state.recoveryStage='';render();notice();});
+ document.querySelector('#recorded-words')?.addEventListener('click',()=>{state.recoveryStage='confirm';notice();render();window.scrollTo(0,0);screen.querySelector('#screen-title').focus({preventScroll:true});});
+ document.querySelector('#show-words')?.addEventListener('click',()=>{state.recoveryStage='words';render();notice();});
+ document.querySelector('#confirm-recovery')?.addEventListener('submit',event=>{
+  event.preventDefault();
+  const wrong=[2,6,10].find(index=>document.querySelector('#recovery-'+index).value.trim().toLowerCase()!==state.wallet.words[index]);
+  if(wrong!==undefined){notice('Word '+(wrong+1)+' does not match your backup.');document.querySelector('#recovery-'+wrong).focus();return;}
+  state.wallet.words.fill('');delete state.wallet.words;state.wallet.ready=true;state.recoveryStage='done';render();notice('Recovery backup confirmed. These words are no longer kept in this page.');window.scrollTo(0,0);
+ });
+}
+async function addPasskey(){
+ if(busy)return;
+ busy=true;const button=document.querySelector('#passkey');button.disabled=true;notice();
+ try{
+  if(!window.PublicKeyCredential||!window.isSecureContext)throw new Error('Passkeys need HTTPS and a supported browser. You can choose 12 recovery words in the demo instead.');
+  const {createPasskeyWallet,publicCredentialExtensions}=await import('./wallet-sdk.js');
+  state.walletPrfSalt||=b64(crypto.getRandomValues(new Uint8Array(32)));
+  let cred,extensions;
+  if(demo&&state.passkey){
+   cred=await navigator.credentials.get({publicKey:{challenge:crypto.getRandomValues(new Uint8Array(32)),allowCredentials:[{type:'public-key',id:from64(state.passkey.id)}],userVerification:'required',extensions:{prf:{eval:{first:from64(state.walletPrfSalt)}}}}});
+   extensions=cred?.getClientExtensionResults();
+  }else{
+   let options;
+   if(demo)options={challenge:b64(crypto.getRandomValues(new Uint8Array(32))),rp:{name:'New Tibet'},user:{id:b64(crypto.getRandomValues(new Uint8Array(32))),name:state.email,displayName:state.name},pubKeyCredParams:[{type:'public-key',alg:-7},{type:'public-key',alg:-257}],authenticatorSelection:{residentKey:'required',userVerification:'required'},attestation:'none',timeout:60000};
+   else options=await api('passkey/options',{});
+   cred=await navigator.credentials.create({publicKey:{...options,challenge:from64(options.challenge),user:{...options.user,id:from64(options.user.id)},extensions:{...options.extensions,prf:{eval:{first:from64(state.walletPrfSalt)}}}}});
+   if(!cred)throw new Error('Passkey creation was cancelled.');
+   extensions=cred.getClientExtensionResults();
+   const credential={id:cred.id,rawId:b64(cred.rawId),type:cred.type,response:{clientDataJSON:b64(cred.response.clientDataJSON),attestationObject:b64(cred.response.attestationObject),transports:cred.response.getTransports?.()||[]},clientExtensionResults:publicCredentialExtensions(extensions)};
+   if(!demo)await api('passkey/verify',{credential});
+   state.passkey={id:cred.id,prfSupported:Boolean(extensions.prf?.enabled)};
+  }
+  if(!cred)throw new Error('Passkey setup was cancelled.');
+  if(state.step!==5)return;
+  if(demo){
+   const prf=extensions?.prf?.results?.first;
+   if(!prf){render();notice('Passkey added for sign-in. To protect this demo wallet, try a passkey with encryption support or choose 12 recovery words.');return;}
+   const wallet=await createPasskeyWallet(prf);
+   if(state.step!==5||state.passkey?.id!==cred.id)return;
+   state.wallet=wallet;state.walletMethod='passkey';state.wallet.credentialId=cred.id;state.wallet.prfSalt=state.walletPrfSalt;
+  }
+  render();notice(demo?'Demo Ethereum wallet protected by your passkey. No funds or token transfers are enabled.':'Your account passkey has been registered securely.');
+ }catch(error){if(state.step===5){render();notice(error.name==='NotAllowedError'?'Passkey setup was cancelled or unavailable. Try again or choose 12 recovery words.':error.message);}}
+ finally{busy=false;}
+}
 async function uploadMedia(kind,blob){const response=await fetch(config.apiBase.replace(/\/$/,'')+'/api/media/upload?kind='+encodeURIComponent(kind)+'&book='+state.book,{method:'POST',headers:{'Content-Type':blob.type,Authorization:'Bearer '+sessionToken,'X-Review-Consent':'2026-10-07'},body:blob});const data=await response.json();if(!response.ok)throw new Error(data.error||'Media upload failed. Please try again.');}
-async function submit(){if(busy)return;if(!contactsReady()&&!(demo&&state.demoSkipped.contacts))return navigate(3);if(!photoKinds.every(k=>state.photos[k]))return navigate(1);if(!state.video)return navigate(2);if(!demo&&!state.passport?.verified)return navigate(4);busy=true;const button=document.querySelector('#submit');button.disabled=true;button.textContent='Submitting…';try{if(demo){state.reference='NT-'+crypto.randomUUID().slice(0,8).toUpperCase();state.messages.push(`New Tibet: Thank you, ${state.name}. Your application ${state.reference} has been received and is awaiting review. We will notify you here when a decision is made.`);}else{for(const kind of photoKinds){button.textContent='Uploading '+photoNames[kind].toLowerCase()+'…';const blob=await(await fetch(state.photos[kind])).blob();await uploadMedia(kind,blob);}button.textContent='Uploading video…';await uploadMedia('video',state.video);button.textContent='Submitting application…';const data=await api('applications',{name:state.name,email:normalize('email',state.email),whatsapp:normalize('whatsapp',state.whatsapp),book:state.book,consent:true,consentVersion:'2026-10-07'});state.reference=data.reference;state.status=data.status;state.notification=data.notification;}state.photos={};state.video=null;URL.revokeObjectURL(state.videoURL);state.videoURL='';navigate(6);}catch(e){notice(e.message);button.disabled=false;button.textContent='Submit application →';}finally{busy=false;}}
+async function submit(){if(busy)return;if(!contactsReady()&&!(demo&&state.demoSkipped.contacts))return navigate(3);if(!photoKinds.every(k=>state.photos[k]))return navigate(1);if(!state.video)return navigate(2);if(!demo&&!state.passport?.verified)return navigate(4);busy=true;const button=document.querySelector('#submit')||document.querySelector('#demo-next');button.disabled=true;button.textContent='Submitting…';try{if(demo){state.reference='NT-'+crypto.randomUUID().slice(0,8).toUpperCase();state.messages.push(`New Tibet: Thank you, ${state.name}. Your application ${state.reference} has been received and is awaiting review. We will notify you here when a decision is made.`);}else{for(const kind of photoKinds){button.textContent='Uploading '+photoNames[kind].toLowerCase()+'…';const blob=await(await fetch(state.photos[kind])).blob();await uploadMedia(kind,blob);}button.textContent='Uploading video…';await uploadMedia('video',state.video);button.textContent='Submitting application…';const data=await api('applications',{name:state.name,email:normalize('email',state.email),whatsapp:normalize('whatsapp',state.whatsapp),book:state.book,consent:true,consentVersion:'2026-10-07'});state.reference=data.reference;state.status=data.status;state.notification=data.notification;}state.photos={};state.video=null;URL.revokeObjectURL(state.videoURL);state.videoURL='';navigate(6);}catch(e){notice(e.message);button.disabled=false;button.textContent='Submit application →';}finally{busy=false;}}
 function reviewPreviewControls(){
  if(!demo)return '';
  const selected=state.status;
@@ -157,7 +249,7 @@ function bindReviewControls(){
  });
 }
 function renderSuccess(){
- if(state.status==='accepted'){renderProfile();return;}
+ if(state.status==='accepted'){renderAcceptedAccount();return;}
  const declined=state.status==='declined';
  const title=declined?'Application declined.':'Application received.';
  const description=declined
@@ -190,8 +282,29 @@ function profileInitials(name){
  const parts=String(name).trim().split(/\s+/u).filter(Boolean);
  return (parts.length>1?[parts[0],parts.at(-1)]:parts).map(part=>Array.from(part)[0]).join('').toLocaleUpperCase()||'NT';
 }
+function renderAcceptedAccount(){
+ if(state.appTab==='petitions')renderPetitions(screen,state,demo,notice,renderAcceptedAccount);
+ else if(state.appTab==='chat')renderChat(screen,state,demo,renderAcceptedAccount);
+ else renderProfile();
+ const panel=document.createElement('section');panel.id='account-panel';panel.setAttribute('role','tabpanel');panel.setAttribute('aria-labelledby','tab-'+state.appTab);
+ while(screen.firstChild)panel.appendChild(screen.firstChild);
+ screen.appendChild(panel);screen.insertAdjacentHTML('beforeend',renderAccountTabs(state.appTab));
+ const tabs=[...screen.querySelectorAll('[data-app-tab]')];
+ const select=tab=>{state.appTab=tab;notice();renderAcceptedAccount();window.scrollTo(0,0);screen.querySelector('#screen-title')?.focus({preventScroll:true});};
+ tabs.forEach((button,index)=>{
+  button.onclick=()=>select(button.dataset.appTab);
+  button.onkeydown=event=>{
+   let next;
+   if(event.key==='ArrowRight')next=(index+1)%tabs.length;
+   if(event.key==='ArrowLeft')next=(index+tabs.length-1)%tabs.length;
+   if(event.key==='Home')next=0;if(event.key==='End')next=tabs.length-1;
+   if(next!==undefined){event.preventDefault();const tab=tabs[next].dataset.appTab;select(tab);screen.querySelector('#tab-'+tab).focus();}
+  };
+ });
+}
 function renderProfile(){
  const name=state.name.trim()||'Your name';
+ const portrait=demo&&state.demoSampleApplicant&&name===sampleApplicant.name;
  const contactsVerified=['email','whatsapp'].every(factor=>state.verified[factor]===normalize(factor,state[factor])&&Boolean(state[factor]));
  const passportText=state.passport?.verified?'Verified · 18+':demo&&state.demoSkipped.passport?'Skipped in demo':demo?'Not verified in this demo':'Not verified';
  screen.innerHTML=`<div class="profile-status">${svg('check')}<span>${demo?'Acceptance preview':'Application accepted'}</span></div>`+
@@ -202,7 +315,7 @@ function renderProfile(){
    <span class="identity-card-kind">${demo?'Demo profile':'Digital identity'}</span>
   </div>
   <div class="identity-card-holder">
-   <div class="identity-portrait" role="img" aria-label="Profile initials ${esc(profileInitials(name))}">${esc(profileInitials(name))}</div>
+   <div class="identity-portrait" ${portrait?'':`role="img" aria-label="Profile initials ${esc(profileInitials(name))}"`}>${portrait?`<img src="${sampleApplicant.portrait}" alt="Fictional demo applicant Tenzin Dolma"/>`:esc(profileInitials(name))}</div>
    <div class="identity-holder-name"><p class="identity-label">Full name</p><h3>${esc(name)}</h3><p class="identity-holder-type">${state.book==='blue'?'Blue Book supporter':'Green Book holder'}</p></div>
   </div>
   <dl class="identity-fields">
@@ -223,12 +336,14 @@ function renderProfile(){
    <div><dt>Account security</dt><dd>${state.passkey?(demo?'Demo passkey':'Passkey'):contactsVerified?'Email + WhatsApp':'Not set up'}</dd></div>
   </dl>
  </section>
+ ${walletSummary(state,demo)}
  ${reviewPreviewControls()}`;
  bindReviewControls();
 }
 function simulateReview(status){
  if(!demo||state.step!==6||!['accepted','declined'].includes(status))return;
  state.status=status;
+ if(status==='accepted')state.appTab='profile';
  const registration=state.messages[0]||`New Tibet: We received demo application ${state.reference}.`;
  const decision=`New Tibet: Your application ${state.reference} has been ${status}. ${status==='accepted'?'Your identity profile is ready.':'Please contact hello@newtibet.com for support.'}`;
  state.messages=[registration,decision];
@@ -239,6 +354,6 @@ document.querySelector('#demo-next').onclick=demoNext;
 // Demo-only entry points let the profile and review states be inspected without new media captures.
 const preview=new URLSearchParams(location.search).get('preview');
 if(demo&&['profile','review'].includes(preview)){
- Object.assign(state,{step:6,name:'Tenzin Demo',email:'sample@example.com',reference:'NT-DEMO-0001',status:preview==='profile'?'accepted':'pending',passport:{verified:false,preview:true},messages:['New Tibet: We received demo application NT-DEMO-0001.']});
+ Object.assign(state,{step:6,name:sampleApplicant.name,email:sampleApplicant.email,whatsapp:sampleApplicant.whatsapp,demoSampleApplicant:true,reference:'NT-DEMO-0001',status:preview==='profile'?'accepted':'pending',passport:{verified:false,preview:true},messages:['New Tibet: We received demo application NT-DEMO-0001.']});
 }
 window.addEventListener('pagehide',stopCamera);document.querySelector('#year').textContent=new Date().getFullYear();document.querySelector('#privacy').onclick=()=>document.querySelector('#privacy-dialog').showModal();document.querySelector('#close-privacy').onclick=()=>document.querySelector('#privacy-dialog').close();render();

@@ -162,6 +162,7 @@ p.description { font-size: 16px; line-height: 1.55; color: var(--muted); margin:
 .identity-card-kind { font-size: 9px; font-weight: 600; line-height: 1.5; letter-spacing: 1px; text-transform: uppercase; text-align: right; color: #60708b; }
 .identity-card-holder { display: grid; grid-template-columns: 72px minmax(0, 1fr); align-items: center; gap: 20px; margin-bottom: 28px; }
 .identity-portrait { display: grid; place-items: center; width: 72px; height: 88px; border-radius: 8px; border: 1px solid #1b2a5b14; background: linear-gradient(145deg, #dde4ef, #cbd6e8); color: var(--lapis); font-size: 25px; font-weight: 500; letter-spacing: 1px; }
+.identity-portrait img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
 .identity-label { margin: 0 0 7px; color: #60708b; font-size: 9px; line-height: 1.4; letter-spacing: 1px; text-transform: uppercase; }
 .identity-holder-name { min-width: 0; }
 .identity-holder-name h3 { margin: 0; font-size: 23px; line-height: 1.2; font-weight: 600; letter-spacing: -.7px; overflow-wrap: anywhere; color: var(--lapis); }
@@ -181,6 +182,73 @@ p.description { font-size: 16px; line-height: 1.55; color: var(--muted); margin:
 .profile-details dt { color: var(--muted); }
 .profile-details dd { text-align: right; margin: 0; color: var(--ink); overflow-wrap: anywhere; }
 .profile-view .demo-review { margin-top: 32px; }
+
+/* Explanations use diagrams and short, readable captions on a phone. */
+.explainer { margin: 22px 0 28px; padding: 18px 10px; background: var(--soft); border-radius: 16px; }
+.explainer > svg { display: block; width: 100%; height: auto; }
+.explainer-steps { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; text-align: center; padding: 12px 0 2px; }
+.explainer-steps strong { display: block; font-size: 12px; font-weight: 500; line-height: 1.4; }
+.explainer-steps small { display: block; font-size: 10px; line-height: 1.5; color: var(--muted); margin-top: 5px; }
+.privacy-note { display: flex; align-items: flex-start; gap: 12px; margin: 24px 0; }
+.privacy-note > svg { flex-shrink: 0; color: var(--green); margin-top: 2px; }
+.privacy-note strong { font-size: 14px; font-weight: 500; }
+.privacy-note p, .wallet-explanation p { font-size: 14px; line-height: 1.65; color: var(--muted); margin: 9px 0 0; }
+.wallet-explanation h3 { font-size: 16px; margin: 0 0 8px; }
+.wallet-address { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 11px; line-height: 1.65; overflow-wrap: anywhere; color: var(--lapis); }
+.wallet-setup-ready { margin: 24px 0; }
+.recovery-words { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; padding: 0; margin: 28px 0; list-style: none; }
+.recovery-words li { display: flex; align-items: center; gap: 8px; padding: 14px 10px; border: 1px solid var(--line); border-radius: 10px; min-width: 0; }
+.recovery-words span { color: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+.recovery-words strong { font-size: 12px; font-weight: 500; }
+p.recovery-description { font-size: 14px; }
+
+/* The accepted identity opens an app with three persistent bottom tabs. */
+.showing-account { padding-bottom: calc(72px + env(safe-area-inset-bottom)); }
+body.demo-mode.showing-account footer { bottom: calc(72px + env(safe-area-inset-bottom)); display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.showing-account .footer-meta { order: 1; }
+.showing-account .demo-footer { order: 2; }
+.showing-account .footer-meta > span, .showing-account .demo-footer > span { display: none; }
+.app-tabs { position: fixed; bottom: 0; left: 0; right: 0; z-index: 6; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); max-width: 560px; margin: auto; padding: 8px 16px max(8px,env(safe-area-inset-bottom)); min-height: calc(72px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: #fff; }
+.app-tabs button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; min-height: 54px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); font-size: 11px; }
+.app-tabs button[aria-selected="true"] { color: var(--lapis); font-weight: 600; }
+.app-tabs button:hover { background: var(--soft); }
+.section-note { font-size: 12px; color: var(--muted); line-height: 1.65; }
+.section-note a { white-space: nowrap; }
+.petition-list { display: grid; gap: 16px; margin-top: 22px; }
+.petition-card { padding: 22px; border: 1px solid var(--line); border-radius: 16px; }
+.petition-category { color: var(--muted); font-size: 11px; }
+.petition-card h3 { margin: 12px 0 10px; font-size: 20px; line-height: 1.3; letter-spacing: -.4px; }
+.petition-card p { color: var(--muted); font-size: 14px; line-height: 1.6; }
+.petition-card details { margin: 16px 0; }
+.petition-card summary { color: var(--lapis); font-size: 12px; padding: 12px 0; cursor: pointer; }
+.petition-card button { width: 100%; margin-top: 8px; min-height: 48px; font-size: 14px; }
+.mesh-status { display: flex; align-items: center; gap: 14px; border-radius: 14px; padding: 18px; background: var(--soft); }
+.mesh-status > svg { color: var(--lapis); }
+.mesh-status strong { display: block; font-size: 13px; font-weight: 500; }
+.mesh-status span { display: block; margin-top: 5px; font-size: 12px; color: var(--muted); }
+.chat-room { border: 1px solid var(--line); border-radius: 16px; overflow: hidden; margin-top: 22px; }
+.chat-room-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 18px; border-bottom: 1px solid var(--line); font-size: 13px; }
+.chat-room-heading strong { font-weight: 500; }
+.chat-room-heading span { color: var(--muted); font-size: 11px; }
+.chat-messages { height: 290px; overflow-y: auto; display: flex; flex-direction: column; align-items: flex-start; gap: 16px; padding: 20px 16px; }
+.chat-message { width: fit-content; max-width: 88%; }
+.chat-message > span { display: block; font-size: 10px; color: var(--muted); margin-bottom: 6px; }
+.chat-message p { background: var(--soft); border-radius: 12px; margin: 0; padding: 12px 14px; font-size: 13px; line-height: 1.55; overflow-wrap: anywhere; white-space: pre-wrap; }
+.chat-message.own { align-self: flex-end; text-align: right; }
+.chat-message.own p { background: var(--lapis); color: #fff; text-align: left; }
+.chat-message small { display: block; margin-top: 6px; color: var(--muted); font-size: 9px; }
+.chat-compose { display: flex; align-items: flex-end; gap: 10px; padding: 12px; border-top: 1px solid var(--line); }
+.chat-compose textarea { resize: none; flex: 1; min-width: 0; min-height: 48px; max-height: 120px; padding: 14px 12px; border: 1px solid var(--line); border-radius: 12px; font: inherit; font-size: 16px; }
+.chat-compose button { flex: 0 0 48px; min-height: 48px; padding: 10px; border-radius: 12px; }
+.wallet-summary { margin-top: 28px; padding: 20px; background: var(--soft); border-radius: 16px; }
+.wallet-summary-top { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+.wallet-summary-top h3 { font-size: 15px; margin: 0; }
+.wallet-summary-top > span { color: var(--muted); font-size: 10px; }
+.wallet-token { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 6px 14px; margin: 24px 0; }
+.wallet-token strong { font-size: 24px; letter-spacing: -.5px; }
+.wallet-token > span { grid-column: 1; color: var(--muted); font-size: 12px; }
+.wallet-token em { grid-row: 1 / 3; grid-column: 2; align-self: center; font-size: 12px; font-style: normal; color: var(--muted); }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 
 footer { width: 100%; max-width: 520px; margin: 0 auto; padding: 8px 24px max(8px, env(safe-area-inset-bottom)); color: #86868b; font-size: 11px; }
 body.demo-mode footer { position: sticky; bottom: 0; z-index: 5; border-top: 1px solid var(--line); background: #fff; }
@@ -223,6 +291,8 @@ dialog p { font-size: 14px; line-height: 1.7; }
   .identity-portrait { width: 58px; height: 76px; font-size: 22px; }
   .identity-holder-name h3 { font-size: 21px; }
   .identity-card-bottom { font-size: 7px; letter-spacing: .7px; }
+  .recovery-words { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .petition-card { padding: 18px; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; scroll-behavior: auto !important; }

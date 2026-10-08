@@ -6,13 +6,14 @@
     "dev": "node backend/server.mjs",
     "start": "node backend/server.mjs",
     "test": "node --test tests/*.test.mjs",
-    "check": "node --check public/app.js && node --check public/demo-media.js && node --check backend/server.mjs && node --check backend/core.mjs && node --check backend/google.mjs && node --check backend/passport.mjs",
+    "check": "node --check public/app.js && node --check public/demo-media.js && node --check public/diagrams.js && node --check public/account.js && node --check frontend/wallet-sdk.js && node --check backend/server.mjs && node --check backend/core.mjs && node --check backend/google.mjs && node --check backend/passport.mjs",
     "build": "node scripts/build.mjs"
   },
   "dependencies": {
     "@simplewebauthn/server": "13.2.2",
     "@zkpassport/sdk": "0.18.2",
-    "qrcode": "1.5.4"
+    "qrcode": "1.5.4",
+    "viem": "2.57.4"
   },
   "engines": {
     "node": ">=24"

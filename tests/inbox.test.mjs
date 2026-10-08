@@ -4,6 +4,7 @@ import {DatabaseSync} from 'node:sqlite';
 import {createNotifications} from '../backend/notifications.mjs';
 import {validateApplication} from '../backend/core.mjs';
 import {recordApplicationEvent,saveDemoInbox,restoreDemoInbox,clearDemoInbox,unreadCount} from '../public/inbox-model.js';
+import {initialDemoBalances,applyDemoVerificationReward,walletRewardUnread} from '../public/member-model.js';
 
 const requiredEvidence={mediaChallenge:{expires:Date.now()+60000},media:Object.fromEntries(['front','back','identity','challenge','video'].map(kind=>[kind,{book:'green'}])),passport:{verified:true,expires:Date.now()+60000},verified:{}};
 test('a display name is required, pseudonyms are accepted, and contacts remain optional',()=>{
@@ -40,4 +41,19 @@ test('demo receipts survive reload without retaining identity details, media, or
  const restored=restoreDemoInbox(storage);assert.equal(restored.status,'accepted');assert.equal(restored.inboxEvents.length,2);assert.equal(unreadCount(restored,true),3);
  clearDemoInbox(storage);assert.equal(restoreDemoInbox(storage),null);
  assert.equal(restoreDemoInbox({getItem:()=>'{invalid'}),null);
+});
+test('wallet reward read state survives reload and existing accepted receipts receive the new reward once',()=>{
+ const map=new Map(),storage={setItem:(key,value)=>map.set(key,value),getItem:key=>map.get(key),removeItem:key=>map.delete(key)};
+ const state={reference:'NT-REWARD-1234',status:'accepted',book:'green',applicationCreatedAt:'2026-10-08T10:00:00Z',inboxEvents:[],inboxRead:[]};
+ recordApplicationEvent(state,'accepted');saveDemoInbox(storage,state);
+ // Older receipt versions have no wallet-reward read flag.
+ const key=[...map.keys()][0],legacy=JSON.parse(map.get(key));delete legacy.walletRewardRead;map.set(key,JSON.stringify(legacy));
+ const restored=restoreDemoInbox(storage);restored.walletDemo=applyDemoVerificationReward(initialDemoBalances(),restored);
+ assert.equal(walletRewardUnread(restored),1);assert.equal(restored.walletDemo.tibetUnits,10000);
+ const transaction=restored.walletDemo.transactions[0];restored.walletRewardRead=true;saveDemoInbox(storage,restored);
+ const raw=JSON.parse(map.get(key));assert.equal(raw.walletRewardRead,true);assert.equal(raw.walletDemo,undefined);
+ const reopened=restoreDemoInbox(storage);reopened.walletDemo=applyDemoVerificationReward(initialDemoBalances(),reopened);
+ assert.equal(walletRewardUnread(reopened),0);assert.deepEqual(reopened.walletDemo.transactions,[transaction]);assert.equal(reopened.walletDemo.tibetUnits,10000);
+ assert.equal(applyDemoVerificationReward(reopened.walletDemo,reopened),reopened.walletDemo);
+ clearDemoInbox(storage);assert.equal(restoreDemoInbox(storage),null);
 });

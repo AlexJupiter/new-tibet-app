@@ -63,3 +63,10 @@ Optional details and one-way inbox validation (8 October 2026):
 - Root and dist static entry points loaded the inbox modules and completed sample signup to Announcements. Syntax, build, and whitespace checks passed. No actual members were messaged or announcements published outside local tests.
 
 Session scripts are `/private/tmp/new-tibet-inbox-ui-qa.cjs`, `/private/tmp/new-tibet-inbox-live-qa.mjs`, `/private/tmp/new-tibet-app-ui-check.cjs`, and `/private/tmp/new-tibet-static-branding-qa.cjs`; screenshots are in `/private/tmp/new-tibet-inbox-preview/`. The public Pages app remains a demo. Live channel operation requires the configured backend described in INBOX.md, and background/OS push is not implemented.
+
+## Wallet verification reward (2026-10-08)
+
+- All 39 application tests passed, including acceptance-only reward eligibility for Green/Blue Book members, one-time credit after repeated renders and decisions, no replenishment after spending, and backward-compatible receipt/reward read-state restoration.
+- Chrome at 390px and 1440px, and WebKit at 320px passed `/private/tmp/new-tibet-wallet-reward-qa.cjs`. Pending/declined applications had no reward or badge. Acceptance created a 100.00 $TIBET balance, a Wallet “1” badge independent of Announcements, and a dated incoming entry. Opening Wallet cleared the badge and preserved that read state on reload.
+- The accepted receipt reconstructed the same reward and original acceptance timestamp after reload. The local ledger did not credit it twice during repeated decisions, tab changes or spending. Sends reserved gas, swaps/withdrawals updated the dated timeline, and the welcome showcase reused the new wallet screen without changing the parent's reward read flag.
+- No Ethereum transfer or mint was submitted. Live mode continued to show wallet activation unavailable, without simulated rewards, balances or financial actions. Outgoing demo activity and balances remain ephemeral; receipts and inbox/reward read state persist without wallet keys or identity media.

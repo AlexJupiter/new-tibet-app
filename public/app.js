@@ -4,6 +4,7 @@ import {cardControls,mountProfileCard} from './card.js';
 import {passportDiagram,walletDiagram} from './diagrams.js';
 import {renderAccountTabs,renderPetitions,renderChat} from './account.js';
 import {renderWallet} from './wallet.js';
+import {initialDemoBalances,applyDemoVerificationReward,walletRewardUnread} from './member-model.js';
 import {renderAnnouncements} from './announcements.js';
 import {renderEcosystem} from './ecosystem.js';
 import {mountWelcomeSlideshow} from './welcome.js';
@@ -13,7 +14,7 @@ const showcaseTab=new URLSearchParams(location.search).get('showcase');
 const showcase=['profile','wallet','petitions','chat','announcements'].includes(showcaseTab);
 const demo = showcase || config.mode !== 'live';
 const steps=Object.freeze({document:0,photos:1,video:2,passport:3,security:4,contacts:5,account:6});
-const initialState = () => ({step:-1,book:'green',name:'',email:'',whatsapp:'',verified:{},codes:{},photo:null,photos:{},photoKind:'front',challenge:null,video:null,videoURL:'',passport:null,passportRequest:null,passkey:null,consent:false,reference:'',status:'pending',messages:[],demoSkipped:{contacts:false,passport:false},demoSampleApplicant:false,demoVideo:false,appTab:'announcements',applicationCreatedAt:'',inboxEvents:[],inboxItems:[],inboxRead:[],inboxExpanded:'',inboxLoading:false,inboxError:'',petitionSignatures:[],createdPetitions:[],petitionView:'list',petitionDraft:{title:'',body:'',goal:'1000'},chatMessages:[],chatDrafts:{},chatConversation:'community',chatOpen:false,chatSearch:'',wallet:null,walletMethod:'passkey',recoveryStage:'',walletPrfSalt:'',walletDemo:null,walletView:'home',walletQuote:null,walletReceipt:null,walletSwapInput:'',walletWithdrawInput:'',walletSendInput:'',walletSendSearch:'',walletSendRecipient:''});
+const initialState = () => ({step:-1,book:'green',name:'',email:'',whatsapp:'',verified:{},codes:{},photo:null,photos:{},photoKind:'front',challenge:null,video:null,videoURL:'',passport:null,passportRequest:null,passkey:null,consent:false,reference:'',status:'pending',messages:[],demoSkipped:{contacts:false,passport:false},demoSampleApplicant:false,demoVideo:false,appTab:'announcements',applicationCreatedAt:'',inboxEvents:[],inboxItems:[],inboxRead:[],inboxExpanded:'',inboxLoading:false,inboxError:'',petitionSignatures:[],createdPetitions:[],petitionView:'list',petitionDraft:{title:'',body:'',goal:'1000'},chatMessages:[],chatDrafts:{},chatConversation:'community',chatOpen:false,chatSearch:'',wallet:null,walletMethod:'passkey',recoveryStage:'',walletPrfSalt:'',walletDemo:null,walletRewardRead:false,walletView:'home',walletQuote:null,walletReceipt:null,walletSwapInput:'',walletWithdrawInput:'',walletSendInput:'',walletSendSearch:'',walletSendRecipient:''});
 const state = initialState();
 const accountLayout=matchMedia('(min-width: 900px)');
 accountLayout.addEventListener('change',()=>document.querySelector('.app-tabs')?.setAttribute('aria-orientation',accountLayout.matches?'vertical':'horizontal'));
@@ -384,6 +385,10 @@ async function resumeLiveSession(){
  catch{sessionToken='';try{sessionStorage.removeItem('new-tibet-session-v1');}catch{}document.querySelector('#signin-status').textContent='Sign in with your passkey to return to your application.';}
 }
 function renderAcceptedAccount(){
+ if(demo){
+  state.walletDemo=applyDemoVerificationReward(state.walletDemo||initialDemoBalances(),state);
+  if(state.appTab==='wallet'&&!document.hidden&&walletRewardUnread(state)){state.walletRewardRead=true;persistInbox();}
+ }
  readOpenInbox();
  if(state.appTab==='announcements')renderAnnouncements(screen,state,demo,{refresh:refreshInbox,markRead:markInboxRead});
  else if(state.appTab==='petitions')renderPetitions(screen,state,demo,notice,renderAcceptedAccount);
@@ -394,7 +399,7 @@ function renderAcceptedAccount(){
  document.body.dataset.appTab=state.appTab;
  const panel=document.createElement('section');panel.id='account-panel';panel.setAttribute('role','tabpanel');panel.setAttribute('aria-labelledby','tab-'+state.appTab);
  while(screen.firstChild)panel.appendChild(screen.firstChild);
- screen.appendChild(panel);screen.insertAdjacentHTML('beforeend',renderAccountTabs(state.appTab,unreadCount(state,demo)));
+ screen.appendChild(panel);screen.insertAdjacentHTML('beforeend',renderAccountTabs(state.appTab,unreadCount(state,demo),demo?walletRewardUnread(state):0));
  const tabs=[...screen.querySelectorAll('[data-app-tab]')];
  screen.querySelector('.app-tabs').setAttribute('aria-orientation',accountLayout.matches?'vertical':'horizontal');
  const select=selectAppTab;
@@ -475,4 +480,4 @@ if(showcase){
 }
 window.addEventListener('pagehide',stopCamera);document.querySelector('#year').textContent=new Date().getFullYear();document.querySelector('#privacy').onclick=()=>document.querySelector('#privacy-dialog').showModal();document.querySelector('#close-privacy').onclick=()=>document.querySelector('#privacy-dialog').close();render();resumeLiveSession();
 setInterval(()=>{if(!demo&&state.step===6&&state.reference&&!document.hidden)refreshInbox();},30000);
-document.addEventListener('visibilitychange',()=>{if(!document.hidden&&state.step===6&&state.reference){if(state.appTab==='announcements')renderAcceptedAccount();if(!demo)refreshInbox();}});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&state.step===6&&state.reference){if(['announcements','wallet'].includes(state.appTab))renderAcceptedAccount();if(!demo)refreshInbox();}});

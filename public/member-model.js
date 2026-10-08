@@ -27,7 +27,17 @@ export function createPetition(state,{title,body,goal}){
 
 // A local demo ledger. Amounts are integers; no chain, exchange or bank is contacted.
 export const demoRateCents=12;
-export const initialDemoBalances=()=>({tibetUnits:125000,usdCents:0,recipientCredits:{},gasSpentUnits:0,processed:[],transactions:[{id:'allocation',type:'allocation',tibetUnits:125000,label:'Sample allocation'}]});
+export const initialDemoBalances=(tibetUnits=0)=>({tibetUnits,usdCents:0,recipientCredits:{},gasSpentUnits:0,processed:[],transactions:tibetUnits?[{id:'allocation',type:'allocation',tibetUnits,label:'Sample allocation'}]:[]});
+export const demoVerificationRewardUnits=10000;
+export function applyDemoVerificationReward(wallet,application){
+ if(application.status!=='accepted'||!/^NT-[A-Z0-9-]{4,60}$/.test(application.reference||''))return wallet;
+ const id=application.reference+':verification-reward';
+ if(wallet.processed.includes(id))return wallet;
+ const accepted=application.inboxEvents?.find(event=>event.reference===application.reference&&event.status==='accepted');
+ const createdAt=[accepted?.createdAt,application.applicationCreatedAt].find(value=>Number.isFinite(Date.parse(value)))||new Date().toISOString();
+ return {...wallet,tibetUnits:wallet.tibetUnits+demoVerificationRewardUnits,processed:[...wallet.processed,id],transactions:[{id,type:'reward',tibetUnits:demoVerificationRewardUnits,label:'Verification successful',createdAt},...wallet.transactions]};
+}
+export const walletRewardUnread=state=>state.status==='accepted'&&!state.walletRewardRead&&state.walletDemo?.transactions.some(tx=>tx.id===state.reference+':verification-reward')?1:0;
 export const formatTokens=units=>new Intl.NumberFormat('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}).format(units/100);
 export const formatDollars=cents=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(cents/100);
 export function parseAmount(value){
@@ -49,13 +59,13 @@ export function swapDemoBalance(wallet,quote,id){
  checkTransaction(wallet,id);
  const checked=quoteDemoSwap(wallet,(quote.tibetUnits/100).toFixed(2));
  if(checked.usdCents!==quote.usdCents)throw new Error('The demo quote changed. Review the amount again.');
- return {...wallet,tibetUnits:wallet.tibetUnits-checked.tibetUnits,usdCents:wallet.usdCents+checked.usdCents,processed:[...wallet.processed,id],transactions:[{id,type:'swap',...checked,label:'Swapped to USD'},...wallet.transactions]};
+ return {...wallet,tibetUnits:wallet.tibetUnits-checked.tibetUnits,usdCents:wallet.usdCents+checked.usdCents,processed:[...wallet.processed,id],transactions:[{id,type:'swap',...checked,label:'Swapped to USD',createdAt:new Date().toISOString()},...wallet.transactions]};
 }
 export function withdrawDemoBalance(wallet,usdCents,id){
  checkTransaction(wallet,id);
  if(!Number.isSafeInteger(usdCents)||usdCents<=0)throw new Error('Enter a valid dollar amount.');
  if(usdCents>wallet.usdCents)throw new Error('This amount exceeds your demo USD balance.');
- return {...wallet,usdCents:wallet.usdCents-usdCents,processed:[...wallet.processed,id],transactions:[{id,type:'withdrawal',usdCents,label:'Withdrawal to sample bank',bank:'•••• 0421'},...wallet.transactions]};
+ return {...wallet,usdCents:wallet.usdCents-usdCents,processed:[...wallet.processed,id],transactions:[{id,type:'withdrawal',usdCents,label:'Withdrawal to sample bank',bank:'•••• 0421',createdAt:new Date().toISOString()},...wallet.transactions]};
 }
 
 // Fictional registered recipients for the local send demonstration.
@@ -86,5 +96,5 @@ export function sendDemoBalance(wallet,quote,id){
  return {...wallet,tibetUnits:wallet.tibetUnits-checked.totalUnits,
   recipientCredits:{...wallet.recipientCredits,[checked.recipientId]:(wallet.recipientCredits[checked.recipientId]||0)+checked.tibetUnits},
   gasSpentUnits:wallet.gasSpentUnits+checked.gasUnits,processed:[...wallet.processed,id],
-  transactions:[{id,type:'send',...checked,label:'Sent to @'+checked.username},...wallet.transactions]};
+  transactions:[{id,type:'send',...checked,label:'Sent to @'+checked.username,createdAt:new Date().toISOString()},...wallet.transactions]};
 }

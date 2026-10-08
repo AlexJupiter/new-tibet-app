@@ -19,7 +19,7 @@ export const unreadCount=(state,demo)=>inboxItems(state,demo).filter(item=>!stat
 export function saveDemoInbox(storage,state){
  if(!state.reference)return;
  // Keep only the receipt and read state. Never persist contact details, media, proofs or keys.
- const snapshot={version:1,reference:state.reference,status:state.status,book:state.book,createdAt:state.applicationCreatedAt,events:state.inboxEvents.map(({id,reference,status,book,createdAt})=>({id,reference,status,book,createdAt})),read:state.inboxRead.slice(-500)};
+ const snapshot={version:1,reference:state.reference,status:state.status,book:state.book,createdAt:state.applicationCreatedAt,events:state.inboxEvents.map(({id,reference,status,book,createdAt})=>({id,reference,status,book,createdAt})),read:state.inboxRead.slice(-500),walletRewardRead:state.walletRewardRead===true};
  try{storage.setItem(storageKey,JSON.stringify(snapshot));return true;}catch{return false;}
 }
 export function restoreDemoInbox(storage){
@@ -28,7 +28,7 @@ export function restoreDemoInbox(storage){
   if(saved.version!==1||!/^NT-[A-Z0-9-]{4,60}$/.test(saved.reference)||!statuses.includes(saved.status)||!['green','blue'].includes(saved.book)||!Array.isArray(saved.events)||saved.events.length>200)return null;
   const events=saved.events.filter(event=>event.reference===saved.reference&&statuses.includes(event.status)&&event.book===saved.book&&Number.isFinite(Date.parse(event.createdAt))).map(event=>applicationEvent(event.reference,event.status,event.book,event.createdAt));
   const allowed=new Set([...events,...sampleAnnouncements].map(item=>item.id));
-  return {reference:saved.reference,status:saved.status,book:saved.book,applicationCreatedAt:Number.isFinite(Date.parse(saved.createdAt))?saved.createdAt:events[0]?.createdAt,inboxEvents:events,inboxRead:Array.isArray(saved.read)?saved.read.filter(id=>allowed.has(id)):[]};
+  return {reference:saved.reference,status:saved.status,book:saved.book,applicationCreatedAt:Number.isFinite(Date.parse(saved.createdAt))?saved.createdAt:events[0]?.createdAt,inboxEvents:events,inboxRead:Array.isArray(saved.read)?saved.read.filter(id=>allowed.has(id)):[],walletRewardRead:saved.walletRewardRead===true};
  }catch{return null;}
 }
 export function clearDemoInbox(storage){try{storage.removeItem(storageKey);}catch{}}

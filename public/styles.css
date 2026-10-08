@@ -416,12 +416,19 @@ body.demo-mode.showing-account footer { bottom: calc(72px + env(safe-area-inset-
 .usd-balance span { color: var(--muted); font-size: 11px; }
 .wallet-details, .wallet-activity { margin-top: 30px; }
 .wallet-details > p { font-size: 13px; color: var(--muted); line-height: 1.65; }
-.wallet-activity ul { list-style: none; padding: 0; margin: 0; }
-.wallet-activity li { display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--line); padding: 18px 0; font-size: 12px; }
+.wallet-timeline { list-style: none; padding: 0; margin: 0; }
+.wallet-activity li { position: relative; display: flex; align-items: flex-start; gap: 12px; padding: 18px 0; font-size: 12px; }
+.wallet-activity li::before { content: ''; position: absolute; left: 16px; top: 0; bottom: 0; width: 1px; background: var(--line); }
+.wallet-activity li:first-child::before { top: 34px; }
+.wallet-activity li:last-child::before { bottom: calc(100% - 34px); }
+.wallet-activity li:only-child::before { display: none; }
 .wallet-activity li > div { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 6px; }
-.wallet-activity li > strong { font-size: 12px; text-align: right; }
+.wallet-activity li > strong { font-size: 12px; text-align: right; white-space: nowrap; }
 .wallet-activity li span:not(.activity-icon) { color: var(--muted); font-size: 10px; }
-.activity-icon { display: grid; place-items: center; width: 32px; height: 32px; background: var(--soft); border-radius: 50%; font-size: 18px; flex-shrink: 0; }
+.wallet-activity time { font-size: 11px; line-height: 1.5; color: var(--ink); }
+.activity-icon { position: relative; display: grid; place-items: center; width: 32px; height: 32px; background: var(--soft); border-radius: 50%; font-size: 18px; flex-shrink: 0; }
+.activity-icon.incoming { color: var(--green); background: #e1e9e3; }
+.wallet-activity .incoming-amount { color: var(--green); }
 .amount-card { border: 1px solid var(--line); border-radius: 16px; padding: 16px 20px 20px; margin: 24px 0; }
 .amount-card > div:first-child { display: flex; align-items: center; justify-content: space-between; font-size: 13px; }
 .amount-card small { display: block; font-size: 12px; color: var(--muted); margin-top: 10px; }

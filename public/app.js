@@ -6,7 +6,7 @@ import {renderAccountTabs,renderPetitions,renderChat} from './account.js';
 import {renderWallet} from './wallet.js';
 import {renderAnnouncements} from './announcements.js';
 import {renderEcosystem} from './ecosystem.js';
-import {recordApplicationEvent,unreadCount,saveDemoInbox,restoreDemoInbox,clearDemoInbox} from './inbox-model.js';
+import {recordApplicationEvent,inboxItems,unreadCount,saveDemoInbox,restoreDemoInbox,clearDemoInbox} from './inbox-model.js';
 const config = window.NEW_TIBET_CONFIG || {mode:'demo',apiBase:''};
 const demo = config.mode !== 'live';
 const steps=Object.freeze({document:0,photos:1,video:2,passport:3,security:4,contacts:5,account:6});
@@ -334,6 +334,21 @@ function updateInboxBadge(){
  const count=unreadCount(state,demo);tab.querySelector('.tab-unread')?.remove();
  if(count){tab.setAttribute('aria-label',`Announcements, ${count} unread`);const badge=document.createElement('span');badge.className='tab-unread';badge.setAttribute('aria-hidden','true');badge.textContent=count;tab.appendChild(badge);}else tab.removeAttribute('aria-label');
 }
+function readOpenInbox(){
+ if(state.step!==6||state.appTab!=='announcements'||document.hidden)return;
+ const ids=inboxItems(state,demo).filter(item=>!state.inboxRead.includes(item.id)).map(item=>item.id);
+ if(!ids.length)return;
+ // Clear the badge immediately; save the same read state to the member's inbox.
+ state.inboxRead=[...new Set([...state.inboxRead,...ids])];persistInbox();
+ if(!demo){
+  const reference=state.reference;
+  api('notifications/read',{ids}).catch(error=>{
+   if(state.reference!==reference)return;
+   state.inboxError=error.message;
+   if(state.step===6&&state.appTab==='announcements')renderAcceptedAccount();
+  });
+ }
+}
 async function markInboxRead(ids){
  if(!ids.length)return;
  try{
@@ -365,6 +380,7 @@ async function resumeLiveSession(){
  catch{sessionToken='';try{sessionStorage.removeItem('new-tibet-session-v1');}catch{}document.querySelector('#signin-status').textContent='Sign in with your passkey to return to your application.';}
 }
 function renderAcceptedAccount(){
+ readOpenInbox();
  if(state.appTab==='announcements')renderAnnouncements(screen,state,demo,{refresh:refreshInbox,markRead:markInboxRead});
  else if(state.appTab==='petitions')renderPetitions(screen,state,demo,notice,renderAcceptedAccount);
  else if(state.appTab==='chat')renderChat(screen,state,demo,renderAcceptedAccount);
@@ -450,4 +466,4 @@ if(demo&&['profile','review','announcements'].includes(preview)){
 }
 window.addEventListener('pagehide',stopCamera);document.querySelector('#year').textContent=new Date().getFullYear();document.querySelector('#privacy').onclick=()=>document.querySelector('#privacy-dialog').showModal();document.querySelector('#close-privacy').onclick=()=>document.querySelector('#privacy-dialog').close();render();resumeLiveSession();
 setInterval(()=>{if(!demo&&state.step===6&&state.reference&&!document.hidden)refreshInbox();},30000);
-document.addEventListener('visibilitychange',()=>{if(!demo&&!document.hidden&&state.step===6&&state.reference)refreshInbox();});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&state.step===6&&state.reference){if(state.appTab==='announcements')renderAcceptedAccount();if(!demo)refreshInbox();}});

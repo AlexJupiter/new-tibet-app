@@ -6,7 +6,7 @@
     "dev": "node backend/server.mjs",
     "start": "node backend/server.mjs",
     "test": "node --test tests/*.test.mjs",
-    "check": "node --check public/app.js && node --check backend/server.mjs && node --check backend/core.mjs && node --check backend/google.mjs && node --check backend/passport.mjs",
+    "check": "node --check public/app.js && node --check public/demo-media.js && node --check backend/server.mjs && node --check backend/core.mjs && node --check backend/google.mjs && node --check backend/passport.mjs",
     "build": "node scripts/build.mjs"
   },
   "dependencies": {

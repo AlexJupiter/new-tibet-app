@@ -182,7 +182,11 @@ p.description { font-size: 16px; line-height: 1.55; color: var(--muted); margin:
 .profile-details dd { text-align: right; margin: 0; color: var(--ink); overflow-wrap: anywhere; }
 .profile-view .demo-review { margin-top: 32px; }
 
-footer { width: 100%; max-width: 520px; margin: 0 auto; padding: 16px 24px max(16px, env(safe-area-inset-bottom)); display: flex; align-items: center; justify-content: space-between; gap: 16px; color: #86868b; font-size: 11px; }
+footer { width: 100%; max-width: 520px; margin: 0 auto; padding: 8px 24px max(8px, env(safe-area-inset-bottom)); color: #86868b; font-size: 11px; }
+body.demo-mode footer { position: sticky; bottom: 0; z-index: 5; border-top: 1px solid var(--line); background: #fff; }
+.footer-meta, .demo-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.demo-footer { min-height: 44px; }
+.demo-footer .text-button { color: var(--lapis); font-size: 14px; font-weight: 500; }
 footer .text-button { color: var(--muted); font-size: 12px; }
 dialog { width: calc(100% - 32px); max-width: 520px; max-height: calc(100svh - 48px); overflow-y: auto; border: 0; border-radius: 22px; padding: 28px; color: var(--muted); background: #fff; }
 dialog::backdrop { background: #00000050; backdrop-filter: blur(5px); }

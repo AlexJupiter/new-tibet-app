@@ -20,3 +20,13 @@ Additional profile validation (October 2026):
 - Both the repository-root static fallback and `dist/` loaded the profile, brand assets, and fonts. Syntax checks, static build, and whitespace checks passed.
 
 Session browser checks are in `/private/tmp/new-tibet-profile-qa.cjs`; profile screenshots are in `/private/tmp/new-tibet-profile-preview/`. These tests do not replace the live provider and physical-passport launch checks described above.
+
+Demo shortcut validation (October 2026):
+
+- Chromium at 320, 390, 430, 768, and 1440px completed the application using footer shortcuts and sample media. Footer controls stayed visible, with touch targets at least 44px tall and no horizontal overflow. The final profile showed skipped contact and passport checks and no passkey.
+- All four synthetic book photos loaded, including the current challenge code; the six-second sample MP4 passed duration validation and played. Existing uploaded photos and entered contact details were preserved. An active recording could be cancelled for a sample without its callback replacing the sample.
+- A failed sample download kept the user on the video step with a working retry control. Restart cleared media, contacts, verification, consent, and review state, and removed the preview shortcut from the URL.
+- Live mode hid the demo footer and ignored direct calls to both demo shortcut functions. Contact, media, and passport requirements still rejected incomplete live submissions, including when demo skip flags were set.
+- The complete camera/recording/OTP demo and mocked live approval checks passed again, along with all thirteen Node tests, syntax checks, and the static build.
+
+Session demo browser checks are in `/private/tmp/new-tibet-demo-qa.cjs`; screenshots are in `/private/tmp/new-tibet-demo-preview/`.

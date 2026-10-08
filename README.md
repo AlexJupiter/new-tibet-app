@@ -4,6 +4,8 @@ A focused Green Book / Blue Book signup app with four book photos, a random-code
 
 The public demo keeps documents and contacts in page memory. It simulates verification codes and review messages with explicit labels. The separate backend implements private Google Drive uploads, Google Sheets records, AppSheet review callbacks, Resend email codes, Meta WhatsApp templates, server-verified WebAuthn registration, and a persistent notification outbox.
 
+Each demo step has a footer shortcut. Upload sample photos adds any missing book images, including the current challenge code; upload sample video adds a six-second MP4. The synthetic media is labeled for demo use. Skip advances ordinary steps, supplies sample contact values when blank, bypasses demo verification and passkey setup, and previews acceptance after review. The final profile has Restart demo. Skipped contact and passport checks stay unverified and are labeled as skipped on the profile. These shortcuts are hidden and inactive in live mode.
+
 ```sh
 npm ci
 npm run dev

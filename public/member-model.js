@@ -1,4 +1,4 @@
-export const memberTabs=['petitions','chat','profile','wallet'];
+export const memberTabs=['announcements','petitions','chat','wallet','profile'];
 export const samplePetitions=Object.freeze([
  {id:'language',category:'Language',title:'Support Tibetan language education',summary:'Expand access to Tibetan language classes and learning materials for the next generation.',body:'More community-run classes, open learning resources, and support for teachers serving Tibetan communities.',supporters:1842,goal:2500},
  {id:'education',category:'Education',title:'Create more student scholarships',summary:'Help Tibetan students access further education and vocational training.',body:'A transparent community scholarship programme with published eligibility criteria and an annual report.',supporters:936,goal:1500},

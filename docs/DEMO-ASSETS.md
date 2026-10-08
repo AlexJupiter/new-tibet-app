@@ -1,5 +1,7 @@
 # Fictional sample applicant and image assets
 
+The front covers, identity spreads, and challenge photos were subsequently revised using real book references. Their current prompts and selected files, together with the narrated videos, are documented in [revised media notes](DEMO-MEDIA-V2.md). This file retains the original generation prompts and the unchanged portrait/back-cover provenance.
+
 These assets were generated with the built-in ImageGen tool for the New Tibet demo. Tenzin Dolma is a fictional Tibetan applicant, not a real person. The booklet photos are fictional community booklets, not authentic government-issued Green or Blue Books. Each booklet is clearly marked DEMO SAMPLE / NOT VALID. Synthetic birth date, place, and book number appear only in the sample booklets; they are not verified claims on the digital ID.
 
 The selected assets were copied into `public/assets/demo/` as mobile-sized JPEGs. The portrait is 768px high; booklet photos are 1200px wide. The application renders its current six-digit challenge onto the blank paper card at runtime, and uses the same fictional portrait and contact values throughout the sample flow. Existing user-entered values and uploads are preserved; custom names use initials rather than this fictional face.
@@ -69,4 +71,3 @@ Use case: photorealistic-natural. Asset type: book with verification code card s
 Final refinement prompt (the generated photo was the edit target):
 
 Use case: precise-object-edit. This image is the edit target, a clearly fictional sample book photo. Remove the promotional slogans and the unclear decorative Tibetan wording from the printed pages. Keep the left page simple: the existing book title, Tibetan community heading in English, knot motif, subtle architectural engraving, and DEMO SAMPLE ONLY. Use clear English labels for the personal fields. Preserve ALL of the rest of this photo exactly: the same fictional woman's portrait and facial features, the name Tenzin Dolma, birth date 24 August 1997, place Dharamshala, number DEMO-NT-001, visible DEMO SAMPLE and NOT VALID markings, book cover color, paper texture, exact composition, tabletop, lighting and framing. If there is a separate white DEMO CODE card, leave its size, position, label and blank center untouched. No new slogans, no new details, no government seals, no QR codes, no numbers on the blank code card. The result is the same natural physical photograph with clearer and more restrained printed copy.
-

@@ -9,12 +9,13 @@ export async function samplePhoto(book,kind,code){
  if(kind==='challenge'){
   // The changing challenge is rendered on the blank paper card in the sample photo.
   ctx.fillStyle='#23304a';ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.font='500 54px "IBM Plex Mono", monospace';ctx.fillText(String(code),1020,495);
+  ctx.font='500 54px "IBM Plex Mono", monospace';ctx.fillText(String(code),book==='blue'?996:1020,495);
  }
  return canvas.toDataURL('image/jpeg',.84);
 }
-export async function sampleVideo(){
- const response=await fetch(new URL('./assets/demo/sample-video.mp4',import.meta.url));
+export async function sampleVideo(book='green'){
+ if(!['green','blue'].includes(book))throw new Error('This sample video is unavailable.');
+ const response=await fetch(new URL(book==='blue'?'./assets/demo/sample-video-blue.mp4':'./assets/demo/sample-video.mp4',import.meta.url));
  if(!response.ok)throw new Error('Unable to load the sample video. Please try again.');
  return new Blob([await response.arrayBuffer()],{type:'video/mp4'});
 }

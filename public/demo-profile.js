@@ -3,6 +3,7 @@ export const sampleApplicant=Object.freeze({
  email:'tenzin.dolma@example.com',
  whatsapp:'+44 7700 900123',
  bookNumber:'DEMO-NT-001',
+ challengeCode:'534216',
  portrait:new URL('./assets/demo/tenzin-dolma.jpg',import.meta.url).href,
  fictional:true
 });

@@ -1,0 +1,43 @@
+import {initialDemoBalances,formatTokens,formatDollars,parseAmount,quoteDemoSwap,swapDemoBalance,withdrawDemoBalance} from './member-model.js';
+const esc=value=>String(value).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+const title=(text,description)=>`<h2 id="screen-title" tabindex="-1">${text}</h2><p class="description">${description}</p>`;
+const note='<p class="section-note">Demo balances and transactions. No tokens or money are moved.</p>';
+function switchView(state,view,rerender){state.walletView=view;rerender();window.scrollTo(0,0);document.querySelector('#screen-title')?.focus({preventScroll:true});}
+export function renderWallet(screen,state,demo,notice,rerender){
+ if(!demo){screen.innerHTML=title('Wallet','New Tibet Coin · $TIBET')+'<div class="access-card"><h3>Wallet activation is not available yet</h3><p>Token balances, swaps, and bank withdrawals will appear after the Ethereum token and payment services are connected.</p></div>';return;}
+ state.walletDemo||=initialDemoBalances();const wallet=state.walletDemo;
+ if(state.walletView==='swap'||state.walletView==='withdraw'){
+  const swapping=state.walletView==='swap';
+  screen.innerHTML=title(swapping?'Swap for dollars':'Withdraw to bank',swapping?'Convert $TIBET to a USD balance.':'Choose how much USD to send to your bank.')+note+`<form id="wallet-form"><div class="amount-card"><div><label for="wallet-amount">${swapping?'You swap':'You withdraw'}</label><button type="button" class="text-button" id="wallet-max">Max</button></div><div class="amount-input"><input id="wallet-amount" type="text" inputmode="decimal" autocomplete="off" maxlength="12" required placeholder="0.00" value="${esc(swapping?state.walletSwapInput:state.walletWithdrawInput)}"/><span>${swapping?'$TIBET':'USD'}</span></div><small>Available: ${swapping?formatTokens(wallet.tibetUnits)+' $TIBET':formatDollars(wallet.usdCents)}</small></div>${swapping?'<div class="swap-estimate"><span>You receive</span><strong id="swap-estimate">$0.00 USD</strong></div><p class="section-note">Illustrative rate: 1 $TIBET = $0.12 USD. This is not a market price.</p>':'<div class="bank-choice"><span class="bank-icon" aria-hidden="true">▤</span><div><strong>Sample bank account</strong><span>Checking · •••• 0421 · USD</span></div><span class="tag">Demo</span></div><p class="section-note">Use this sample account to preview a withdrawal. No bank details are collected.</p>'}<div class="actions"><button class="secondary" id="wallet-cancel" type="button">Cancel</button><button class="primary" type="submit">Review ${swapping?'swap':'withdrawal'}</button></div></form>`;
+  const input=screen.querySelector('#wallet-amount');
+  const update=()=>{state[swapping?'walletSwapInput':'walletWithdrawInput']=input.value;if(swapping){let amount='$0.00 USD';try{amount=formatDollars(quoteDemoSwap(wallet,input.value).usdCents)+' USD';}catch{}screen.querySelector('#swap-estimate').textContent=amount;}};
+  input.oninput=update;update();
+  screen.querySelector('#wallet-max').onclick=()=>{input.value=((swapping?wallet.tibetUnits:wallet.usdCents)/100).toFixed(2);update();};
+  screen.querySelector('#wallet-cancel').onclick=()=>{notice();switchView(state,'home',rerender);};
+  screen.querySelector('#wallet-form').onsubmit=event=>{
+   event.preventDefault();if(!demo||!['swap','withdraw'].includes(state.walletView))return;
+   try{
+    const quote=swapping?quoteDemoSwap(state.walletDemo,input.value):{usdCents:parseAmount(input.value)};
+    if(!swapping&&quote.usdCents>state.walletDemo.usdCents)throw new Error('This amount exceeds your demo USD balance.');
+    state.walletQuote={...quote,id:crypto.randomUUID(),type:swapping?'swap':'withdrawal'};notice();switchView(state,swapping?'swap-review':'withdraw-review',rerender);
+   }catch(error){notice(error.message);input.focus();}
+  };return;
+ }
+ if(state.walletView==='swap-review'||state.walletView==='withdraw-review'){
+  const quote=state.walletQuote,swapping=state.walletView==='swap-review';
+  screen.innerHTML=title(swapping?'Review swap':'Review withdrawal',swapping?'Check the amounts before continuing.':'Check the amount and sample bank account.')+note+`<dl class="transaction-review">${swapping?`<div><dt>You swap</dt><dd>${formatTokens(quote.tibetUnits)} $TIBET</dd></div>`:'<div><dt>To</dt><dd>Sample bank · •••• 0421</dd></div>'}<div><dt>${swapping?'You receive':'Amount'}</dt><dd>${formatDollars(quote.usdCents)} USD</dd></div><div><dt>Demo fee</dt><dd>$0.00</dd></div><div><dt>Network</dt><dd>Ethereum · Demo</dd></div></dl><div class="actions"><button class="secondary" id="wallet-back" type="button">Back</button><button class="primary" id="wallet-confirm" type="button">${swapping?'Confirm demo swap':'Confirm demo withdrawal'}</button></div>`;
+  screen.querySelector('#wallet-back').onclick=()=>switchView(state,swapping?'swap':'withdraw',rerender);
+  screen.querySelector('#wallet-confirm').onclick=()=>{
+   if(!demo||!['swap-review','withdraw-review'].includes(state.walletView))return;
+   try{state.walletDemo=swapping?swapDemoBalance(state.walletDemo,quote,quote.id):withdrawDemoBalance(state.walletDemo,quote.usdCents,quote.id);state.walletReceipt=quote;state.walletQuote=null;state.walletSwapInput='';state.walletWithdrawInput='';notice();switchView(state,'receipt',rerender);}catch(error){notice(error.message);}
+  };return;
+ }
+ if(state.walletView==='receipt'){
+  const receipt=state.walletReceipt,swapping=receipt.type==='swap';
+  screen.innerHTML=`<div class="success-icon" aria-hidden="true">✓</div>`+title(swapping?'Demo swap complete':'Demo withdrawal complete',swapping?formatDollars(receipt.usdCents)+' USD added to your demo balance.':formatDollars(receipt.usdCents)+' USD sent to the sample bank in this demo.')+'<p class="section-note">Simulation only. No transaction or bank transfer has taken place.</p>'+`<div class="actions"><button class="primary" id="wallet-done">Back to wallet</button></div>`;
+  screen.querySelector('#wallet-done').onclick=()=>switchView(state,'home',rerender);return;
+ }
+ screen.innerHTML=title('Wallet','New Tibet Coin · Ethereum')+`<section class="wallet-balance"><div><span>$TIBET balance</span><span class="tag">Demo</span></div><strong id="tibet-balance">${formatTokens(wallet.tibetUnits)} <small>$TIBET</small></strong><p>Illustrative value: ${formatDollars(Math.floor(wallet.tibetUnits*12/100))} USD</p><div class="wallet-actions"><button class="primary" id="wallet-swap" ${wallet.tibetUnits===0?'disabled':''}>Swap for dollars</button><button class="secondary" id="wallet-withdraw" ${wallet.usdCents===0?'disabled':''}>Withdraw to bank</button></div></section><div class="usd-balance"><div><strong>USD balance</strong><span>Available for demo withdrawal</span></div><strong id="usd-balance">${formatDollars(wallet.usdCents)}</strong></div>${note}<section class="wallet-details"><h3>Wallet security</h3><p>${state.wallet?.ready?(state.wallet.method==='passkey'?'Protected by your passkey.':'12-word backup confirmed.'):'Wallet setup was skipped in this demo.'}</p>${state.wallet?.ready?`<p class="wallet-address">${esc(state.wallet.address)}</p>`:''}<p class="section-note">Sample balances are unrelated to this Ethereum address. Real swaps and withdrawals require the token contract, liquidity, and a bank payout provider.</p></section><section class="wallet-activity"><h3>Activity</h3><ul>${wallet.transactions.map(tx=>`<li><span class="activity-icon" aria-hidden="true">${tx.type==='allocation'?'+':tx.type==='swap'?'⇄':'↗'}</span><div><strong>${tx.label}</strong><span>${tx.bank?'Sample bank '+tx.bank:'Demo · No money moved'}</span></div><strong>${tx.type==='allocation'?'+'+formatTokens(tx.tibetUnits)+' $TIBET':tx.type==='swap'?'+'+formatDollars(tx.usdCents):'−'+formatDollars(tx.usdCents)}</strong></li>`).join('')}</ul></section>`;
+ screen.querySelector('#wallet-swap').onclick=()=>{notice();switchView(state,'swap',rerender);};
+ screen.querySelector('#wallet-withdraw').onclick=()=>{if(!state.walletDemo.usdCents)return;notice();switchView(state,'withdraw',rerender);};
+}

@@ -10,7 +10,7 @@ import {recordApplicationEvent,unreadCount,saveDemoInbox,restoreDemoInbox,clearD
 const config = window.NEW_TIBET_CONFIG || {mode:'demo',apiBase:''};
 const demo = config.mode !== 'live';
 const steps=Object.freeze({document:0,photos:1,video:2,passport:3,security:4,contacts:5,account:6});
-const initialState = () => ({step:-1,book:'green',name:'',email:'',whatsapp:'',verified:{},codes:{},photo:null,photos:{},photoKind:'front',challenge:null,video:null,videoURL:'',passport:null,passportRequest:null,passkey:null,consent:false,reference:'',status:'pending',messages:[],demoSkipped:{contacts:false,passport:false},demoSampleApplicant:false,demoVideo:false,appTab:'announcements',applicationCreatedAt:'',inboxEvents:[],inboxItems:[],inboxRead:[],inboxFilter:'all',inboxExpanded:'',inboxLoading:false,inboxError:'',petitionSignatures:[],createdPetitions:[],petitionView:'list',petitionDraft:{title:'',body:'',goal:'1000'},chatMessages:[],chatDrafts:{},chatConversation:'community',chatOpen:false,chatSearch:'',wallet:null,walletMethod:'passkey',recoveryStage:'',walletPrfSalt:'',walletDemo:null,walletView:'home',walletQuote:null,walletReceipt:null,walletSwapInput:'',walletWithdrawInput:''});
+const initialState = () => ({step:-1,book:'green',name:'',email:'',whatsapp:'',verified:{},codes:{},photo:null,photos:{},photoKind:'front',challenge:null,video:null,videoURL:'',passport:null,passportRequest:null,passkey:null,consent:false,reference:'',status:'pending',messages:[],demoSkipped:{contacts:false,passport:false},demoSampleApplicant:false,demoVideo:false,appTab:'announcements',applicationCreatedAt:'',inboxEvents:[],inboxItems:[],inboxRead:[],inboxExpanded:'',inboxLoading:false,inboxError:'',petitionSignatures:[],createdPetitions:[],petitionView:'list',petitionDraft:{title:'',body:'',goal:'1000'},chatMessages:[],chatDrafts:{},chatConversation:'community',chatOpen:false,chatSearch:'',wallet:null,walletMethod:'passkey',recoveryStage:'',walletPrfSalt:'',walletDemo:null,walletView:'home',walletQuote:null,walletReceipt:null,walletSwapInput:'',walletWithdrawInput:''});
 const state = initialState();
 const accountLayout=matchMedia('(min-width: 900px)');
 accountLayout.addEventListener('change',()=>document.querySelector('.app-tabs')?.setAttribute('aria-orientation',accountLayout.matches?'vertical':'horizontal'));
@@ -365,7 +365,7 @@ async function resumeLiveSession(){
  catch{sessionToken='';try{sessionStorage.removeItem('new-tibet-session-v1');}catch{}document.querySelector('#signin-status').textContent='Sign in with your passkey to return to your application.';}
 }
 function renderAcceptedAccount(){
- if(state.appTab==='announcements')renderAnnouncements(screen,state,demo,{rerender:renderAcceptedAccount,openProfile:()=>selectAppTab('profile'),refresh:refreshInbox,markRead:markInboxRead});
+ if(state.appTab==='announcements')renderAnnouncements(screen,state,demo,{refresh:refreshInbox,markRead:markInboxRead});
  else if(state.appTab==='petitions')renderPetitions(screen,state,demo,notice,renderAcceptedAccount);
  else if(state.appTab==='chat')renderChat(screen,state,demo,renderAcceptedAccount);
  else if(state.appTab==='wallet')renderWallet(screen,state,demo,notice,renderAcceptedAccount);

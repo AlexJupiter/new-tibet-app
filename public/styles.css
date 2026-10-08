@@ -504,14 +504,6 @@ dialog p { font-size: 14px; line-height: 1.7; }
 .channel-tools { display: flex; flex-shrink: 0; }
 .channel-tools button { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; background: transparent; color: var(--lapis); border-radius: 8px; }
 .channel-tools button:hover:not(:disabled) { background: var(--soft); }
-.channel-application { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; padding: 10px 16px; border: 0; border-bottom: 1px solid var(--line); background: #f7f8fb; color: var(--lapis); text-align: left; flex-shrink: 0; }
-.channel-application > span { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; }
-.channel-application strong { font-size: 12px; font-weight: 500; line-height: 1.6; }
-.channel-application .receipt-reference { font-size: 10px; color: var(--lapis); }
-.channel-application > svg { flex-shrink: 0; width: 16px; height: 16px; }
-.inbox-filters { display: flex; gap: 6px; padding: 6px 12px; border-bottom: 1px solid var(--line); flex-shrink: 0; }
-.inbox-filters button { min-height: 44px; padding: 8px 12px; border: 0; border-radius: 20px; background: transparent; font-size: 11px; color: var(--ink); }
-.inbox-filters button[aria-pressed='true'] { background: #edf1f7; color: var(--lapis); font-weight: 600; }
 .channel-feed { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; background: #f0eee8; padding: 20px 16px 28px; }
 .channel-feed-content { width: 100%; max-width: 620px; margin: auto; }
 .channel-date { text-align: center; margin: 6px 0 18px; }
@@ -567,7 +559,5 @@ body.showing-account:is([data-app-tab='chat'],[data-app-tab='announcements']) { 
  .showing-account:is([data-app-tab='chat'],[data-app-tab='announcements']) .sidebar-note { display: none; }
  .showing-account:is([data-app-tab='chat'],[data-app-tab='announcements']) footer .text-button { white-space: nowrap; font-size: 12px; }
  .channel-heading { padding-left: 24px; padding-right: 24px; }
- .channel-application { padding-left: 24px; padding-right: 24px; }
- .inbox-filters { padding-left: 20px; padding-right: 20px; }
  .channel-feed { padding: 24px 40px 32px; }
 }

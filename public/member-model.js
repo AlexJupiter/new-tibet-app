@@ -8,13 +8,13 @@ export const canUsePetitions=state=>state.status==='accepted'&&state.book==='gre
 export const petitionsFor=state=>[...(state.createdPetitions||[]),...samplePetitions];
 export const supporterCount=(petition,state)=>petition.supporters+(state.petitionSignatures.includes(petition.id)?1:0);
 export function supportPetition(state,id){
- if(!canUsePetitions(state))throw new Error('Petitions are currently available only to verified Green Book holders.');
+ if(!canUsePetitions(state))throw new Error('Supporting petitions currently requires verified Green Book membership.');
  if(!petitionsFor(state).some(p=>p.id===id))throw new Error('This petition is unavailable.');
  if(state.petitionSignatures.includes(id))return false;
  state.petitionSignatures.push(id);return true;
 }
 export function createPetition(state,{title,body,goal}){
- if(!canUsePetitions(state))throw new Error('Petitions are currently available only to verified Green Book holders.');
+ if(!canUsePetitions(state))throw new Error('Creating petitions currently requires verified Green Book membership.');
  title=String(title||'').trim();body=String(body||'').trim();goal=Number(goal);
  if(title.length<6||title.length>120)throw new Error('Use a title between 6 and 120 characters.');
  if(body.length<20||body.length>2000)throw new Error('Explain the change in 20–2,000 characters.');

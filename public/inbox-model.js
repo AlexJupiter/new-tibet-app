@@ -1,6 +1,6 @@
 export const sampleAnnouncements=Object.freeze([
  {id:'sample-community',kind:'announcement',title:'New Tibet community updates',body:'Important New Tibet announcements will appear in this channel. You can read them in the app without sharing an email address or phone number.',createdAt:'2026-10-08T09:00:00Z',sample:true},
- {id:'sample-petitions',kind:'announcement',title:'Green Book petitions',body:'Creating and supporting petitions is currently available to verified Green Book holders. Your application receipt and review decisions are kept separately in this inbox.',createdAt:'2026-10-07T14:00:00Z',sample:true}
+ {id:'sample-petitions',kind:'announcement',title:'Green Book petitions',body:'Everyone can read petitions and view their results. Creating and supporting petitions currently requires verified Green Book membership. Your application receipt and review decisions are private to you.',createdAt:'2026-10-07T14:00:00Z',sample:true}
 ]);
 const storageKey='new-tibet-demo-inbox-v1';
 const statuses=['pending','accepted','declined'];

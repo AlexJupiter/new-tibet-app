@@ -1,12 +1,21 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {canUsePetitions,createPetition,supportPetition,supporterCount,samplePetitions,initialDemoBalances,parseAmount,quoteDemoSwap,swapDemoBalance,withdrawDemoBalance} from '../public/member-model.js';
+import {canUsePetitions,petitionsFor,createPetition,supportPetition,supporterCount,samplePetitions,initialDemoBalances,parseAmount,quoteDemoSwap,swapDemoBalance,withdrawDemoBalance} from '../public/member-model.js';
 const applicant=(book='green',status='accepted')=>({book,status,name:'Tenzin Dolma',createdPetitions:[],petitionSignatures:[]});
 test('petitions require an accepted Green Book application for creation and support',()=>{
  for(const state of [applicant('blue'),applicant('green','pending'),applicant('green','declined')]){
   assert.equal(canUsePetitions(state),false);
   assert.throws(()=>supportPetition(state,'language'));
   assert.throws(()=>createPetition(state,{title:'Community learning',body:'Expand community language learning for young people.',goal:1000}));
+ }
+});
+test('Blue Book, pending and declined members can read petitions and results without voting',()=>{
+ for(const state of [applicant('blue'),applicant('green','pending'),applicant('green','declined')]){
+  const petitions=petitionsFor(state);assert.equal(petitions.length,3);
+  assert.equal(petitions[0].title,'Support Tibetan language education');
+  assert.equal(supporterCount(petitions[0],state),1842);
+  assert.throws(()=>supportPetition(state,petitions[0].id),/Supporting petitions/);
+  assert.equal(supporterCount(petitions[0],state),1842);assert.deepEqual(state.petitionSignatures,[]);
  }
 });
 test('support is counted once and a new petition starts with zero supporters',()=>{

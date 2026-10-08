@@ -4,6 +4,8 @@ The accepted profile shows a QR code and wallet options. A card can be presented
 
 GitHub Pages remains a static demo. Its Apple/Google previews are explicitly marked **PREVIEW ONLY** and cannot be imported into a device wallet. The demo can download a PNG card with a QR that opens an explicitly labeled demo check. It does not impersonate a signed `.pkpass` or a Google Wallet save link. Real saving requires the existing live backend plus issuer credentials; keep those secrets on the backend.
 
+Profile controls use unmodified official Apple and Google Wallet SVG badges. Demo captions and issuer-unavailable labels sit outside the artwork; the badges remain visible when live provider availability updates. Sources and sizing are recorded in `public/assets/wallet/SOURCES.md`. Enabled live providers follow the existing signed-pass/save-link flow.
+
 ## QR membership checks
 
 Set `MEMBERSHIP_CARD_SECRET` to a separate stable random secret of at least 32 characters, and set `CARD_FRONTEND_URL` to the full frontend base URL with a trailing slash, e.g. `https://alexjupiter.github.io/new-tibet-app/`. Its origin must match `FRONTEND_ORIGIN`. The frontend must use the configured live backend in `public/config.js`.

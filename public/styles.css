@@ -361,6 +361,10 @@ body.demo-mode.showing-account footer { bottom: calc(72px + env(safe-area-inset-
 /* Conversation list and familiar message bubbles. */
 .chat-about { margin: 12px 0 20px; }
 .chat-app { border: 1px solid var(--line); border-radius: 18px; overflow: hidden; }
+.chat-mesh-note { grid-column: 1 / -1; display: flex; align-items: flex-start; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--line); background: #f5f7fb; color: var(--ink); }
+.chat-mesh-note > svg { flex-shrink: 0; margin-top: 1px; color: var(--lapis); }
+.chat-mesh-note strong { display: block; font-size: 14px; line-height: 1.5; }
+.chat-mesh-note p { margin: 3px 0 0; font-size: 13px; line-height: 1.5; }
 .chat-list { background: #fff; min-width: 0; }
 .chat-list-title { display: flex; align-items: center; justify-content: space-between; padding: 20px 16px 12px; }
 .chat-list-title span { color: var(--muted); font-size: 11px; }
@@ -596,11 +600,11 @@ body.showing-account:is([data-app-tab='chat'],[data-app-tab='announcements']) { 
 .showing-account:is([data-app-tab='chat'],[data-app-tab='announcements']) .workspace { position: fixed; top: 0; left: 0; right: 0; bottom: calc(134px + env(safe-area-inset-bottom)); width: auto; max-width: none; margin: 0; padding: 0; }
 .showing-account:is([data-app-tab='chat'],[data-app-tab='announcements']) :is(.surface,#screen,#account-panel) { height: 100%; max-width: none; margin: 0; min-height: 0; }
 .showing-account:is([data-app-tab='chat'],[data-app-tab='announcements']) #notice { display: none; }
-.showing-account[data-app-tab='chat'] .chat-app { display: flex; height: 100%; border: 0; border-radius: 0; min-height: 0; }
-.showing-account[data-app-tab='chat'] .chat-list { display: flex; flex-direction: column; width: 100%; min-height: 0; }
+.showing-account[data-app-tab='chat'] .chat-app { display: grid; grid-template-columns: minmax(0,1fr); grid-template-rows: auto minmax(0,1fr); height: 100%; border: 0; border-radius: 0; min-height: 0; }
+.showing-account[data-app-tab='chat'] .chat-list { grid-row: 2; display: flex; flex-direction: column; width: 100%; min-height: 0; }
 .showing-account[data-app-tab='chat'] .conversation-list { min-height: 0; overflow-y: auto; flex: 1; }
 .showing-account[data-app-tab='chat'] .chat-app.conversation-open .chat-list { display: none; }
-.showing-account[data-app-tab='chat'] .chat-room { flex: 1; height: 100%; min-height: 0; }
+.showing-account[data-app-tab='chat'] .chat-room { grid-row: 2; height: 100%; min-height: 0; }
 .showing-account[data-app-tab='chat'] .chat-messages { flex: 1; min-height: 0; height: auto; align-items: flex-start; padding: 24px 18px; }
 .showing-account[data-app-tab='chat'] .chat-room-heading, .showing-account[data-app-tab='chat'] .chat-compose, .showing-account[data-app-tab='chat'] .mesh-delivery-note { flex-shrink: 0; }
 .showing-account:is([data-app-tab='chat'],[data-app-tab='announcements']) footer { position: fixed; bottom: calc(72px + env(safe-area-inset-bottom)); left: 0; right: 0; height: 62px; max-width: none; margin: 0; }

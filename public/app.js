@@ -5,6 +5,7 @@ import {passportDiagram,walletDiagram} from './diagrams.js';
 import {renderAccountTabs,renderPetitions,renderChat} from './account.js';
 import {renderWallet} from './wallet.js';
 import {renderAnnouncements} from './announcements.js';
+import {renderEcosystem} from './ecosystem.js';
 import {recordApplicationEvent,unreadCount,saveDemoInbox,restoreDemoInbox,clearDemoInbox} from './inbox-model.js';
 const config = window.NEW_TIBET_CONFIG || {mode:'demo',apiBase:''};
 const demo = config.mode !== 'live';
@@ -368,6 +369,7 @@ function renderAcceptedAccount(){
  else if(state.appTab==='petitions')renderPetitions(screen,state,demo,notice,renderAcceptedAccount);
  else if(state.appTab==='chat')renderChat(screen,state,demo,renderAcceptedAccount);
  else if(state.appTab==='wallet')renderWallet(screen,state,demo,notice,renderAcceptedAccount);
+ else if(state.appTab==='ecosystem')renderEcosystem(screen);
  else if(state.status==='accepted')renderProfile();else renderApplicationDetails();
  document.body.dataset.appTab=state.appTab;
  const panel=document.createElement('section');panel.id='account-panel';panel.setAttribute('role','tabpanel');panel.setAttribute('aria-labelledby','tab-'+state.appTab);

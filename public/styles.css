@@ -254,18 +254,50 @@ input::placeholder, textarea::placeholder { color: var(--ink); opacity: 1; }
 .recovery-words strong { font-size: 12px; font-weight: 500; }
 p.recovery-description { font-size: 14px; }
 
-/* Four bottom tabs on phones; the same navigation becomes a desktop sidebar. */
+/* Six bottom tabs on phones; the same navigation becomes a desktop sidebar. */
 .showing-account { padding-bottom: calc(72px + env(safe-area-inset-bottom)); }
 body.demo-mode.showing-account footer { bottom: calc(72px + env(safe-area-inset-bottom)); display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .showing-account .footer-meta { order: 1; }
 .showing-account .demo-footer { order: 2; }
 .showing-account .footer-meta > span, .showing-account .demo-footer > span { display: none; }
-.app-tabs { position: fixed; bottom: 0; left: 0; right: 0; z-index: 6; display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); max-width: 560px; margin: auto; padding: 8px 4px max(8px,env(safe-area-inset-bottom)); min-height: calc(72px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: #fff; }
+.app-tabs { position: fixed; bottom: 0; left: 0; right: 0; z-index: 6; display: grid; grid-template-columns: minmax(74px,1.35fr) repeat(5,minmax(44px,1fr)); max-width: 560px; margin: auto; padding: 8px 4px max(8px,env(safe-area-inset-bottom)); min-height: calc(72px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: #fff; }
 .app-tabs button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; min-height: 54px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); font-size: 11px; }
 .app-tabs button > svg { flex-shrink: 0; width: 22px; height: 22px; }
 .app-tabs button[aria-selected="true"] { color: var(--lapis); font-weight: 600; }
 .app-tabs button:hover { background: var(--soft); }
 .sidebar-brand, .sidebar-note, .onboarding-nav { display: none; }
+/* Partner directory with locally served website imagery. */
+.ecosystem-intro.description { margin-bottom: 20px; }
+.ecosystem-signin { margin: 0 0 24px; padding: 20px; border-radius: 16px; background: var(--soft); text-align: center; }
+.ecosystem-signin-image { display: block; width: 100%; max-width: 360px; height: auto; margin: auto; font-family: var(--font-sans); }
+.ecosystem-signin figcaption { margin-top: 12px; font-size: 12px; line-height: 1.5; }
+.ecosystem-benefits { display: grid; gap: 18px; margin: 0; padding: 0; list-style: none; }
+.ecosystem-benefits li { display: flex; gap: 12px; align-items: flex-start; }
+.ecosystem-benefits li > svg { flex-shrink: 0; margin-top: 2px; color: var(--lapis); }
+.ecosystem-benefits h3 { margin: 0 0 4px; font-size: 14px; }
+.ecosystem-benefits p { margin: 0; font-size: 13px; line-height: 1.6; }
+.ecosystem-preview-note { margin: 20px 0 28px; font-size: 12px; line-height: 1.6; }
+.ecosystem-partner-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.ecosystem-partner-heading h3 { margin: 0; font-size: 18px; }
+.ecosystem-partner-heading > span { display: flex; gap: 6px; align-items: center; font-size: 11px; }
+.ecosystem-partner-heading svg { width: 12px; height: 12px; }
+.ecosystem-partners { display: grid; gap: 18px; }
+.ecosystem-partner { display: block; min-width: 0; overflow: hidden; border: 1px solid #d4d4dc; border-radius: 16px; color: var(--ink); text-decoration: none; }
+.ecosystem-partner:hover { border-color: var(--lapis); background: #f7f8fb; }
+.ecosystem-partner-image { display: flex; align-items: center; justify-content: center; gap: 14px; aspect-ratio: 16 / 9; overflow: hidden; background: var(--soft); }
+.ecosystem-partner-image img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.ecosystem-partner-image.monlam { background: #f8f5ec; }
+.ecosystem-partner-image.monlam img { width: 72px; height: 72px; object-fit: contain; }
+.ecosystem-partner-image.monlam span { font-size: 22px; font-weight: 600; letter-spacing: -.5px; }
+.ecosystem-partner-image.zomsa img { object-position: 50% 42%; }
+.ecosystem-partner-image.smartvote { background: #e4edf2; }
+.ecosystem-partner-image.smartvote img { object-fit: contain; }
+.ecosystem-partner-copy { padding: 18px; }
+.ecosystem-partner-copy > div { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.ecosystem-partner-copy h3 { margin: 0; font-size: 18px; letter-spacing: -.3px; }
+.ecosystem-partner-copy svg { width: 18px; height: 18px; flex-shrink: 0; color: var(--lapis); }
+.ecosystem-partner-copy p { margin: 10px 0 14px; font-size: 13px; line-height: 1.6; }
+.ecosystem-domain { font-size: 12px; color: var(--lapis); overflow-wrap: anywhere; }
 .section-note { font-size: 12px; color: var(--muted); line-height: 1.65; }
 .section-note a { white-space: nowrap; }
 .petition-list { display: grid; gap: 16px; margin-top: 22px; }
@@ -380,6 +412,10 @@ body.demo-mode.showing-account footer { bottom: calc(72px + env(safe-area-inset-
  .showing-account[data-app-tab='profile'] #account-panel, .showing-account[data-app-tab='wallet'] #account-panel { max-width: 520px; }
  .showing-account[data-app-tab='chat'] #account-panel { max-width: 1040px; }
  .showing-account[data-app-tab='petitions'] .petition-list { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 20px; }
+ .ecosystem-benefits, .ecosystem-partners { grid-template-columns: repeat(3,minmax(0,1fr)); }
+ .ecosystem-partner-image.monlam { gap: 8px; }
+ .ecosystem-partner-image.monlam img { width: 56px; height: 56px; }
+ .ecosystem-partner-image.monlam span { font-size: 20px; }
  .app-tabs, .onboarding-nav { position: fixed; display: flex; flex-direction: column; justify-content: flex-start; gap: 8px; top: 0; bottom: 0; left: 0; right: auto; width: 224px; max-width: none; min-height: 100svh; padding: 24px 16px; margin: 0; border: 0; border-right: 1px solid var(--line); background: #fafafa; z-index: 6; }
  .sidebar-brand { display: flex; align-items: center; padding: 4px 12px 32px; }
  .sidebar-brand img { width: 95px; height: 40px; object-fit: contain; }

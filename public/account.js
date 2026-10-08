@@ -6,10 +6,11 @@ const tabIcons={
  petitions:icon('<path d="M7 3h9l4 4v14H4V3Z"/><path d="M15 3v5h5M8 12h8m-8 4h5"/>'),
  chat:icon('<path d="M21 11a9 9 0 0 1-9 9 10 10 0 0 1-4-1l-5 2 2-5a9 9 0 1 1 16-5Z"/><path d="M8 10h8m-8 4h5"/>'),
  profile:icon('<rect x="2" y="4" width="20" height="16" rx="3"/><circle cx="8" cy="10" r="2"/><path d="M5 16v-1a3 3 0 0 1 6 0v1m4-7h4m-4 4h4"/>'),
- wallet:icon('<rect x="3" y="6" width="18" height="15" rx="3"/><path d="M4 6V4a2 2 0 0 1 2-2h13v4m-2 7h4v5h-4a2.5 2.5 0 0 1 0-5Z"/>')
+ wallet:icon('<rect x="3" y="6" width="18" height="15" rx="3"/><path d="M4 6V4a2 2 0 0 1 2-2h13v4m-2 7h4v5h-4a2.5 2.5 0 0 1 0-5Z"/>'),
+ ecosystem:icon('<rect x="3" y="3" width="6" height="6" rx="1.5"/><rect x="15" y="3" width="6" height="6" rx="1.5"/><rect x="3" y="15" width="6" height="6" rx="1.5"/><rect x="15" y="15" width="6" height="6" rx="1.5"/><path d="M9 6h6M6 9v6m12-6v6M9 18h6"/>')
 };
 export function renderAccountTabs(selected,unread=0){
- return `<nav class="app-tabs" role="tablist" aria-label="New Tibet app"><div class="sidebar-brand" aria-hidden="true"><img src="${new URL('./assets/new-tibet-logo-blue.svg',import.meta.url).href}" alt=""/><span>New Tibet</span></div>${memberTabs.map(tab=>`<button type="button" role="tab" id="tab-${tab}" data-app-tab="${tab}" aria-selected="${selected===tab}" aria-controls="account-panel" tabindex="${selected===tab?'0':'-1'}" ${tab==='announcements'&&unread?`aria-label="Announcements, ${unread} unread"`:''}>${tabIcons[tab]}<span class="tab-label">${{announcements:'Announcements',petitions:'Petitions',chat:'Chat',profile:'Profile',wallet:'Wallet'}[tab]}</span>${tab==='announcements'&&unread?`<span class="tab-unread" aria-hidden="true">${unread}</span>`:''}</button>`).join('')}<span class="sidebar-note">Your New Tibet account</span></nav>`;
+ return `<nav class="app-tabs" role="tablist" aria-label="New Tibet app"><div class="sidebar-brand" aria-hidden="true"><img src="${new URL('./assets/new-tibet-logo-blue.svg',import.meta.url).href}" alt=""/><span>New Tibet</span></div>${memberTabs.map(tab=>`<button type="button" role="tab" id="tab-${tab}" data-app-tab="${tab}" aria-selected="${selected===tab}" aria-controls="account-panel" tabindex="${selected===tab?'0':'-1'}" ${tab==='announcements'&&unread?`aria-label="Announcements, ${unread} unread"`:''}>${tabIcons[tab]}<span class="tab-label">${{announcements:'Announcements',petitions:'Petitions',chat:'Chat',profile:'Profile',wallet:'Wallet',ecosystem:'Ecosystem'}[tab]}</span>${tab==='announcements'&&unread?`<span class="tab-unread" aria-hidden="true">${unread}</span>`:''}</button>`).join('')}<span class="sidebar-note">Your New Tibet account</span></nav>`;
 }
 
 export function renderPetitions(screen,state,demo,notice,rerender){

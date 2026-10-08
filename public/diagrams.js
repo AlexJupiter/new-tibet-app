@@ -1,4 +1,4 @@
-const arrow='<path d="M0 0h35m-7-6 7 6-7 6" fill="none" stroke="#a2a9b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
+const arrow='<path d="M0 0h35m-7-6 7 6-7 6" fill="none" stroke="#1b2a5b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
 export function passportDiagram(){
  return `<figure class="explainer" aria-labelledby="passport-diagram-caption">
  <svg viewBox="0 0 440 155" role="img" aria-label="Tap a biometric passport with your phone. ZKPassport generates a proof on the phone. New Tibet verifies the proof.">
@@ -17,7 +17,7 @@ export function passportDiagram(){
 export function walletDiagram(){
  return `<figure class="explainer" aria-labelledby="wallet-diagram-caption">
  <svg viewBox="0 0 440 145" role="img" aria-label="Face ID, fingerprint or device PIN unlocks a passkey. A supported passkey protects the Ethereum wallet key. The wallet is intended to hold New Tibet Coin, TIBET.">
-  <g transform="translate(20 22)" fill="none" stroke="#1b2a5b" stroke-width="2.5" stroke-linecap="round"><rect width="91" height="99" rx="20" fill="#f1f4f9" stroke="none"/><path d="M25 22h-7v14m47-14h8v14M18 63v14h7m48-14v14h-8M35 40v6m22-6v6m-12-6v15h5m-18 9q14 10 27 0"/><path d="M17 103c5-13 9-15 15-14" stroke="#eb833a"/></g>
+  <g transform="translate(20 22)" fill="none" stroke="#1b2a5b" stroke-width="2.5" stroke-linecap="round"><rect width="91" height="99" rx="20" fill="#f1f4f9" stroke="none"/><path d="M25 22h-7v14m47-14h8v14M18 63v14h7m48-14v14h-8M35 40v6m22-6v6m-12-6v15h5m-18 9q14 10 27 0"/></g>
   <g transform="translate(134 72)">${arrow}</g>
   <g transform="translate(183 22)"><rect width="74" height="99" rx="18" fill="#f1f4f9"/><circle cx="31" cy="41" r="14" fill="none" stroke="#1b2a5b" stroke-width="3"/><path d="m41 51 18 18m-5-5 7-7m-14 0 7-7" fill="none" stroke="#1b2a5b" stroke-width="3" stroke-linecap="round"/><path d="m26 42 3 3 7-9" fill="none" stroke="#315f4b" stroke-width="2"/></g>
   <g transform="translate(276 72)">${arrow}</g>

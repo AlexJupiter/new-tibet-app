@@ -1,6 +1,6 @@
 # Membership inbox and one-way announcements
 
-Name, email, and WhatsApp are optional. Blank details do not block submission, passport proof verification, or passkey enrollment. Supplied contacts must be verified and cannot be substituted after verification. Consent to book/video review, all four photos, the video, and the live adult passport proof remain required. These uploads may contain personally identifiable information; optional contacts do not make document review anonymous.
+A display name is required for new submissions; it can be a pseudonym and does not have to be a real name. Email and WhatsApp are optional. Blank contact details do not block submission, passport proof verification, or passkey enrollment. Supplied contacts must be verified and cannot be substituted after verification. Consent to book/video review, all four photos, the video, and the live adult passport proof remain required. These uploads may contain personally identifiable information; optional contacts do not make document review anonymous.
 
 Application receipts are inserted atomically with successful membership submissions. A final review decision adds one private event atomically with the decision; repeated submissions and review callbacks do not duplicate events. Existing applications are backfilled on backend startup. Announcements and read state live in the encrypted persistent SQLite deployment described in SETUP.md; never serve its data directory publicly.
 
@@ -41,3 +41,5 @@ Email and WhatsApp are optional transports. Configure Resend only to offer email
 GitHub Pages runs the static demo. Its New Tibet notices are labeled sample announcements, and its application decisions are simulations. A small local snapshot keeps only reference, book type, status events, timestamps, and read IDs. It excludes name, email, WhatsApp, photos/video, passport proofs, passkey material, and wallet keys. Reload restores Announcements with a member reference as its display name. Restart demo clears this snapshot.
 
 Activating a real channel on the Pages frontend requires hosting the configured backend and changing `public/config.js` to live mode with its API URL. Do not add publishing credentials to the Pages repository.
+
+New applications collect the required display name and book/video review consent on Document. The remaining order is Book photos, Video, Passport, Wallet security, then optional Contact details. Omitting contacts preserves the chosen display name. Existing accounts retain their inbox history, including legacy applications that have no name.

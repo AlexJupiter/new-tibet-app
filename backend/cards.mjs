@@ -45,7 +45,7 @@ export function createMembershipCards(db,env){
 }
 
 export function applePassData(app,card,env){
- return {formatVersion:1,passTypeIdentifier:env.APPLE_PASS_TYPE_ID,teamIdentifier:env.APPLE_TEAM_ID,serialNumber:app.reference,organizationName:'New Tibet',description:'New Tibet membership card',backgroundColor:'rgb(237, 241, 247)',foregroundColor:'rgb(27, 42, 91)',labelColor:'rgb(96, 112, 139)',expirationDate:card.expiresAt,sharingProhibited:true,
+ return {formatVersion:1,passTypeIdentifier:env.APPLE_PASS_TYPE_ID,teamIdentifier:env.APPLE_TEAM_ID,serialNumber:app.reference,organizationName:'New Tibet',description:'New Tibet membership card',backgroundColor:'rgb(237, 241, 247)',foregroundColor:'rgb(27, 42, 91)',labelColor:'rgb(27, 42, 91)',expirationDate:card.expiresAt,sharingProhibited:true,
   generic:{primaryFields:[{key:'member',label:'MEMBER',value:memberLabel(app)}],secondaryFields:[{key:'book',label:'MEMBERSHIP',value:bookLabel(app)},{key:'status',label:'STATUS',value:'Accepted'}],auxiliaryFields:[{key:'reference',label:'MEMBER REFERENCE',value:app.reference}],backFields:[{key:'use',label:'IN PERSON',value:'Present at participating physical locations. Staff can scan the QR code to check current New Tibet membership.'},{key:'privacy',label:'PRIVACY',value:'This membership pass contains no name, contact details, book photos or passport data.'},{key:'contact',label:'NEW TIBET',value:'https://newtibet.com/\nhello@newtibet.com'}]},
   barcodes:[{format:'PKBarcodeFormatQR',message:card.verificationURL,messageEncoding:'iso-8859-1',altText:app.reference}]};
 }

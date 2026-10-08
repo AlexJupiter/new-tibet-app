@@ -21,8 +21,9 @@ test('contact-free membership gets durable private receipts and announcements wi
    const bytes=kind==='video'?Buffer.concat([Buffer.from([0x1a,0x45,0xdf,0xa3]),Buffer.alloc(200)]):Buffer.concat([Buffer.from([255,216]),Buffer.alloc(200),Buffer.from([255,217])]);
    const response=await fetch(base+'/api/media/upload?kind='+kind+'&book=green',{method:'POST',headers:{Origin:env.FRONTEND_ORIGIN,Authorization:'Bearer '+bearer,'X-Review-Consent':'2026-10-08','Content-Type':kind==='video'?'video/webm':'image/jpeg'},body:bytes});assert.equal(response.status,201);
   }
-  const result=await call('applications',{book:'green',consent:true,consentVersion:'2026-10-08'});assert.equal(result.status,201);assert.equal(result.data.notification,'in-app');
-  const receipt=await call('notifications');assert.equal(receipt.data.items.length,1);assert.equal(receipt.data.items[0].status,'pending');assert.equal(receipt.data.application.name,'');assert.equal(receipt.data.application.passportVerified,true);assert(!JSON.stringify(receipt.data).includes('proofs'));
+  assert.equal((await call('applications',{book:'green',consent:true,consentVersion:'2026-10-08'})).status,400);
+  const result=await call('applications',{name:'Snow Lion',book:'green',consent:true,consentVersion:'2026-10-08'});assert.equal(result.status,201);assert.equal(result.data.notification,'in-app');
+  const receipt=await call('notifications');assert.equal(receipt.data.items.length,1);assert.equal(receipt.data.items[0].status,'pending');assert.equal(receipt.data.application.name,'Snow Lion');assert.equal(receipt.data.application.passportVerified,true);assert(!JSON.stringify(receipt.data).includes('proofs'));
   const decision={reference:result.data.reference,status:'accepted',reviewedBy:'reviewer@example.org'};
   assert.equal((await call('reviews/decision',decision,env.REVIEW_WEBHOOK_SECRET)).status,200);await call('reviews/decision',decision,env.REVIEW_WEBHOOK_SECRET);
   assert.equal((await call('notifications')).data.items.length,2);await app.processJobs();assert.equal(sent,0);

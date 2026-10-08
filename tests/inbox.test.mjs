@@ -6,9 +6,11 @@ import {validateApplication} from '../backend/core.mjs';
 import {recordApplicationEvent,saveDemoInbox,restoreDemoInbox,clearDemoInbox,unreadCount} from '../public/inbox-model.js';
 
 const requiredEvidence={mediaChallenge:{expires:Date.now()+60000},media:Object.fromEntries(['front','back','identity','challenge','video'].map(kind=>[kind,{book:'green'}])),passport:{verified:true,expires:Date.now()+60000},verified:{}};
-test('name and contacts are optional while consent, book evidence, and passport proof remain required',()=>{
- const body={book:'green',consent:true,consentVersion:'2026-10-08'};
- assert.deepEqual(validateApplication(body,requiredEvidence),{name:'',email:'',whatsapp:'',book:'green',consentVersion:'2026-10-08'});
+test('a display name is required, pseudonyms are accepted, and contacts remain optional',()=>{
+ const body={name:'  Snow Lion  ',book:'green',consent:true,consentVersion:'2026-10-08'};
+ assert.deepEqual(validateApplication(body,requiredEvidence),{name:'Snow Lion',email:'',whatsapp:'',book:'green',consentVersion:'2026-10-08'});
+ for(const name of [undefined,null,'','   ','x'.repeat(101),{}])assert.throws(()=>validateApplication({...body,name},requiredEvidence),/display name/);
+ assert.equal(validateApplication({...body,name:'བཀྲ་ཤིས་'},requiredEvidence).name,'བཀྲ་ཤིས་');
  assert.throws(()=>validateApplication({...body,email:'member@example.com'},requiredEvidence),/Verify the optional/);
  assert.equal(validateApplication({...body,email:'member@example.com'},{...requiredEvidence,verified:{email:'member@example.com'}}).email,'member@example.com');
  for(const session of [{...requiredEvidence,media:{}},{...requiredEvidence,passport:null}])assert.throws(()=>validateApplication(body,session));

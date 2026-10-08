@@ -52,11 +52,11 @@ async function downloadDemoCard({reference,book,name,qrImage}){
  const [logo,qr]=await Promise.all([loadImage(new URL('./assets/new-tibet-logo-blue.svg',import.meta.url).href),loadImage(qrImage)]);
  const canvas=document.createElement('canvas');canvas.width=1200;canvas.height=760;const ctx=canvas.getContext('2d');
  ctx.fillStyle='#edf1f7';ctx.fillRect(0,0,1200,760);ctx.fillStyle='#1b2a5b';ctx.fillRect(0,0,1200,10);ctx.drawImage(logo,60,50,240,101);
- ctx.font='500 22px Inter, sans-serif';ctx.fillStyle='#60708b';ctx.textAlign='right';ctx.fillText('DEMO MEMBERSHIP CARD',1140,100);ctx.textAlign='left';
+ ctx.font='500 22px Inter, sans-serif';ctx.fillStyle='#1b2a5b';ctx.textAlign='right';ctx.fillText('DEMO MEMBERSHIP CARD',1140,100);ctx.textAlign='left';
  ctx.font='500 20px Inter, sans-serif';ctx.fillText('DISPLAY NAME',60,235);ctx.fillStyle='#1b2a5b';ctx.font='600 54px Inter, sans-serif';while(ctx.measureText(name).width>1020){name=name.slice(0,-2)+'…';}ctx.fillText(name,60,302);
- ctx.fillStyle='#60708b';ctx.font='500 20px Inter, sans-serif';ctx.fillText('MEMBERSHIP',60,398);ctx.fillText('STATUS',430,398);ctx.fillText('MEMBER REFERENCE',60,530);
+ ctx.fillStyle='#1b2a5b';ctx.font='500 20px Inter, sans-serif';ctx.fillText('MEMBERSHIP',60,398);ctx.fillText('STATUS',430,398);ctx.fillText('MEMBER REFERENCE',60,530);
  ctx.fillStyle='#1b2a5b';ctx.font='500 30px Inter, sans-serif';ctx.fillText(book==='blue'?'Blue Book supporter':'Green Book holder',60,446);ctx.fillText('Accepted · preview',430,446);ctx.font='400 24px "IBM Plex Mono", monospace';ctx.fillText(reference,60,575);
- ctx.imageSmoothingEnabled=false;ctx.drawImage(qr,865,350,275,275);ctx.fillStyle='#60708b';ctx.font='400 18px Inter, sans-serif';ctx.textAlign='center';ctx.fillText('DEMO QR CODE',1002,650);
+ ctx.imageSmoothingEnabled=false;ctx.drawImage(qr,865,350,275,275);ctx.fillStyle='#1b2a5b';ctx.font='400 18px Inter, sans-serif';ctx.textAlign='center';ctx.fillText('DEMO QR CODE',1002,650);
  ctx.textAlign='left';ctx.fillStyle='#1b2a5b';ctx.fillRect(60,687,1080,1);ctx.font='500 20px Inter, sans-serif';ctx.fillText('NEW TIBET',60,728);ctx.textAlign='right';ctx.fillText('DEMO · PREVIEW ONLY',1140,728);
  const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));if(!blob)throw new Error('Image unavailable.');
  const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='new-tibet-demo-card.png';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);

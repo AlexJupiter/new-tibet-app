@@ -8,7 +8,7 @@ export const digest=(secret,text)=>createHmac('sha256',secret).update(text).dige
 export function compare(a,b){return typeof a==='string'&&typeof b==='string'&&a.length===b.length&&timingSafeEqual(Buffer.from(a),Buffer.from(b));}
 export function verifyChallenge(challenge,{value,code},secret,now=Date.now()){if(!challenge||challenge.used||challenge.expires<now||challenge.attempts>=5)throw new Problem('Code expired or too many attempts. Request a new code.');challenge.attempts++;if(challenge.value!==value||!compare(challenge.hash,digest(secret,challenge.value+':'+code)))throw new Problem('That code does not match. Please try again.');challenge.used=true;return challenge.value;}
 export function validateApplication(body,session){
- const name=String(body.name||'').trim();if(name.length>100)throw new Problem('Use a name of up to 100 characters, or leave it blank.');
+ const name=typeof body.name==='string'?body.name.trim():'';if(!name||name.length>100)throw new Problem('Enter a display name of 1–100 characters. You can use a pseudonym.');
  if(!['green','blue'].includes(body.book))throw new Problem('Choose a Green Book or Blue Book.');
  if(body.consent!==true||!['2026-10-07','2026-10-08'].includes(body.consentVersion))throw new Problem('Consent to book and video review is required.');
  const contacts={email:'',whatsapp:''};

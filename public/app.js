@@ -1,4 +1,6 @@
 import {sampleApplicant} from './demo-profile.js';
+import {loadImage} from './images.js';
+import {cardControls,mountProfileCard} from './card.js';
 import {passportDiagram,walletDiagram} from './diagrams.js';
 import {renderAccountTabs,renderPetitions,renderChat} from './account.js';
 import {renderWallet} from './wallet.js';
@@ -104,7 +106,10 @@ async function uploadDemoSamples(){
    if(state.step!==step)return;
    // Complete sample sets share the recorded clip's clearly labeled example code.
    if(Object.keys(state.photos).length===0)state.challenge={code:sampleApplicant.challengeCode};
-   for(const kind of photoKinds){if(state.photos[kind])continue;const photo=await samplePhoto(state.book,kind,state.challenge.code);if(state.step!==step)return;if(!state.photos[kind])state.photos[kind]=photo;}
+   const book=state.book;
+   const samples=await Promise.all(photoKinds.filter(kind=>!state.photos[kind]).map(async kind=>[kind,await samplePhoto(book,kind,state.challenge.code)]));
+   if(state.step!==step||state.book!==book)return;
+   for(const [kind,photo] of samples)if(!state.photos[kind])state.photos[kind]=photo;
    state.demoSampleApplicant=true;
    for(const factor of ['name','email','whatsapp']){if(!state[factor].trim())state[factor]=sampleApplicant[factor];}
    render();notice('Sample photos added for this demo.');
@@ -132,7 +137,7 @@ function renderPhoto(){
  document.querySelector('#back').onclick=()=>navigate(0);document.querySelector('#camera').onclick=startCamera;document.querySelector('#upload').onclick=()=>document.querySelector('#file').click();document.querySelector('#file').onchange=e=>loadPhoto(e.target.files[0]);document.querySelector('#use-photo').onclick=()=>{if(!state.photos[kind])return;if(photoKinds.every(k=>state.photos[k]))return navigate(2);state.photoKind=photoKinds.find(k=>!state.photos[k]);render();};ensureChallenge();
 }
 async function startCamera(){notice();stopCamera();try{if(!navigator.mediaDevices?.getUserMedia)throw new Error('Camera access needs HTTPS and a supported browser. You can choose a photo instead.');stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1600}},audio:false});document.querySelector('#capture').innerHTML='<video autoplay playsinline muted aria-label="Live camera preview"></video><div class="camera-guide"></div>';const video=screen.querySelector('video');video.srcObject=stream;await video.play();const button=document.querySelector('#camera');button.innerHTML='Take photo';button.onclick=()=>{if(!video.videoWidth)return notice('Wait for the camera to finish starting.');const canvas=document.createElement('canvas');const scale=Math.min(1,1600/video.videoWidth);canvas.width=video.videoWidth*scale;canvas.height=video.videoHeight*scale;canvas.getContext('2d').drawImage(video,0,0,canvas.width,canvas.height);state.photos[state.photoKind]=canvas.toDataURL('image/jpeg',.85);stopCamera();render();};}catch(e){notice(e.name==='NotAllowedError'?'Camera permission was denied. Allow the camera in your browser settings, or choose a photo.':e.name==='NotFoundError'?'No camera was found. You can choose an existing photo.':e.message);}}
-async function loadPhoto(file){if(!file)return;if(file.size>8*1024*1024)return notice('Choose a photo smaller than 8 MB.');if(!['image/jpeg','image/png','image/webp'].includes(file.type))return notice('Choose a JPEG, PNG, or WebP image.');stopCamera();const url=URL.createObjectURL(file);try{const img=new Image();img.src=url;await img.decode();const scale=Math.min(1,1600/Math.max(img.width,img.height));const c=document.createElement('canvas');c.width=img.width*scale;c.height=img.height*scale;c.getContext('2d').drawImage(img,0,0,c.width,c.height);const photo=c.toDataURL('image/jpeg',.85);if(photo.length>4*1024*1024)throw new Error('This photo is too large. Try a smaller image.');state.photos[state.photoKind]=photo;notice();render();}catch(e){notice(e.message||'This photo could not be opened. Please try another image.');}finally{URL.revokeObjectURL(url);}}
+async function loadPhoto(file){if(!file)return;if(file.size>8*1024*1024)return notice('Choose a photo smaller than 8 MB.');if(!['image/jpeg','image/png','image/webp'].includes(file.type))return notice('Choose a JPEG, PNG, or WebP image.');stopCamera();const url=URL.createObjectURL(file),kind=state.photoKind,book=state.book;try{const img=await loadImage(url);const scale=Math.min(1,1600/Math.max(img.width,img.height));const c=document.createElement('canvas');c.width=img.width*scale;c.height=img.height*scale;c.getContext('2d').drawImage(img,0,0,c.width,c.height);const photo=c.toDataURL('image/jpeg',.85);if(photo.length>4*1024*1024)throw new Error('This photo is too large. Try a smaller image.');if(state.step!==1||state.book!==book)return;state.photos[kind]=photo;notice();render();}catch(e){notice(e.message||'This photo could not be opened. Please try another image.');}finally{URL.revokeObjectURL(url);}}
 function setVideo(blob){if(state.videoURL)URL.revokeObjectURL(state.videoURL);state.video=blob;state.videoURL=URL.createObjectURL(blob);state.demoVideo=false;}
 function renderVideo(){screen.innerHTML=heading('Video verification.','Hold your book and code, keep your face visible, and read this aloud.')+`<div class="challenge-card"><small>YOUR VIDEO MESSAGE</small><p>“I am applying for New Tibet. My verification code is <strong class="inline-code">${esc(state.challenge?.code||'')}</strong>.”</p></div><div class="capture" id="capture">${state.video?`<video controls playsinline src="${state.videoURL}" aria-label="Your recorded video">${state.demoVideo?`<track kind="captions" src="${new URL(`./assets/demo/sample-video-${state.book}.vtt`,import.meta.url).href}" srclang="en" label="English" default/>`:""}</video>`:`<div class="empty">${svg('camera')}<strong>Camera + microphone</strong><p>Good light, a quiet place, and your book ready.</p></div>`}</div><p class="capture-label" id="recording-status">${state.video?(state.demoVideo?'Narrated fictional sample · Example code 534216':'Watch your video before continuing.'):'Your browser will ask for camera and microphone permission.'}</p><div class="capture-actions"><button class="${state.video?'secondary':'primary'}" id="record">${state.video?'Record again':'Record video'}</button><button class="text-button" id="video-upload">Choose a video instead</button></div><input type="file" id="video-file" accept="video/webm,video/mp4,video/quicktime" hidden/><p class="under-button">WebM or MP4 · 5–30 seconds · Maximum 20 MB</p><div class="actions navigation"><button class="secondary" id="back">Back</button><button class="primary" id="video-next" ${!state.video?'hidden':''}>Continue →</button></div>`;document.querySelector('#back').onclick=()=>navigate(1);document.querySelector('#record').onclick=startVideo;document.querySelector('#video-next').onclick=()=>{if(state.video)navigate(3);};document.querySelector('#video-upload').onclick=()=>document.querySelector('#video-file').click();document.querySelector('#video-file').onchange=e=>loadVideo(e.target.files[0]);}
 async function loadVideo(file){if(!file)return;try{if(file.size>20*1024*1024)throw new Error('Choose a video smaller than 20 MB.');if(!['video/webm','video/mp4','video/quicktime'].includes(file.type))throw new Error('Choose a WebM or MP4 video.');const url=URL.createObjectURL(file);const v=document.createElement('video');try{v.src=url;await new Promise((r,j)=>{v.onloadedmetadata=r;v.onerror=()=>j(new Error('This video could not be opened.'));});if(!Number.isFinite(v.duration)||v.duration<5||v.duration>30.5)throw new Error('Choose a video lasting 5–30 seconds.');}finally{URL.revokeObjectURL(url);}if(state.step!==2)return false;setVideo(file);render();notice();return true;}catch(e){notice(e.message);return false;}}
@@ -395,14 +400,15 @@ function renderProfile(){
    <div class="identity-portrait" ${portrait?'':`role="img" aria-label="Profile initials ${esc(profileInitials(name))}"`}>${portrait?`<img src="${sampleApplicant.portrait}" alt="Fictional demo applicant Tenzin Dolma"/>`:esc(profileInitials(name))}</div>
    <div class="identity-holder-name"><p class="identity-label">${state.name.trim()?"Display name":"Member name"}</p><h3>${esc(name)}</h3><p class="identity-holder-type">${state.book==='blue'?'Blue Book supporter':'Green Book holder'}</p></div>
   </div>
-  <dl class="identity-fields">
+  <div class="identity-card-details"><dl class="identity-fields">
    <div class="identity-reference"><dt>Profile reference</dt><dd>${esc(state.reference)}</dd></div>
    <div><dt>Document</dt><dd>${bookLabel()}</dd></div>
    <div><dt>Status</dt><dd>${demo?'Accepted · preview':'Accepted'}</dd></div>
-  </dl>
+  </dl><button class="identity-qr" id="identity-qr" type="button" aria-label="Show membership QR code" disabled><span>Preparing QR…</span></button></div>
   <div class="identity-card-bottom"><span>NEW TIBET IDENTITY</span><span>${demo?'PREVIEW ONLY':'DIGITAL PROFILE'}</span></div>
  </article>
  ${demo?'<p class="identity-preview-note">Demo profile · No identity document has been issued.</p>':''}
+ ${cardControls(demo)}
  <section class="profile-details" aria-labelledby="profile-details-title">
   <h3 id="profile-details-title">Profile details</h3>
   <dl>
@@ -415,6 +421,7 @@ function renderProfile(){
  </section>
  ${reviewPreviewControls()}`;
  bindReviewControls();
+ mountProfileCard({root:screen,state,demo,api,config});
 }
 function simulateReview(status){
  if(!demo||state.step!==6||!['accepted','declined'].includes(status))return;

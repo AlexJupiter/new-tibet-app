@@ -9,11 +9,13 @@ import {GoogleStore} from './google.mjs';
 import {verifyPassport,passportScope} from './passport.mjs';
 import {Messages} from './messages.mjs';
 import {createNotifications,applicationSummary} from './notifications.mjs';
+import {createMembershipCards} from './cards.mjs';
 const required=['PASSPORT_UNIQUENESS_SECRET','SESSION_SECRET','FRONTEND_ORIGIN','RP_ID','REVIEW_WEBHOOK_SECRET','REVIEWER_EMAILS','GOOGLE_APPLICATION_CREDENTIALS','GOOGLE_DRIVE_FOLDER_ID','GOOGLE_SHEET_ID'];
 export function createApp(env=process.env,adapters={}){
  const live=env.APP_MODE==='live';const missing=required.filter(key=>!env[key]);if(live&&missing.length)throw new Error('Missing backend settings: '+missing.join(', '));if(live&&(env.SESSION_SECRET.length<32||env.REVIEW_WEBHOOK_SECRET.length<32||env.PASSPORT_UNIQUENESS_SECRET.length<32))throw new Error('Use secrets of at least 32 characters.');if(live&&!env.FRONTEND_ORIGIN.startsWith('https://')&&env.NODE_ENV!=='test')throw new Error('The live frontend must use HTTPS.');
  const secret=env.SESSION_SECRET||token();const dataDir=resolve(env.DATA_DIR||'backend/data');mkdirSync(dataDir,{recursive:true,mode:0o700});const db=new DatabaseSync(adapters.database||resolve(dataDir,'identity.sqlite'));db.exec("PRAGMA journal_mode=WAL; CREATE TABLE IF NOT EXISTS sessions(id TEXT PRIMARY KEY, data TEXT NOT NULL, expires INTEGER NOT NULL); CREATE TABLE IF NOT EXISTS applications(reference TEXT PRIMARY KEY, session_id TEXT UNIQUE, data TEXT NOT NULL); CREATE TABLE IF NOT EXISTS jobs(id TEXT PRIMARY KEY, reference TEXT NOT NULL, kind TEXT NOT NULL, attempts INTEGER DEFAULT 0, due INTEGER NOT NULL, state TEXT DEFAULT 'queued'); CREATE TABLE IF NOT EXISTS passport_claims(nullifier TEXT PRIMARY KEY, session_id TEXT UNIQUE NOT NULL, expires INTEGER NOT NULL, reference TEXT); CREATE TABLE IF NOT EXISTS rate_events(key TEXT NOT NULL, time INTEGER NOT NULL);");
  const notifications=createNotifications(db);
+ const cards=createMembershipCards(db,env),cardDownloads=new Map();
  for(const row of db.prepare('SELECT session_id,data FROM applications').all()){const app=JSON.parse(row.data);notifications.record({...app,status:'pending'},row.session_id);if(app.status!=='pending')notifications.record(app,row.session_id);}
  const store=adapters.store||new GoogleStore(env),messages=adapters.messages||new Messages(env);let processing=false;const passkeys=adapters.passkeys||(()=>import('@simplewebauthn/server'));
  function readSession(id){const row=db.prepare('SELECT * FROM sessions WHERE id=? AND expires>?').get(id,Date.now());if(!row)throw new Problem('Your session expired. Please start again.',401);return JSON.parse(row.data);}
@@ -30,8 +32,22 @@ export function createApp(env=process.env,adapters={}){
  const server=http.createServer(async(req,res)=>{const origin=req.headers.origin;const sameOrigin=!origin&&req.headers['sec-fetch-site']==='same-origin'&&req.headers.host===new URL(env.FRONTEND_ORIGIN||'http://localhost').host;const allowedOrigin=origin===env.FRONTEND_ORIGIN?origin:sameOrigin?env.FRONTEND_ORIGIN:null;try{const path=new URL(req.url,'http://localhost').pathname;
  if(req.method==='OPTIONS'){if(!allowedOrigin)throw new Problem('Origin not permitted.',403);res.writeHead(204,{'Access-Control-Allow-Origin':allowedOrigin,'Access-Control-Allow-Methods':'GET, POST, OPTIONS','Access-Control-Allow-Headers':'Content-Type, Authorization, X-Review-Consent','Vary':'Origin'});return res.end();}
  if(path==='/health')return json(res,200,{ok:true,mode:live?'live':'demo'},allowedOrigin);
- if(!path.startsWith('/api/')){if(req.method!=='GET')throw new Problem('Method not allowed.',405);const file=resolve('public','.'+decodeURIComponent(path==='/'?'/index.html':path));if(!file.startsWith(resolve('public')+'/')||!existsSync(file))throw new Problem('Not found.',404);res.writeHead(200,{'Content-Type':({'.html':'text/html; charset=utf-8','.css':'text/css','.js':'text/javascript','.svg':'image/svg+xml'})[extname(file)]||'application/octet-stream','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','Permissions-Policy':'camera=(self), microphone=(self)','Content-Security-Policy':"default-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' https://*.zkpassport.id wss://*.zkpassport.id https://*.obsidion.xyz wss://*.obsidion.xyz "+(env.FRONTEND_ORIGIN||'')});return res.end(readFileSync(file));}
+ if(!path.startsWith('/api/')){if(req.method!=='GET')throw new Problem('Method not allowed.',405);const file=resolve('public','.'+decodeURIComponent(path==='/'?'/index.html':path));if(!file.startsWith(resolve('public')+'/')||!existsSync(file))throw new Problem('Not found.',404);res.writeHead(200,{'Content-Type':({'.html':'text/html; charset=utf-8','.css':'text/css','.js':'text/javascript','.svg':'image/svg+xml','.jpg':'image/jpeg','.png':'image/png','.mp4':'video/mp4','.woff2':'font/woff2','.vtt':'text/vtt'})[extname(file)]||'application/octet-stream','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','Permissions-Policy':'camera=(self), microphone=(self)','Content-Security-Policy':"default-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' https://*.zkpassport.id wss://*.zkpassport.id https://*.obsidion.xyz wss://*.obsidion.xyz "+(env.FRONTEND_ORIGIN||'')});return res.end(readFileSync(file));}
  if(!live)throw new Problem('Live integrations are not configured. The website is in test mode.',503);
+ if(path==='/api/cards/verify'){
+  if(req.method!=='POST')throw new Problem('Method not allowed.',405);
+  if(origin&&!allowedOrigin)throw new Problem('Origin not permitted.',403);
+  rate(digest(secret,'card-scan:'+req.socket.remoteAddress),60,60000);
+  return json(res,200,cards.verify((await body(req)).card),allowedOrigin);
+ }
+ if(path.startsWith('/api/cards/apple/download/')){
+  if(req.method!=='GET')throw new Problem('Method not allowed.',405);
+  const ticket=path.slice('/api/cards/apple/download/'.length),entry=cardDownloads.get(ticket);cardDownloads.delete(ticket);
+  if(!entry||entry.expires<Date.now())throw new Problem('This Wallet download expired. Please add the card again.',410);
+  cards.profile(appByReference(entry.reference));const pass=entry.pass;
+  res.writeHead(200,{'Content-Type':'application/vnd.apple.pkpass','Content-Disposition':'attachment; filename="new-tibet-membership.pkpass"','Cache-Control':'no-store','Referrer-Policy':'no-referrer','X-Content-Type-Options':'nosniff'});return res.end(pass);
+ }
+
  if(path==='/api/reviews/decision'||path==='/api/reviews/retry'){if(req.method!=='POST')throw new Problem('Method not allowed.',405);const provided=String(req.headers.authorization||'').replace(/^Bearer /,'');if(!compare(provided,env.REVIEW_WEBHOOK_SECRET))throw new Problem('Reviewer authorization required.',401);const data=await body(req);if(path.endsWith('/retry')){const app=appByReference(data.reference);db.prepare("UPDATE jobs SET state='queued',attempts=0,due=? WHERE reference=? AND state='failed'").run(Date.now(),app.reference);return json(res,200,{queued:true});}const reviewers=env.REVIEWER_EMAILS.toLowerCase().split(',').map(x=>x.trim());const reviewer=String(data.reviewedBy||'').toLowerCase();if(!reviewers.includes(reviewer))throw new Problem('Reviewer is not authorized.',403);const app=appByReference(data.reference);const changed=validateDecision(app.status,data.status);if(changed){app.status=data.status;app.reviewedBy=reviewer;app.reviewedAt=new Date().toISOString();if(data.note!==undefined)app.reviewNote=String(data.note).slice(0,1000);app.decisionMessage=app.whatsapp?'queued':'in-app';db.exec('BEGIN');try{saveApp(app);const owner=db.prepare('SELECT session_id FROM applications WHERE reference=?').get(app.reference).session_id;notifications.record(app,owner);if(app.whatsapp)queue(app.reference,'decision');queue(app.reference,'sheet');db.prepare("UPDATE jobs SET state='queued',attempts=0,due=? WHERE id=?").run(Date.now(),app.reference+':sheet');db.exec('COMMIT');}catch(e){db.exec('ROLLBACK');throw e;}}return json(res,200,{reference:app.reference,status:app.status,notification:app.decisionMessage});}
  if(path==='/api/admin/announcements'){
   if(req.method!=='POST')throw new Problem('Method not allowed.',405);
@@ -63,6 +79,21 @@ export function createApp(env=process.env,adapters={}){
   const latest=appByReference(app.reference);if(latest.passkey.counter!==key.counter)throw new Problem('Sign-in changed. Try again.',409);
   latest.passkey.counter=result.authenticationInfo.newCounter;saveApp(latest);s.reference=app.reference;s.ownerSessionId=row.session_id;saveSession(id,s);
   return json(res,200,{application:applicationSummary(latest)},allowedOrigin);
+ }
+ if(path==='/api/cards/profile'&&req.method==='GET'){
+  if(!s.reference)throw new Problem('No application in this session.',404);
+  return json(res,200,cards.profile(appByReference(s.reference)),allowedOrigin);
+ }
+ if((path==='/api/cards/apple'||path==='/api/cards/google')&&req.method==='POST'){
+  if(!s.reference)throw new Problem('No application in this session.',404);
+  rate(digest(secret,'wallet-pass:'+id),10,60000);
+  const app=appByReference(s.reference);
+  if(path.endsWith('/google'))return json(res,200,cards.google(app),allowedOrigin);
+  const card=cards.profile(app);if(!card.apple)throw new Problem('Apple Wallet issuing is not enabled yet.',503);
+  for(const [key,value] of cardDownloads)if(value.expires<Date.now())cardDownloads.delete(key);
+  if(cardDownloads.size>=256)throw new Problem('Wallet downloads are busy. Please try again later.',503);
+  const pass=await cards.apple(app),ticket=token();cardDownloads.set(ticket,{reference:app.reference,pass,expires:Date.now()+60000});
+  return json(res,200,{path:'/api/cards/apple/download/'+ticket},allowedOrigin);
  }
  if(path==='/api/notifications'&&req.method==='GET'){
   const owner=s.ownerSessionId||id;const items=notifications.list(owner);

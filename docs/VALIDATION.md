@@ -1,5 +1,16 @@
 # Validation performed
 
+## Board iteration — 9 October 2026
+
+- All 47 Node tests and syntax checks pass. New coverage includes optional NFC and post-submission setup, one-time NFC and learning rewards, country aggregation and email consent, private Drive/Sheets retention with retries and retakes, background-update ordering and account-security preservation, and HTTP byte ranges for walkthrough seeking.
+- The production static build succeeds and synchronizes the root fallback pages.
+- Chrome at 390px and 1440px and WebKit at 320px pass the two-stage Green/Blue Book sample flow, approval, six-tab order and touch targets, 100 + 100 reward/restoration, campaign credit, Green Book petition permissions, Bluetooth mesh diagram, optional contacts and country consent.
+- The same browsers pass the roadmap, data policy, integration guide, six-screen welcome slideshow, email-interest demo and full-height chat layout without horizontal overflow or JavaScript errors.
+- The walkthrough is a narrated 165-second, 390 × 844 H.264/AAC recording of the actual app, with chapters, English captions, poster, transcript and download. Assets are approximately 3.5 MB. See WALKTHROUGH.md for the captured sequence.
+- Chrome at both widths and WebKit at 320px pass video playback, chapter seeking, English captions, transcript/download links and layout checks.
+
+## Earlier validation
+
 - Twenty-six Node tests pass: contact and OTP protections; consent and matching contacts; all four book photos and video required; media format/size envelopes; age 18+ policy, strict face matching, session nonce binding, extra-disclosure rejection (including nationality), mock/failed proof rejection; duplicate-passport claims including submitted applications; manual-review authentication and finality; private Drive multipart/idempotency; message outbox retries; fresh BIP-39 Ethereum accounts; passkey PRF encryption/decryption and wrong-key/tamper rejection; removal of PRF secrets from credential payloads; petition eligibility/creation/support; and integer demo wallet accounting with quote, balance, and duplicate-transaction protections.
 - Chromium at 390px and 1440px passed four actual browser camera captures using fake hardware, the six-digit code photo, 5-second browser video recording with microphone permission, preview/playback, wrong/correct OTPs, submission and review views without script errors or horizontal overflow.
 - The real bundled ZKPassport SDK generated a non-dev, non-salted QR/deep link with a mocked WebSocket transport. Browser/live proof acceptance used mocked SDK callbacks and an injected verifier. No genuine physical-passport cryptographic verification was performed.

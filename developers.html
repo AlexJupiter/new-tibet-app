@@ -97,7 +97,7 @@
 
       <section id="membership" class="docs-section" aria-labelledby="membership-title">
         <p class="docs-step">STEP 4</p><h2 id="membership-title">Read only the status you need</h2>
-        <p>Use an app-specific subject to link a local account, rather than a name, email address or public member reference. The intended design uses pairwise subjects to reduce tracking across applications.</p>
+        <p>Use an app-specific subject to link a local account, rather than a name, email address or public member reference. Basic membership does not require passport NFC; enhanced verification is an optional tier. The intended design uses pairwise subjects to reduce tracking across applications.</p>
         <div class="docs-claim-grid"><article><h3>Sign-in only</h3><p>An issuer and subject identify the returning account. No contact details or membership status are needed.</p><code>openid</code></article><article><h3>Membership access</h3><p>Request approved membership status if your application needs to distinguish Green and Blue Book holders.</p><code>openid membership</code><small>Proposed scope</small></article></div>
         <p class="docs-note">Membership scopes, the namespaced claim below and pairwise subjects are proposed. They are not implemented or an available API contract.</p>
         <div class="docs-code"><div class="docs-code-bar"><span>Illustrative claims · Not a signed token</span><button type="button" data-copy="claims-code" hidden>Copy</button></div><pre tabindex="0" aria-label="Proposed membership claims"><code id="claims-code" data-code-file="claims.example.json">Loading example…</code></pre><a class="docs-code-download" href="./public/assets/integration/claims.example.json" download>Download illustrative claims</a></div>

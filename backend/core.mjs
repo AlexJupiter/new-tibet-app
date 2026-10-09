@@ -10,7 +10,7 @@ export function verifyChallenge(challenge,{value,code},secret,now=Date.now()){if
 export function validateApplication(body,session){
  const name=typeof body.name==='string'?body.name.trim():'';if(!name||name.length>100)throw new Problem('Enter a display name of 1–100 characters. You can use a pseudonym.');
  if(!['green','blue'].includes(body.book))throw new Problem('Choose a Green Book or Blue Book.');
- if(body.consent!==true||!['2026-10-07','2026-10-08'].includes(body.consentVersion))throw new Problem('Consent to book and video review is required.');
+ if(body.consent!==true||!['2026-10-07','2026-10-08','2026-10-09'].includes(body.consentVersion))throw new Problem('Consent to book and video review is required.');
  const contacts={email:'',whatsapp:''};
  for(const factor of ['email','whatsapp'])if(String(body[factor]||'').trim()){
   contacts[factor]=validateContact(factor,body[factor]);
@@ -18,7 +18,7 @@ export function validateApplication(body,session){
  }
  if(!session.mediaChallenge||session.mediaChallenge.expires<Date.now())throw new Problem('Your photo challenge expired. Start a new application.');
  if(!['front','back','identity','challenge','video'].every(kind=>session.media?.[kind]?.book===body.book))throw new Problem('Provide the four book photos and video message.');
- if(!session.passport?.verified||session.passport.expires<Date.now())throw new Problem('A verified adult passport proof is required.',403);
+ // Passport NFC is an optional upgrade, not a registration prerequisite.
  return {name,...contacts,book:body.book,consentVersion:body.consentVersion};
 }
 export function validateMedia(kind,type,buffer){if(!['front','back','identity','challenge','video'].includes(kind))throw new Problem('Unsupported media kind.');if(kind!=='video'){if(type!=='image/jpeg'||buffer.length<100||buffer.length>3*1024*1024||buffer[0]!==255||buffer[1]!==216||buffer.at(-2)!==255||buffer.at(-1)!==217)throw new Problem('Provide a valid JPEG photo smaller than 3 MB.');return 'image/jpeg';}if(buffer.length<100||buffer.length>20*1024*1024)throw new Problem('Provide a video smaller than 20 MB.');const webm=buffer.subarray(0,4).equals(Buffer.from([0x1a,0x45,0xdf,0xa3]));const mp4=buffer.toString('ascii',4,8)==='ftyp';if(type==='video/webm'&&webm)return type;if(['video/mp4','video/quicktime'].includes(type)&&mp4)return type;throw new Problem('Provide a valid WebM or MP4 video.');}

@@ -10,4 +10,5 @@ const verification=await readFile('public/verify.html','utf8');
 await writeFile('verify.html',verification.replace(/(href|src)="\.\/(favicon\.svg|fonts\.css|styles\.css|config\.js|verify\.js|assets\/[^\"]+)"/g,'$1="./public/$2"'));
 const developers=await readFile('public/developers.html','utf8');
 await writeFile('developers.html',developers.replace(/(href|src)="\.\/(favicon\.svg|fonts\.css|developers\.css|developers\.js|assets\/[^\"]+)"/g,'$1="./public/$2"'));
+for(const name of ['roadmap','privacy','walkthrough']){const source=await readFile('public/'+name+'.html','utf8');await writeFile(name+'.html',source.replace(/(href|src)="\.\/(favicon\.svg|fonts\.css|developers\.css|product\.css|walkthrough\.js|assets\/[^"]+)"/g,'$1="./public/$2"'));}
 console.log('Static GitHub Pages app built in dist/; repository-root fallback synchronized.');

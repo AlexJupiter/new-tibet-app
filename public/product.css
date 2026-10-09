@@ -1,0 +1,18 @@
+
+.product-main { max-width: 1040px; margin: auto; padding: 48px 32px 0; }
+.product-main > .docs-lead { max-width: 700px; }
+.product-section { margin-top: 32px; padding-top: 28px; border-top: 1px solid var(--line); }
+.product-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.roadmap-phases { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 16px; list-style: none; padding: 0; margin: 24px 0 16px; }
+.roadmap-phases > li { padding: 22px; border: 1px solid #cbd2e2; border-radius: 14px; }
+.roadmap-phases ul { margin: 14px 0 0; padding-left: 17px; }
+.roadmap-phases ul li { font-size: 13px; line-height: 1.7; margin-bottom: 8px; }
+.roadmap-phases .docs-step { display: block; font-size: 10px; line-height: 1.8; margin-bottom: 12px; }
+.product-print-note { font-size: 12px; margin-top: 20px; }
+.walkthrough-player { max-width: 400px; margin: 28px auto; }
+.walkthrough-player video { display: block; width: 100%; aspect-ratio: 390/844; background: #fff; border: 1px solid #cbd2e2; border-radius: 18px; }
+.walkthrough-player figcaption { margin-top: 12px; font-size: 12px; line-height: 1.6; text-align: center; }
+.walkthrough-chapters { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.walkthrough-chapters button { min-height: 48px; padding: 12px; text-align: left; border: 1px solid var(--line); border-radius: 8px; background: #f5f6f9; color: var(--ink); font-size: 13px; }
+@media(max-width: 699px){ .product-main{padding:32px 20px 0}.roadmap-phases,.product-grid{grid-template-columns:1fr}.walkthrough-chapters{grid-template-columns:1fr} }
+@media print { .docs-header,.docs-hero-actions,.docs-contact,.docs-footer,.product-print-note{display:none}.product-main{padding:0;max-width:none}h1{font-size:28px}h2{font-size:19px}p{font-size:10px}.docs-lead{font-size:12px}.docs-status{margin:16px 0;padding:10px}.docs-status p{font-size:10px}.roadmap-phases{gap:8px}.roadmap-phases>li{padding:12px}.roadmap-phases ul li{font-size:10px}.product-section{margin-top:14px;padding-top:12px;break-inside:avoid}.product-grid{gap:14px}h3{font-size:13px} }

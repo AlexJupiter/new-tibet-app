@@ -1,3 +1,4 @@
+import {rewardCampaigns,bindRewardCampaigns} from './rewards.js';
 const asset=name=>new URL('./assets/'+name,import.meta.url).href;
 const icon=paths=>`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
 const external=icon('<path d="M14 3h7v7m0-7L10 14M10 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5"/>');
@@ -8,7 +9,7 @@ const partners=[
  {name:'smartvote Tibet',url:'https://tibet.smartvote.org/en/home',domain:'tibet.smartvote.org',image:'smartvote-tibet.png',className:'smartvote',alt:'smartvote Tibet: find candidates who share your opinions',description:'Compare your views with candidates in Tibetan elections.'}
 ];
 
-export function renderEcosystem(screen){
+export function renderEcosystem(screen,state,demo,rerender,notice){
  screen.innerHTML=`<h2 id="screen-title" tabindex="-1">Ecosystem</h2>
  <p class="description ecosystem-intro">Explore how New Tibet ID could connect with other Tibetan services.</p>
  <figure class="ecosystem-signin">
@@ -28,9 +29,10 @@ export function renderEcosystem(screen){
   <small>Integration preview · Partner sign-in is not enabled yet.</small>
  </section>
  <p class="ecosystem-preview-note">These sites are examples of possible integrations. New Tibet has not signed partnership agreements with any of them. New Tibet ID sign-in is not connected to these sites.</p>
- <div class="ecosystem-partner-heading"><h3>Example integrations</h3><span>Opens in a new tab ${external}</span></div>
+ ${rewardCampaigns(state,demo)}<div class="ecosystem-partner-heading"><h3>Example integrations</h3><span>Opens in a new tab ${external}</span></div>
  <div class="ecosystem-partners">${partners.map(partner=>`<a class="ecosystem-partner" href="${partner.url}" target="_blank" rel="noopener noreferrer" aria-label="Visit ${partner.name} (opens in a new tab)">
   <div class="ecosystem-partner-image ${partner.className}"><img src="${asset('ecosystem/'+partner.image)}" alt="${partner.alt}" width="${partner.className==='monlam'?180:partner.className==='zomsa'?1080:1200}" height="${partner.className==='monlam'?180:partner.className==='zomsa'?810:630}" loading="lazy" decoding="async"/>${partner.className==='monlam'?'<span>Monlam AI</span>':''}</div>
   <div class="ecosystem-partner-copy"><span class="ecosystem-example">Example</span><div><h3>${partner.name}</h3>${external}</div><p>${partner.description}</p><span class="ecosystem-domain">${partner.domain}</span></div>
- </a>`).join('')}</div>`;
+ </a>`).join('')}</div><section class="ecosystem-reach"><h3>Community reach</h3><p>Members can optionally contribute their country to group totals, without keeping a country on their profile. Results below 10 members are hidden.</p>${demo?'<div><span><strong>20</strong> Germany</span><span><strong>12</strong> India</span><span><strong>10</strong> United Kingdom</span></div><p class="section-note">Illustrative counts for this demo. No location is read from your passport.</p>':'<p class="section-note">Country-level reporting can be enabled with the live backend.</p>'}</section><section class="ecosystem-possibilities"><h3>What partners could offer</h3><p>Premium Monlam services, learning rewards in Dzongsar, and a free sign-in service for smartvote Tibet are possible uses. These are proposals, not agreed offers.</p><h3>Use $TIBET in person</h3><p>A future payment network could let participating Tibet Houses, yoga courses and other community venues accept $TIBET. No venue accepts payments through this demo.</p><a class="text-button" href="${new URL('./roadmap.html',import.meta.url).href}" target="_blank" rel="noopener noreferrer">View product roadmap ↗</a></section>`;
+ bindRewardCampaigns(screen,state,demo,rerender,notice);
 }

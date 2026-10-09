@@ -2,6 +2,7 @@ const slides=[
  {tab:'profile',title:'Your digital ID',description:'A New Tibet membership card, with a QR code for in-person checks.'},
  {tab:'wallet',title:'Your $TIBET wallet',description:'Hold, send and swap New Tibet Coin.'},
  {tab:'chat',title:'Community chat',description:'A preview of the planned Bluetooth mesh messenger.'},
+ {tab:'petitions',title:'Community petitions',description:'Read proposals and results. Verified Green Book members can create and support petitions.'},
  {tab:'ecosystem',title:'Explore the ecosystem',description:'See examples of how New Tibet ID could connect with other Tibetan services.'},
  {tab:'announcements',title:'Updates in the app',description:'Application decisions and New Tibet announcements in one channel.'}
 ];

@@ -1,0 +1,25 @@
+New Tibet mobile prototype walkthrough — 9 October 2026
+
+0:00
+New Tibet connects Tibetan identity, community and a digital wallet. This walkthrough uses the current mobile prototype, a fictional member and simulated tokens. Join with a Green Book or Blue Book. Book approval earns one hundred Tibet coins.
+
+0:18
+Registration has two stages. First, choose your book and a display name. You can use a pseudonym. Then provide four book photographs and a short video with the verification code. These sample documents belong to the fictional applicant Tenzin Dolma. Passport verification and contact details are optional. Verification information is deleted after sixty days.
+
+0:45
+Once the book application is accepted, the profile displays a membership card with a Q R code. The wallet receives one hundred Tibet coins, with a dated signup reward in its activity timeline. The wallet notification clears when you open it. All balances here are demonstrations.
+
+1:06
+The passport check is an optional upgrade. A compatible N F C passport generates a private proof, rather than sending passport details to New Tibet. In this recording we simulate that result. The enhanced tier adds another one hundred Tibet coins.
+
+1:24
+The ecosystem could reward participation inside partner applications. This example gives one hundred Tibet coins for seven consecutive learning days. Here we simulate those days in a proposed Monlam campaign. The reward appears once in the wallet timeline. Partner agreements and real payouts are not enabled.
+
+1:43
+The planned native messenger uses BitChat's Bluetooth mesh. Messages pass from phone to phone, with nearby devices acting as relays. There is no central messaging server to censor the Bluetooth route, and internet is not required. Delivery depends on nearby phones and can take time. This website does not transmit Bluetooth messages.
+
+2:06
+Petitions is restored after Chat. Everyone can read proposals and sample results. Verified Green Book holders can create and support petitions. Ecosystem tiles show possible integrations, alongside a developer guide for Sign in with New Tibet I D. These sites are examples, not signed partners.
+
+2:25
+The roadmap has three phases: identity and on ramp, partner utility, then digital nation and culture. Future uses include cultural archives, voting and community payments. The data policy explains sixty day deletion and optional country level totals. Wallet security and optional contacts can be added after registration.

@@ -14,7 +14,7 @@ test('a display name is required, pseudonyms are accepted, and contacts remain o
  assert.equal(validateApplication({...body,name:'བཀྲ་ཤིས་'},requiredEvidence).name,'བཀྲ་ཤིས་');
  assert.throws(()=>validateApplication({...body,email:'member@example.com'},requiredEvidence),/Verify the optional/);
  assert.equal(validateApplication({...body,email:'member@example.com'},{...requiredEvidence,verified:{email:'member@example.com'}}).email,'member@example.com');
- for(const session of [{...requiredEvidence,media:{}},{...requiredEvidence,passport:null}])assert.throws(()=>validateApplication(body,session));
+ assert.throws(()=>validateApplication(body,{...requiredEvidence,media:{}}));assert.equal(validateApplication(body,{...requiredEvidence,passport:null}).book,'green');
  assert.throws(()=>validateApplication({...body,consent:false},requiredEvidence));
 });
 test('application notifications are private, announcements shared, read state scoped, and publishing idempotent',()=>{

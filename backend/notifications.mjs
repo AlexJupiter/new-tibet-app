@@ -1,7 +1,7 @@
 import {Problem} from './core.mjs';
 import {applicationEvent} from '../public/inbox-model.js';
 export function applicationSummary(app){
- return {reference:app.reference,status:app.status,book:app.book,name:app.name||'',email:app.email||'',whatsapp:app.whatsapp||'',createdAt:app.createdAt,passportVerified:Boolean(app.passport?.verified),passkeyId:app.passkey?.id||null};
+ return {reference:app.reference,status:app.status,book:app.book,name:app.name||'',email:app.email||'',whatsapp:app.whatsapp||'',createdAt:app.createdAt,passportVerified:Boolean(app.passport?.verified),passkeyId:app.passkey?.id||null,countryStatsCounted:app.countryStatsCounted===true,verificationTier:app.passport?.verified?'enhanced':'book',verificationDeleteAt:app.verificationDeleteAt||null,verificationDeletedAt:app.verificationDeletedAt||null};
 }
 export function createNotifications(db){
  db.exec('CREATE TABLE IF NOT EXISTS notifications(id TEXT PRIMARY KEY, recipient TEXT, data TEXT NOT NULL, created_at TEXT NOT NULL); CREATE TABLE IF NOT EXISTS notification_reads(session_id TEXT NOT NULL, notification_id TEXT NOT NULL, read_at TEXT NOT NULL, PRIMARY KEY(session_id,notification_id)); CREATE INDEX IF NOT EXISTS notification_recipient ON notifications(recipient,created_at);');

@@ -1,4 +1,4 @@
-export const memberTabs=['profile','wallet','chat','ecosystem','announcements'];
+export const memberTabs=['profile','wallet','chat','petitions','ecosystem','announcements'];
 export const samplePetitions=Object.freeze([
  {id:'english-access',category:'Accessibility',title:'English access to CTA documents and sessions',summary:'Guarantee English access to official documents and parliamentary sessions through translations and subtitles.',body:'Do you think the CTA should guarantee that all official documents and parliamentary sessions are accessible in English, for example by providing translations and subtitles?',supporters:1842,goal:2500},
  {id:'charter-reform',category:'Governance',title:'Clarify the separation of powers in the Tibetan Charter',summary:'Revise the Tibetan Charter to clearly define the separation of powers and introduce conflict resolution mechanisms.',body:'Do you think the Tibetan Charter should be revised to more clearly define the separation of powers and to introduce conflict resolution mechanisms?',supporters:936,goal:1500},
@@ -36,6 +36,22 @@ export function applyDemoVerificationReward(wallet,application){
  const accepted=application.inboxEvents?.find(event=>event.reference===application.reference&&event.status==='accepted');
  const createdAt=[accepted?.createdAt,application.applicationCreatedAt].find(value=>Number.isFinite(Date.parse(value)))||new Date().toISOString();
  return {...wallet,tibetUnits:wallet.tibetUnits+demoVerificationRewardUnits,processed:[...wallet.processed,id],transactions:[{id,type:'reward',tibetUnits:demoVerificationRewardUnits,label:'Verification successful',createdAt},...wallet.transactions]};
+}
+export const demoPassportRewardUnits=10000;
+export function applyDemoPassportReward(wallet,application){
+ if(application.status!=='accepted'||application.demoPassportTier!==true||!/^NT-[A-Z0-9-]{4,60}$/.test(application.reference||''))return wallet;
+ const id=application.reference+':passport-reward';if(wallet.processed.includes(id))return wallet;
+ return {...wallet,tibetUnits:wallet.tibetUnits+demoPassportRewardUnits,processed:[...wallet.processed,id],transactions:[{id,type:'passport-reward',tibetUnits:demoPassportRewardUnits,label:'NFC verification upgrade',createdAt:application.passportTierAt||new Date().toISOString()},...wallet.transactions]};
+}
+export const demoCampaigns=Object.freeze([{id:'monlam',name:'Monlam AI'},{id:'dzongsar',name:'Dzongsar'}]);
+export function advanceDemoCampaign(state,id){
+ if(state.status!=='accepted')throw new Error('Complete book verification before trying a reward campaign.');
+ const campaign=demoCampaigns.find(item=>item.id===id);if(!campaign)throw new Error('Unknown reward campaign.');
+ state.rewardDays||={};const day=Math.min(7,(state.rewardDays[id]||0)+1);state.rewardDays[id]=day;
+ const txid=state.reference+':campaign:'+id;
+ const wallet=state.walletDemo;
+ if(day===7&&!wallet.processed.includes(txid))state.walletDemo={...wallet,tibetUnits:wallet.tibetUnits+10000,processed:[...wallet.processed,txid],transactions:[{id:txid,type:'partner-reward',tibetUnits:10000,label:campaign.name+' learning reward',createdAt:new Date().toISOString()},...wallet.transactions]};
+ return day;
 }
 export const walletRewardUnread=state=>state.status==='accepted'&&!state.walletRewardRead&&state.walletDemo?.transactions.some(tx=>tx.id===state.reference+':verification-reward')?1:0;
 export const formatTokens=units=>new Intl.NumberFormat('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}).format(units/100);

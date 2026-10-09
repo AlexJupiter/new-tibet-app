@@ -19,3 +19,5 @@ The template demonstrates issuer discovery, explicit client-secret-basic authent
 - [openid-client OIDC example](https://github.com/panva/openid-client/blob/main/examples/oidc.ts)
 - [openid-client authorizationCodeGrant reference](https://github.com/panva/openid-client/blob/main/docs/functions/authorizationCodeGrant.md)
 - [openid-client client-secret-basic reference](https://github.com/panva/openid-client/blob/main/docs/functions/ClientSecretBasic.md)
+
+The 9 October board update makes NFC optional for base membership. Do not infer a passport check from accepted Green/Blue Book status. A future enhanced-tier claim would require an explicitly designed and confirmed contract; the existing examples do not request or promise one.

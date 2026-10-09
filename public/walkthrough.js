@@ -1,0 +1,1 @@
+const video=document.querySelector('#walkthrough-video');document.querySelectorAll('[data-video-time]').forEach(button=>button.onclick=()=>{video.currentTime=Number(button.dataset.videoTime);video.play().catch(()=>{});video.scrollIntoView({block:'center',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});});

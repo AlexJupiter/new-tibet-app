@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {canUsePetitions,petitionsFor,createPetition,supportPetition,supporterCount,samplePetitions,initialDemoBalances,applyDemoVerificationReward,walletRewardUnread,parseAmount,quoteDemoSwap,swapDemoBalance,withdrawDemoBalance,searchDemoRecipients,findDemoRecipient,quoteDemoSend,sendDemoBalance} from '../public/member-model.js';
-const applicant=(book='green',status='accepted')=>({book,status,name:'Tenzin Dolma',createdPetitions:[],petitionSignatures:[]});
+const applicant=(book='green',status='accepted')=>({book,status,reference:'NT-MEMBER-123',name:'Tenzin Dolma',createdPetitions:[],petitionSignatures:[]});
 test('new demo wallets are empty until membership acceptance credits the 100 TIBET reward',()=>{
  const empty=initialDemoBalances();assert.equal(empty.tibetUnits,0);assert.deepEqual(empty.transactions,[]);
  for(const status of ['pending','declined'])assert.equal(applyDemoVerificationReward(empty,{reference:'NT-REWARD-1234',status}),empty);

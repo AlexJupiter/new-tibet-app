@@ -31,7 +31,8 @@ test('contact-free membership gets durable private receipts and announcements wi
   assert.equal((await call('admin/announcements',announcement)).status,401);assert.equal((await call('admin/announcements',{...announcement,publishedBy:'other'},env.REVIEW_WEBHOOK_SECRET)).status,403);assert.equal((await call('admin/announcements',announcement,env.REVIEW_WEBHOOK_SECRET)).status,201);
   assert.equal((await call('notifications',{body:'An unauthorized reply'})).status,404);
   const ownerToken=bearer;bearer=(await call('session',{},'')).data.token;
-  assert.equal((await call('notifications')).data.items.length,1);assert.equal((await call('notifications/read',{ids:[result.data.reference+':accepted']})).status,404);
+  assert.equal((await call('notifications')).data.items.length,0);assert.equal((await call('notifications/read',{ids:[result.data.reference+':accepted']})).status,404);
+  assert.equal((await call('notifications/read',{ids:['announcement:important-update']})).status,404);
   await call('auth/options',{});assert.equal((await call('auth/verify',{credential:{id:'stored-passkey',response:{userHandle:'wrong'},testValid:true}})).status,401);
   const stored=JSON.parse(app.db.prepare('SELECT data FROM applications').get().data);
   await call('auth/options',{});assert.equal((await call('auth/verify',{credential:{id:'stored-passkey',response:{userHandle:stored.passkey.userHandle},testValid:false}})).status,401);

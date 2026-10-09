@@ -14,7 +14,7 @@ export function recordApplicationEvent(state,status){
  if(!state.inboxEvents.some(item=>item.id===event.id))state.inboxEvents.push(event);
  return event;
 }
-export const inboxItems=(state,demo)=>[...(demo?sampleAnnouncements:[]),...(demo?state.inboxEvents:state.inboxItems)].sort((a,b)=>b.createdAt.localeCompare(a.createdAt)||a.id.localeCompare(b.id));
+export const inboxItems=(state,demo)=>[...(demo&&state.status==='accepted'?sampleAnnouncements:[]),...(demo?state.inboxEvents:state.inboxItems)].filter(item=>state.status==='accepted'||item.kind==='application').sort((a,b)=>b.createdAt.localeCompare(a.createdAt)||a.id.localeCompare(b.id));
 export const unreadCount=(state,demo)=>inboxItems(state,demo).filter(item=>!state.inboxRead.includes(item.id)).length;
 export function saveDemoInbox(storage,state){
  if(!state.reference)return;

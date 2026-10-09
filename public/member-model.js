@@ -6,7 +6,7 @@ export const samplePetitions=Object.freeze([
  {id:'overseas-resources',category:'Community resources',title:'More CTA resources for Tibetan communities overseas',summary:'Allocate more resources overseas, even if support for traditional settlements in India, Nepal, and Bhutan is reduced.',body:'Do you think the CTA should allocate more resources to Tibetan communities overseas, even if this means reducing support for the traditional settlements in India, Nepal, and Bhutan?',supporters:812,goal:1500},
  {id:'youth-participation',category:'Youth participation',title:'Lower the minimum ages for Chitue and Sikyong',summary:'Lower the minimum age requirements of 25 for Chitue and 35 for Sikyong to encourage greater youth participation.',body:'Do you think the minimum age requirements for Chitue (25 years) and Sikyong (35 years) should be lowered to encourage greater youth participation?',supporters:1186,goal:2000}
 ]);
-export const canUsePetitions=state=>state.status==='accepted'&&state.book==='green';
+export const canUsePetitions=state=>state.status==='accepted'&&Boolean(state.reference)&&state.book==='green';
 export const petitionsFor=state=>[...(state.createdPetitions||[]),...samplePetitions];
 export const supporterCount=(petition,state)=>petition.supporters+(state.petitionSignatures.includes(petition.id)?1:0);
 export function supportPetition(state,id){
@@ -41,7 +41,10 @@ export const demoPassportRewardUnits=10000;
 export function applyDemoPassportReward(wallet,application){
  if(application.status!=='accepted'||application.demoPassportTier!==true||!/^NT-[A-Z0-9-]{4,60}$/.test(application.reference||''))return wallet;
  const id=application.reference+':passport-reward';if(wallet.processed.includes(id))return wallet;
- return {...wallet,tibetUnits:wallet.tibetUnits+demoPassportRewardUnits,processed:[...wallet.processed,id],transactions:[{id,type:'passport-reward',tibetUnits:demoPassportRewardUnits,label:'NFC verification upgrade',createdAt:application.passportTierAt||new Date().toISOString()},...wallet.transactions]};
+ const accepted=application.inboxEvents?.find(event=>event.reference===application.reference&&event.status==='accepted');
+ const times=[application.passportTierAt,accepted?.createdAt].map(value=>Date.parse(value)).filter(Number.isFinite);
+ const createdAt=times.length?new Date(Math.max(...times)).toISOString():new Date().toISOString();
+ return {...wallet,tibetUnits:wallet.tibetUnits+demoPassportRewardUnits,processed:[...wallet.processed,id],transactions:[{id,type:'passport-reward',tibetUnits:demoPassportRewardUnits,label:'NFC verification upgrade',createdAt},...wallet.transactions]};
 }
 export const demoCampaigns=Object.freeze([{id:'monlam',name:'Monlam AI'},{id:'dzongsar',name:'Dzongsar'}]);
 export function advanceDemoCampaign(state,id){

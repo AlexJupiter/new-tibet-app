@@ -132,10 +132,16 @@ export function createApp(env=process.env,adapters={}){
   return json(res,200,{path:'/api/cards/apple/download/'+ticket},allowedOrigin);
  }
  if(path==='/api/notifications'&&req.method==='GET'){
-  const owner=s.ownerSessionId||id;const items=notifications.list(owner);
-  return json(res,200,{items,application:s.reference?applicationSummary(appByReference(s.reference)):null},allowedOrigin);
+  const owner=s.ownerSessionId||id,app=s.reference?appByReference(s.reference):null;
+  const items=notifications.list(owner).filter(item=>app?.status==='accepted'||item.kind==='application');
+  return json(res,200,{items,application:app?applicationSummary(app):null},allowedOrigin);
  }
- if(path==='/api/notifications/read'&&req.method==='POST')return json(res,200,{read:notifications.markRead(s.ownerSessionId||id,data.ids)},allowedOrigin);
+ if(path==='/api/notifications/read'&&req.method==='POST'){
+  const owner=s.ownerSessionId||id,app=s.reference?appByReference(s.reference):null;
+  const visible=new Set(notifications.list(owner).filter(item=>app?.status==='accepted'||item.kind==='application').map(item=>item.id));
+  if(Array.isArray(data.ids)&&data.ids.some(item=>!visible.has(item)))throw new Problem('Notification not found.',404);
+  return json(res,200,{read:notifications.markRead(owner,data.ids)},allowedOrigin);
+ }
  if(path==='/api/media/challenge'&&req.method==='POST'){if(s.reference)throw new Problem('This application is already submitted.',409);s.mediaChallenge||={code:code(),expires:Date.now()+86400000};if(s.mediaChallenge.expires<Date.now())throw new Problem('Your photo challenge expired. Start a new application.');saveSession(id,s);return json(res,200,s.mediaChallenge,allowedOrigin);}
  if(path==='/api/passport/challenge'&&req.method==='POST'){if(s.reference&&appByReference(s.reference).passport?.verified)throw new Problem('Your passport is already verified.',409);s.passportChallenge={nonce:token(),domain:new URL(env.FRONTEND_ORIGIN).hostname,scope:passportScope,expires:Date.now()+3600000};saveSession(id,s);return json(res,200,s.passportChallenge,allowedOrigin);}
  if(path==='/api/passport/verify'&&req.method==='POST'){

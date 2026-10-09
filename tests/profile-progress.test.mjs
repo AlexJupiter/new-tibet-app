@@ -16,15 +16,15 @@ test('exploring does not create membership, reveal announcements or grant coins 
  assert.equal(inboxItems(pending,true).length,1);
  assert.equal(inboxItems({...pending,status:'accepted'},true).length,3);
 });
-test('reward progress matches confirmed credit eligibility and never grants rewards for unfinished evidence or optional contacts',()=>{
+test('reward progress matches confirmed credit eligibility for every stage',()=>{
  const approved={...visitor,reference:'NT-APPROVED-123',status:'accepted'};
  for(const book of ['green','blue']){
-  const state={...approved,book};assert.equal(hasMemberAccess(state),true);assert.equal(verificationProgress(state).earned,100);
-  assert.equal(verificationProgress({...state,demoPassportTier:true}).earned,200);
-  assert.equal(verificationProgress({...state,passport:{verified:true}}).earned,200);
+  const state={...approved,book};assert.equal(hasMemberAccess(state),true);assert.equal(verificationProgress(state).earned,110);
+  assert.equal(verificationProgress({...state,demoPassportTier:true}).earned,210);
+  assert.equal(verificationProgress({...state,passport:{verified:true}}).earned,210);
  }
- assert.equal(verificationProgress({...approved,book:'vouched'}).earned,0);
- assert.equal(verificationProgress({...approved,book:'vouched',demoPassportTier:true}).earned,100);
+ assert.equal(verificationProgress({...approved,book:'vouched'}).earned,10);
+ assert.equal(verificationProgress({...approved,book:'vouched',demoPassportTier:true}).earned,110);
  const pendingNFC={...approved,status:'pending',demoPassportTier:true,passportTierAt:'2026-10-09T10:00:00Z'};
  assert.equal(verificationProgress(pendingNFC).earned,0);assert.equal(verificationProgress(pendingNFC).stages.find(stage=>stage.id==='passport').done,true);
  assert.equal(verificationProgress(pendingNFC).stages.find(stage=>stage.id==='passport').action,null);
@@ -33,7 +33,7 @@ test('reward progress matches confirmed credit eligibility and never grants rewa
  const wallet=applyDemoPassportReward(initialDemoBalances(),acceptedNFC);assert.equal(wallet.tibetUnits,10000);assert.equal(Date.parse(wallet.transactions[0].createdAt),Date.parse('2026-10-09T11:00:00Z'));
  const draft={...visitor,name:'Snow Lion',photos:Object.fromEntries(['front','back','identity','challenge'].map(kind=>[kind,'private-photo'])),video:{},passkey:{id:'key'},email:'contact@example.org',verified:{email:'contact@example.org'}};
  const progress=verificationProgress(draft);assert.equal(progress.earned,0);assert.equal(progress.stages.find(stage=>stage.id==='book').action,'evidence');
- assert.equal(progress.stages.find(stage=>stage.id==='security').reward,0);assert.equal(progress.stages.find(stage=>stage.id==='contacts').reward,0);
+ assert.equal(progress.stages.find(stage=>stage.id==='security').reward,10);assert.equal(progress.stages.find(stage=>stage.id==='contacts').reward,10);
  assert.equal(verificationProgress({...draft,book:'vouched'}).stages.find(stage=>stage.id==='book').action,'join');
 });
 test('exploration persists only a preference, without identity details, and handles disabled storage',()=>{

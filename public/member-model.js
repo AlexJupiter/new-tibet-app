@@ -1,3 +1,4 @@
+import {onboardingRewards,eligibleOnboardingRewards} from './onboarding-rewards.js';
 export const memberTabs=['profile','wallet','chat','petitions','ecosystem','announcements'];
 export const samplePetitions=Object.freeze([
  {id:'english-access',category:'Accessibility',title:'English access to CTA documents and sessions',summary:'Guarantee English access to official documents and parliamentary sessions through translations and subtitles.',body:'Do you think the CTA should guarantee that all official documents and parliamentary sessions are accessible in English, for example by providing translations and subtitles?',supporters:1842,goal:2500},
@@ -28,7 +29,7 @@ export function createPetition(state,{title,body,goal}){
 // A local demo ledger. Amounts are integers; no chain, exchange or bank is contacted.
 export const demoRateCents=12;
 export const initialDemoBalances=(tibetUnits=0)=>({tibetUnits,usdCents:0,recipientCredits:{},gasSpentUnits:0,processed:[],transactions:tibetUnits?[{id:'allocation',type:'allocation',tibetUnits,label:'Sample allocation'}]:[]});
-export const demoVerificationRewardUnits=10000;
+export const demoVerificationRewardUnits=onboardingRewards.book*100;
 export function applyDemoVerificationReward(wallet,application){
  if(application.status!=='accepted'||!['green','blue'].includes(application.book)||!/^NT-[A-Z0-9-]{4,60}$/.test(application.reference||''))return wallet;
  const id=application.reference+':verification-reward';
@@ -37,14 +38,24 @@ export function applyDemoVerificationReward(wallet,application){
  const createdAt=[accepted?.createdAt,application.applicationCreatedAt].find(value=>Number.isFinite(Date.parse(value)))||new Date().toISOString();
  return {...wallet,tibetUnits:wallet.tibetUnits+demoVerificationRewardUnits,processed:[...wallet.processed,id],transactions:[{id,type:'reward',tibetUnits:demoVerificationRewardUnits,label:'Verification successful',createdAt},...wallet.transactions]};
 }
-export const demoPassportRewardUnits=10000;
+export const demoPassportRewardUnits=onboardingRewards.passport*100;
 export function applyDemoPassportReward(wallet,application){
- if(application.status!=='accepted'||application.demoPassportTier!==true||!/^NT-[A-Z0-9-]{4,60}$/.test(application.reference||''))return wallet;
+ if(application.status!=='accepted'||!(application.demoPassportTier===true||application.passport?.verified===true)||!/^NT-[A-Z0-9-]{4,60}$/.test(application.reference||''))return wallet;
  const id=application.reference+':passport-reward';if(wallet.processed.includes(id))return wallet;
  const accepted=application.inboxEvents?.find(event=>event.reference===application.reference&&event.status==='accepted');
  const times=[application.passportTierAt,accepted?.createdAt].map(value=>Date.parse(value)).filter(Number.isFinite);
  const createdAt=times.length?new Date(Math.max(...times)).toISOString():new Date().toISOString();
  return {...wallet,tibetUnits:wallet.tibetUnits+demoPassportRewardUnits,processed:[...wallet.processed,id],transactions:[{id,type:'passport-reward',tibetUnits:demoPassportRewardUnits,label:'NFC verification upgrade',createdAt},...wallet.transactions]};
+}
+export function applyDemoOnboardingRewards(wallet,application){
+ wallet=applyDemoPassportReward(applyDemoVerificationReward(wallet,application),application);
+ for(const reward of eligibleOnboardingRewards(application).filter(item=>!['book','passport'].includes(item.stage))){
+  const id=application.reference+':'+reward.stage+'-reward';
+  if(wallet.processed.includes(id))continue;
+  const tibetUnits=reward.amount*100;
+  wallet={...wallet,tibetUnits:wallet.tibetUnits+tibetUnits,processed:[...wallet.processed,id],transactions:[{id,type:'onboarding-reward',stage:reward.stage,tibetUnits,label:reward.label,createdAt:reward.createdAt},...wallet.transactions]};
+ }
+ return wallet;
 }
 export const demoCampaigns=Object.freeze([{id:'monlam',name:'Monlam AI'},{id:'dzongsar',name:'Dzongsar'}]);
 export function advanceDemoCampaign(state,id){
@@ -56,7 +67,9 @@ export function advanceDemoCampaign(state,id){
  if(day===7&&!wallet.processed.includes(txid))state.walletDemo={...wallet,tibetUnits:wallet.tibetUnits+10000,processed:[...wallet.processed,txid],transactions:[{id:txid,type:'partner-reward',tibetUnits:10000,label:campaign.name+' learning reward',createdAt:new Date().toISOString()},...wallet.transactions]};
  return day;
 }
-export const walletRewardUnread=state=>state.status==='accepted'&&!state.walletRewardRead&&state.walletDemo?.transactions.some(tx=>tx.id===state.reference+':verification-reward')?1:0;
+export const walletRewardUnread=state=>state.status==='accepted'&&state.walletDemo?.transactions.some(tx=>
+ ['reward','passport-reward','onboarding-reward'].includes(tx.type)&&tx.id.startsWith(state.reference+':')&&
+ (Array.isArray(state.walletRewardReadIds)?!state.walletRewardReadIds.includes(tx.id):!state.walletRewardRead))?1:0;
 export const formatTokens=units=>new Intl.NumberFormat('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}).format(units/100);
 export const formatDollars=cents=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(cents/100);
 export function parseAmount(value){

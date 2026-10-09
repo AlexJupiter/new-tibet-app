@@ -567,6 +567,7 @@ body.demo-mode.showing-account footer { bottom: calc(72px + env(safe-area-inset-
 .wallet-activity li > div { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 6px; }
 .wallet-activity li > strong { font-size: 12px; text-align: right; white-space: nowrap; }
 .wallet-activity li span:not(.activity-icon) { color: var(--muted); font-size: 10px; }
+.wallet-activity li span.activity-sender { color: var(--ink); font-size: 12px; line-height: 1.5; }
 .wallet-activity time { font-size: 11px; line-height: 1.5; color: var(--ink); }
 .activity-icon { position: relative; display: grid; place-items: center; width: 32px; height: 32px; background: var(--soft); border-radius: 50%; font-size: 18px; flex-shrink: 0; }
 .activity-icon.incoming { color: var(--green); background: #e1e9e3; }

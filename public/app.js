@@ -541,7 +541,7 @@ function renderProfile(){
  const contactsVerified=providedContacts.length>0&&providedContacts.every(factor=>state.verified[factor]===normalize(factor,state[factor]));
  const passportText=state.demoPassportTier?'Enhanced tier · Demo preview':state.passport?.verified?'Verified · 18+':demo&&state.demoSkipped.passport?'Skipped in demo':demo?'Not verified in this demo':'Not verified';
  screen.innerHTML=`<div class="profile-status">${svg('check')}<span>${demo?'Acceptance preview':'Application accepted'}</span></div>`+
- heading('Identity profile.',state.book==='vouched'?'You joined through a member’s invitation.':demo?'Example of an accepted New Tibet application.':'Your application has been approved.')+`${canInvite(state)?'<button class="secondary profile-invite" id="profile-invite" type="button" aria-haspopup="dialog">Invite</button>':''}
+ heading('Identity profile.',state.book==='vouched'?'You joined through a member’s invitation.':demo?'Example of an accepted New Tibet application.':'Your application has been approved.')+rewardLadder({...state,demoMode:demo})+`${canInvite(state)?'<button class="secondary profile-invite" id="profile-invite" type="button" aria-haspopup="dialog">Invite</button>':''}
  <article class="identity-card" aria-label="New Tibet digital identity profile">
   <div class="identity-card-top">
    <img src="${new URL('./assets/new-tibet-logo-blue.svg',import.meta.url).href}" width="152" height="64" alt="New Tibet"/>
@@ -559,7 +559,6 @@ function renderProfile(){
   <div class="identity-card-bottom"><span>NEW TIBET IDENTITY</span><span>${demo?'PREVIEW ONLY':'DIGITAL PROFILE'}</span></div>
  </article>
  ${demo?'<p class="identity-preview-note">Demo profile · No identity document has been issued.</p>':''}
- ${rewardLadder({...state,demoMode:demo})}
  ${cardControls(demo)}
  <section class="profile-details" aria-labelledby="profile-details-title">
   <h3 id="profile-details-title">Profile details</h3>

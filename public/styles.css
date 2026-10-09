@@ -796,6 +796,30 @@ body.showing-account:is([data-app-tab='chat'],[data-app-tab='announcements']) { 
 .wallet-reward-summary { margin: 20px 0; padding: 18px; border-radius: 12px; background: #edf3ef; }
 .wallet-reward-summary strong { font-size: 14px; color: #254c3b; }
 .wallet-reward-summary p { margin: 8px 0 0; font-size: 13px; line-height: 1.6; }
+.reward-celebration-dialog { position: fixed; width: calc(100% - 32px); max-width: 420px; max-height: calc(100dvh - 32px); margin: auto; border: 1px solid var(--line); border-radius: 24px; padding: 28px 24px 24px; overflow-y: auto; text-align: center; background: #fff; box-shadow: 0 24px 80px #14204726; }
+.reward-celebration-dialog::backdrop { background: #121c3d66; backdrop-filter: blur(4px); }
+.reward-celebration-content { position: relative; z-index: 1; }
+.reward-seal { display: grid; place-items: center; width: 64px; height: 64px; margin: 0 auto 18px; border-radius: 50%; color: var(--green); background: #e9f2ed; animation: reward-seal-in .4s ease-out both; }
+.reward-congratulations { margin: 0 0 8px; color: var(--green); font-size: 13px; font-weight: 600; }
+.reward-celebration-dialog h2 { margin: 0; max-width: none; font-size: 26px; line-height: 1.2; letter-spacing: -.6px; }
+.reward-celebration-amount { display: flex; flex-direction: column; gap: 2px; margin: 22px 0 16px; color: var(--lapis); }
+.reward-celebration-amount strong { font-size: 64px; letter-spacing: -2px; line-height: 1.1; }
+.reward-celebration-amount span { font-size: 18px; font-weight: 600; }
+.reward-celebration-status { margin: 0 0 10px; font-size: 13px; font-weight: 600; color: var(--green); }
+.reward-celebration-source { margin: 0 0 18px; font-size: 12px; color: var(--ink); }
+.reward-celebration-stage { margin: 0 0 12px; font-size: 13px; font-weight: 500; }
+.reward-celebration-dialog #reward-celebration-description { margin: 0 0 12px; font-size: 13px; line-height: 1.6; }
+.reward-celebration-demo { margin: 0 0 18px; font-size: 11px; line-height: 1.5; }
+.reward-celebration-dialog .primary { width: 100%; }
+.reward-celebration-breakdown { padding: 0; margin: 0 0 18px; list-style: none; text-align: left; }
+.reward-celebration-breakdown li { display: flex; justify-content: space-between; gap: 14px; padding: 7px 0; font-size: 12px; line-height: 1.5; }
+.reward-celebration-breakdown strong { white-space: nowrap; color: var(--lapis); }
+.reward-confetti { position: absolute; inset: 0; overflow: hidden; pointer-events: none; border-radius: inherit; }
+.reward-confetti span { position: absolute; top: -16px; left: var(--confetti-x); width: 7px; height: 11px; border-radius: 2px; background: var(--confetti-color); opacity: 0; animation: reward-confetti-fall 3.2s var(--confetti-delay) ease-out both; }
+.reward-confetti span:nth-child(3n) { width: 6px; height: 6px; border-radius: 50%; }
+@keyframes reward-confetti-fall { 0% { opacity: 0; transform: translate(0,-10px) rotate(0deg); } 8% { opacity: .9; } 75% { opacity: .75; } 100% { opacity: 0; transform: translate(var(--confetti-drift),560px) rotate(var(--confetti-turn)); } }
+@keyframes reward-seal-in { from { opacity: 0; transform: scale(.8); } to { opacity: 1; transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .reward-confetti { display: none; } .reward-seal { animation: none; } }
 .ecosystem-possibilities { margin-top: 30px; }
 .ecosystem-possibilities p { font-size: 13px; line-height: 1.7; }
 .profile-upgrades { display: grid; gap: 14px; margin-top: 24px; }

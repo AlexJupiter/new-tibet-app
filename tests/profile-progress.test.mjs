@@ -1,10 +1,37 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {hasMemberAccess,verificationProgress,rememberExplorer,restoreExplorer,clearExplorer} from '../public/profile-progress.js';
+import {hasMemberAccess,verificationProgress,nextSetupAction,setupProgress,rewardLadder,rememberExplorer,restoreExplorer,clearExplorer} from '../public/profile-progress.js';
 import {inboxItems,unreadCount} from '../public/inbox-model.js';
 import {applyDemoVerificationReward,applyDemoPassportReward,initialDemoBalances,canUsePetitions} from '../public/member-model.js';
 
 const visitor={status:'guest',reference:'',book:'green',name:'',photos:{},inboxEvents:[],inboxRead:[]};
+test('guided setup resumes required evidence and follows optional stages in order',()=>{
+ assert.equal(nextSetupAction(visitor),'join');
+ assert.equal(nextSetupAction({...visitor,name:'Snow Lion',profileSetupStep:1}),'evidence');
+ assert.equal(nextSetupAction({...visitor,name:'Snow Lion',book:'vouched',profileSetupStep:1}),'join');
+ const submitted={...visitor,status:'pending',reference:'NT-SETUP-1234'};
+ assert.equal(nextSetupAction(submitted),'passport');
+ assert.equal(nextSetupAction({...submitted,onboardingSkipped:['passport']}),'security');
+ assert.equal(nextSetupAction({...submitted,demoPassportTier:true}),'security');
+ assert.equal(nextSetupAction({...submitted,demoPassportTier:true,wallet:{ready:true}}),'contacts');
+ const finished={...submitted,onboardingSkipped:['passport','security','contacts']};
+ assert.equal(nextSetupAction(finished),null);assert.equal(verificationProgress(finished).earned,0);
+ assert.equal(nextSetupAction({...submitted,status:'declined'}),null);
+ assert.equal(nextSetupAction({...submitted,status:'accepted',demoPassportTier:true,wallet:{ready:true},email:'a@example.org',verified:{email:'a@example.org'}}),null);
+});
+test('progress distinguishes skipped upgrades from completed ones and keeps rewards collapsed',()=>{
+ assert.match(setupProgress(visitor,0),/Signup · Step 1 of 2/);
+ assert.match(setupProgress({...visitor,book:'vouched'},0),/Signup · Step 1 of 1/);
+ const submitted={...visitor,status:'pending',reference:'NT-SETUP-1234',onboardingSkipped:['passport']};
+ const html=setupProgress(submitted,4);
+ assert.match(html,/Optional setup · Step 2 of 3/);assert.doesNotMatch(html,/✓/);
+ assert.match(setupProgress({...submitted,demoPassportTier:true},4),/✓/);
+ const summary=rewardLadder(submitted);
+ assert.match(summary,/data-profile-setup="security"/);assert.match(summary,/<details class="journey-details">/);assert.doesNotMatch(summary,/<details[^>]*open/);
+ assert.match(summary,/Skipped · Available later/);
+ assert.match(rewardLadder({...submitted,status:'declined'}),/Setup paused/);
+ assert.doesNotMatch(rewardLadder({...submitted,status:'declined'}),/data-profile-setup=/);
+});
 test('exploring does not create membership, reveal announcements or grant coins and petition rights',()=>{
  for(const state of [visitor,{...visitor,status:'pending',reference:'NT-PENDING-123'},{...visitor,status:'declined',reference:'NT-DECLINED-123'},{...visitor,status:'accepted'}]){
   assert.equal(hasMemberAccess(state),false);assert.equal(verificationProgress(state).earned,0);assert.equal(canUsePetitions(state),false);

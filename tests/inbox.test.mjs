@@ -57,3 +57,13 @@ test('wallet reward read state survives reload and existing accepted receipts re
  assert.equal(applyDemoVerificationReward(reopened.walletDemo,reopened),reopened.walletDemo);
  clearDemoInbox(storage);assert.equal(restoreDemoInbox(storage),null);
 });
+test('optional setup skips survive reload as stage IDs without adding personal details',()=>{
+ const map=new Map(),storage={setItem:(key,value)=>map.set(key,value),getItem:key=>map.get(key)};
+ const state={reference:'NT-SETUP-1234',status:'pending',book:'green',inboxEvents:[],inboxRead:[],onboardingSkipped:['passport','contacts','private@example.org','passport','book']};
+ saveDemoInbox(storage,state);
+ const key=[...map.keys()][0],raw=map.get(key);
+ assert(!raw.includes('private@example.org'));assert.deepEqual(restoreDemoInbox(storage).onboardingSkipped,['passport','contacts']);
+ const saved=JSON.parse(raw);saved.onboardingSkipped=['security','unknown','security'];map.set(key,JSON.stringify(saved));
+ assert.deepEqual(restoreDemoInbox(storage).onboardingSkipped,['security']);
+ delete saved.onboardingSkipped;map.set(key,JSON.stringify(saved));assert.deepEqual(restoreDemoInbox(storage).onboardingSkipped,[]);
+});

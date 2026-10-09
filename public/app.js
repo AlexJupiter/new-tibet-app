@@ -5,12 +5,12 @@ import {passportDiagram,walletDiagram} from './diagrams.js';
 import {renderAccountTabs,renderPetitions,renderChat} from './account.js';
 import {renderWallet} from './wallet.js';
 import {initialDemoBalances,applyDemoOnboardingRewards,walletRewardUnread} from './member-model.js';
-import {onboardingRewards,rememberDemoOnboardingStages} from './onboarding-rewards.js';
+import {onboardingRewards,rememberDemoOnboardingStages,securityComplete,contactsComplete} from './onboarding-rewards.js';
 import {renderAnnouncements} from './announcements.js';
 import {renderEcosystem} from './ecosystem.js';
 import {mountWelcomeSlideshow} from './welcome.js';
 import {canInvite,membershipLabel,createDemoInvite,redeemDemoInvite,invitationMessage} from './invites.js';
-import {hasMemberAccess,rewardLadder,rememberExplorer,restoreExplorer,clearExplorer} from './profile-progress.js';
+import {hasMemberAccess,rewardLadder,setupProgress,rememberExplorer,restoreExplorer,clearExplorer} from './profile-progress.js';
 import {renderRestricted} from './restricted.js';
 import {recordApplicationEvent,inboxItems,unreadCount,saveDemoInbox,restoreDemoInbox,clearDemoInbox} from './inbox-model.js';
 const config = window.NEW_TIBET_CONFIG || {mode:'demo',apiBase:''};
@@ -23,6 +23,7 @@ const state = initialState();
 state.inviteCode='';state.invitation=null;
 state.guest=false;state.profileSetup=false;state.profileSetupStep=null;
 state.demoOnboardingStages={};state.walletRewardReadIds=[];
+state.onboardingSkipped=[];
 const invitationCode=new URLSearchParams(location.search).get('invite')||'';
 const accountLayout=matchMedia('(min-width: 900px)');
 accountLayout.addEventListener('change',()=>document.querySelector('.app-tabs')?.setAttribute('aria-orientation',accountLayout.matches?'vertical':'horizontal'));
@@ -51,10 +52,12 @@ function explore(startJoining=false){
 }
 function startProfileSetup(step){if(busy)return;state.appTab='profile';state.profileSetup=true;state.profileSetupStep=step;navigate(step);}
 function closeProfileSetup(){if(busy)return;state.profileSetupStep=state.step;state.appTab='profile';navigate(steps.account);}
+function setSetupSkipped(id,skipped){state.onboardingSkipped=(state.onboardingSkipped||[]).filter(item=>item!==id);if(skipped)state.onboardingSkipped.push(id);persistInbox();}
 function showProfileSetup(){
+ state.profileSetupStep=state.step;
  if(state.step===steps.document)renderBooks();else if(state.step===steps.photos)renderPhoto();else if(state.step===steps.passport)renderPassport();else if(state.step===steps.security)renderSecurity();else if(state.step===steps.contacts)renderContacts();
- screen.insertAdjacentHTML('afterbegin','<button class="text-button profile-back" id="profile-setup-close" type="button">← Back to Profile</button>');
- screen.querySelector('#profile-setup-close').onclick=closeProfileSetup;
+ screen.insertAdjacentHTML('afterbegin',`${state.reference?'<button class="text-button profile-back" id="profile-setup-close" type="button">← Back to Profile</button>':''}${setupProgress(state,state.step)}`);
+ screen.querySelector('#profile-setup-close')?.addEventListener('click',closeProfileSetup);
 }
 function render(){
  document.querySelector('#mode-banner').hidden=!demo;document.querySelector('#mode-banner').textContent=demo?'Demo':'';
@@ -114,9 +117,9 @@ async function demoNext(){
  }
  if(state.step===steps.passport){
   if(!state.passport?.verified){state.demoSkipped.passport=true;state.passport={verified:false,preview:true};}
-  state.appTab='profile';return navigate(steps.account);
+  setSetupSkipped('passport',!state.passport?.verified&&!state.demoPassportTier);return navigate(steps.security);
  }
- if(state.step===steps.security)return navigate(steps.contacts);
+ if(state.step===steps.security){setSetupSkipped('security',!securityComplete(state));return navigate(steps.contacts);}
  if(state.step===6){
   if(state.guest)return startProfileSetup(state.profileSetupStep??steps.document);
   if(state.status!=='accepted')return simulateReview('accepted');
@@ -128,6 +131,7 @@ async function demoNext(){
   state.inviteCode='';state.invitation=null;
   state.guest=false;state.profileSetup=false;state.profileSetupStep=null;
   state.demoOnboardingStages={};state.walletRewardReadIds=[];
+  state.onboardingSkipped=[];
   const url=new URL(location.href);url.searchParams.delete('preview');url.searchParams.delete('invite');history.replaceState(null,'',url);
   navigate(-1);
  }
@@ -172,24 +176,17 @@ function selectMembershipRoute(book){
 function renderBooks(){
  const emblem='<svg viewBox="0 0 40 40" fill="none" stroke="currentColor"><circle cx="20" cy="18" r="10"/><path d="M20 5v26M7 18h26M11 9l18 18M11 27 29 9M5 34h30"/></svg>';
  const vouched=state.book==='vouched';
- screen.innerHTML=heading('How will you join?','Use a verification code from an existing verified member, or verify your book.')+`<p class="section-note">Joining earns ${onboardingRewards.join} free $TIBET after membership acceptance.</p><form id="document-form">
-  <section class="join-invitation" aria-label="Join with a member verification code">
-   <button class="book-card ${vouched?'selected':''}" type="button" data-book="vouched" aria-pressed="${vouched}"><span class="radio" aria-hidden="true">${vouched?'✓':''}</span><div class="vouch-symbol" aria-hidden="true">${svg('check')}</div><h3>Use a verification code</h3><p>Vouched by a member · No book needed</p></button>
-   <label class="field"><span>Member verification code${vouched?' · Required':''}</span><input id="invite-code" value="${esc(state.inviteCode||'')}" maxlength="64" autocomplete="off" autocapitalize="characters" spellcheck="false" ${vouched?'required':''} placeholder="Paste your verification code" aria-describedby="invite-hint"/><small id="invite-hint">A verified member can generate a code using Invite on their profile. Entering a code selects the vouched signup option.${demo?' This is a demo; use a DEMO-NT invitation code.':' Codes can be used once and expire after seven days.'}</small></label>
-  </section>
-  <p class="join-alternative">Or verify a book</p><div class="book-grid" role="group" aria-label="Join with a book">${['green','blue'].map(book=>`<button type="button" class="book-card ${state.book===book?'selected':''}" data-book="${book}" aria-pressed="${state.book===book}"><span class="radio" aria-hidden="true">${state.book===book?'✓':''}</span><div class="book ${book}" aria-hidden="true">${emblem}<span>${book.toUpperCase()} BOOK</span></div><h3>${book==='green'?'Green Book':'Blue Book'}</h3><p>${book==='green'?'For Green Book holders':'For Blue Book supporters'}</p></button>`).join('')}</div>
-  <label class="field"><span>Display name · Required</span><input id="name" autocomplete="nickname" value="${esc(state.name)}" maxlength="100" required aria-describedby="name-hint" placeholder="Choose a display name"/><small id="name-hint">You don’t need to use your real name. Choose a pseudonym if you’re worried about privacy. This name is displayed in the app.</small></label><div class="helper">${svg('info')}<span>${vouched?'Join as a vouched member without book photos or a video. Petition voting and the 100 free $TIBET book reward still require book verification.':'Four book photos and a short video are required for verification. They may contain personal information.'}</span></div><div class="actions"><button class="primary" id="continue" type="submit" ${!documentReady()?'disabled':''}>${vouched?'Join New Tibet':'Continue'}</button></div></form>`;
+ screen.innerHTML=heading('Join New Tibet.','Choose your membership and a display name.')+`<form id="document-form">
+  <div class="book-grid membership-options" role="group" aria-label="Choose how to join">${['green','blue','vouched'].map(book=>`<button type="button" class="book-card ${book==='vouched'?'code-choice ':''}${state.book===book?'selected':''}" data-book="${book}" aria-pressed="${state.book===book}"><span class="radio" aria-hidden="true">${state.book===book?'✓':''}</span>${book==='vouched'?`<div class="vouch-symbol" aria-hidden="true">${svg('check')}</div>`:`<div class="book ${book}" aria-hidden="true">${emblem}</div>`}<h3>${book==='vouched'?'Use a verification code':book==='green'?'Green Book':'Blue Book'}</h3>${book==='vouched'?'<p>Vouched by a member · No book needed</p>':''}</button>`).join('')}</div>
+  ${vouched?`<label class="field"><span>Member verification code · Required</span><input id="invite-code" value="${esc(state.inviteCode||'')}" maxlength="64" autocomplete="off" autocapitalize="characters" spellcheck="false" required placeholder="Paste your verification code" aria-describedby="invite-hint"/><small id="invite-hint">Ask a verified member to generate a code using Invite on their profile.${demo?' Use a DEMO-NT code in this demo.':''}</small></label>`:''}
+  <label class="field"><span>Display name · Required</span><input id="name" autocomplete="nickname" value="${esc(state.name)}" maxlength="100" required aria-describedby="name-hint" placeholder="Choose a display name"/><small id="name-hint">You can use a pseudonym instead of your real name. This name appears in the app.</small></label>
+  <div class="helper">${svg('info')}<span>${vouched?'Join with your code, without book photos or a video. The book reward and petition voting require book verification.':'Next: four book photos and a short video. Verification information is deleted after 60 days.'}</span></div><div class="actions"><button class="primary" id="continue" type="submit" ${!documentReady()?'disabled':''}>${vouched?'Join New Tibet':'Continue to verification'}</button></div></form>
+  <button class="text-button signup-sign-in" id="profile-sign-in" type="button">Already a member? Sign in</button><p id="profile-signin-status" role="status"></p>`;
  screen.querySelectorAll('[data-book]').forEach(button=>button.onclick=()=>{if(busy)return;selectMembershipRoute(button.dataset.book);render();if(state.book==='vouched')document.querySelector('#invite-code').focus();});
  document.querySelector('#name').oninput=event=>{state.name=event.target.value;document.querySelector('#continue').disabled=!documentReady();};
- document.querySelector('#invite-code').oninput=event=>{
-  state.inviteCode=event.target.value;
-  if(state.inviteCode.trim()&&state.book!=='vouched'){
-   const {selectionStart,selectionEnd}=event.target;selectMembershipRoute('vouched');render();
-   const input=document.querySelector('#invite-code');input.focus();input.setSelectionRange(selectionStart,selectionEnd);
-  }
-  document.querySelector('#continue').disabled=!documentReady();
- };
+ document.querySelector('#invite-code')?.addEventListener('input',event=>{state.inviteCode=event.target.value;document.querySelector('#continue').disabled=!documentReady();});
  document.querySelector('#document-form').onsubmit=event=>{event.preventDefault();if(documentReady()){state.name=state.name.trim();if(state.book==='vouched')joinWithInvite();else navigate(steps.photos);}};
+ document.querySelector('#profile-sign-in').onclick=signIn;
 }
 async function joinWithInvite(){
  if(busy||!documentReady())return;busy=true;notice();const button=screen.querySelector('#continue'),code=state.inviteCode,name=state.name;button.disabled=true;button.textContent='Joining…';
@@ -211,11 +208,11 @@ function renderPhoto(){
  screen.querySelector('#screen-title').textContent='Verify your book.';
  screen.querySelector('.description').textContent='Provide four book photos and a short video. No passport or contact details are required to join.';
  const nav=document.createElement('div');nav.className='evidence-nav';nav.setAttribute('role','group');nav.setAttribute('aria-label','Verification evidence');
- nav.innerHTML=`<button type="button" data-evidence="photos" aria-pressed="${state.evidenceView==='photos'}">Book photos ${Object.keys(state.photos).length===4?'✓':''}</button><button type="button" data-evidence="video" aria-pressed="${state.evidenceView==='video'}">Video ${state.video?'✓':''}</button>`;
+ nav.innerHTML=`<button type="button" data-evidence="photos" aria-pressed="${state.evidenceView==='photos'}">Book photos ${Object.keys(state.photos).length===4?'✓':''}</button><button type="button" data-evidence="video" ${!photoKinds.every(kind=>state.photos[kind])&&!state.video?'disabled':''} aria-pressed="${state.evidenceView==='video'}">Video ${state.video?'✓':''}</button>`;
  screen.querySelector('.description').after(nav);
  nav.querySelectorAll('button').forEach(button=>button.onclick=()=>{stopCamera();state.evidenceView=button.dataset.evidence;render();});
  screen.querySelector('#back')?.remove();
- if(state.evidenceView==='video'){const next=screen.querySelector('#video-next');next.textContent='Back to book photos';next.onclick=()=>navigate(steps.photos);}
+ if(state.evidenceView==='video'){screen.querySelector('#video-next').hidden=true;}else{screen.insertAdjacentHTML('beforeend','<button class="text-button evidence-step-back" id="evidence-back" type="button">← Back to membership</button>');screen.querySelector('#evidence-back').onclick=()=>navigate(steps.document);return;}
  screen.insertAdjacentHTML('beforeend',`<section class="evidence-submit"><div class="evidence-checks"><span>${Object.keys(state.photos).length===4?'✓':'○'} 4 book photos</span><span>${state.video?'✓':'○'} Short video</span></div><p class="retention-note"><strong>Your verification information is deleted after 60 days.</strong><br/>Book photos, video and personal information collected for verification are removed 60 days after submission. Your display name, membership status and account credentials remain to operate your account.</p><label class="checkbox"><input id="review-consent" type="checkbox" ${state.consent?'checked':''}/><span>I agree to New Tibet reviewing my book photos and video under this 60-day policy.</span></label><div class="actions"><button class="secondary" id="evidence-back" type="button">Back</button><button class="primary" id="next" type="button" ${evidenceReady()?'':'disabled'}>Submit application</button></div></section>`);
  screen.querySelector('#evidence-back').onclick=()=>navigate(steps.document);
  screen.querySelector('#review-consent').onchange=event=>{state.consent=event.target.checked;screen.querySelector('#next').disabled=!evidenceReady();};
@@ -243,16 +240,16 @@ function renderPassport(){
  ${state.passportRequest?`<div class="passport-qr"><img src="${state.passportRequest.qr}" alt="Scan to open ZKPassport" width="256" height="256"/><p id="passport-progress" role="status">Open the link on your phone or scan this code with ZKPassport.</p><a class="primary" href="${esc(state.passportRequest.url)}" target="_blank" rel="noopener">Open ZKPassport ↗</a></div>`:''}
  ${!verified?`<div class="actions"><button class="primary" id="start-passport">${state.passportRequest?'Start a new passport check':'Verify with ZKPassport'}</button></div>`:''}
  ${demo&&!verified?'<button class="secondary" id="demo-passport-upgrade" type="button">Simulate NFC upgrade · +100 $TIBET</button><p class="under-button">Simulation only. No cryptographic proof is verified.</p>':''}
- <div class="actions"><button class="secondary" id="back">Back</button>${verified?'<button class="primary" id="passport-next">Continue →</button>':''}</div>`;
+ <div class="actions"><button class="secondary" id="back">Back</button><button class="${verified?'primary':'secondary'}" id="passport-next">${verified?'Continue to wallet security':'Skip for now'}</button></div>`;
  document.querySelector('#back').onclick=()=>{state.appTab='profile';navigate(steps.account);};
  if(!verified)document.querySelector('#start-passport').onclick=startPassport;
- document.querySelector('#passport-next')?.addEventListener('click',()=>{state.appTab='profile';navigate(steps.account);});
+ document.querySelector('#passport-next').onclick=()=>{if(busy)return;setSetupSkipped('passport',!verified);navigate(steps.security);};
  document.querySelector('#demo-passport-upgrade')?.addEventListener('click',()=>{if(!demo||!state.reference)return;state.demoPassportTier=true;state.passportTierAt=new Date().toISOString();persistInbox();render();notice(state.status==='accepted'?'Another 100 $TIBET credited in the demo. No real passport proof or token transfer occurred.':'NFC preview completed. The extra 100 $TIBET will be credited after membership approval.');});
 }
 async function startPassport(){if(busy)return;busy=true;notice();const generation=++passportGeneration;const button=document.querySelector('#start-passport');button.disabled=true;button.textContent='Preparing secure request…';try{const {ZKPassport,NullifierType,qr}=await import('./passport-sdk.js');let challenge;if(demo)challenge={nonce:crypto.randomUUID(),domain:location.hostname,scope:'new-tibet-identity-v1'};else{await session();challenge=await api('passport/challenge',{});}if(generation!==passportGeneration||state.step!==steps.passport)return;passportClient?.clearAllRequests();passportClient=new ZKPassport(challenge.domain);const builder=await passportClient.request({name:'New Tibet Identity',logo:new URL('./assets/new-tibet-symbol.svg',import.meta.url).href,purpose:'Prove age 18+ and prevent duplicate passport registration. No passport details are disclosed.',scope:challenge.scope,devMode:false,validity:3600,uniqueIdentifierType:NullifierType.NON_SALTED});const request=builder.gte('age',18).bind('custom_data',challenge.nonce).facematch('strict').done();const image=await qr(request.url);if(generation!==passportGeneration||state.step!==steps.passport){passportClient.clearAllRequests();return;}state.passportRequest={url:request.url,qr:image};render();const progress=text=>{if(generation===passportGeneration&&state.step===steps.passport){const p=document.querySelector('#passport-progress');if(p)p.textContent=text;}};request.onRequestReceived(()=>progress('Request opened. Follow the instructions on your phone.'));request.onGeneratingProof(()=>progress('Generating your private proofs on your phone…'));request.onReject(()=>progress('You declined the request. Start a new check when ready.'));request.onError(()=>progress('The passport check could not complete. Start a new check and try again.'));request.onSuccess(async({proofs,result})=>{if(generation!==passportGeneration||state.step!==steps.passport)return false;if(demo){progress('Proofs received. This preview has no backend to verify them; your passport is still unverified. Nothing has been stored.');return false;}try{progress('Checking cryptographic proofs and duplicate-passport protection…');await api('passport/verify',{proofs,result});if(generation!==passportGeneration||state.step!==steps.passport)return false;state.passport={verified:true};render();notice('Your age and passport proofs were verified.');return true;}catch(e){progress(e.message);return false;}});}catch(e){notice('Unable to start ZKPassport. '+e.message);}finally{busy=false;if(state.step===steps.passport)document.querySelector('#start-passport')?.removeAttribute('disabled');}}
 const countryOptions={DE:'Germany',IN:'India',NP:'Nepal',BT:'Bhutan',GB:'United Kingdom',US:'United States',CA:'Canada',AU:'Australia',FR:'France',CH:'Switzerland',AT:'Austria',IT:'Italy',SE:'Sweden',ZZ:'Other'};
 function renderContacts(){
- screen.innerHTML=heading('Contact details (optional).',`Verify an email address or phone number to earn ${onboardingRewards.contacts} free $TIBET. You can still skip this step and receive updates in Announcements.`)+`<div class="privacy-note">${svg('shield')}<div><strong>Updates are already available in the app.</strong><p>Your application updates and important New Tibet announcements arrive in Announcements. You can leave both contact fields blank.</p></div></div>${contactField('email','Email address · Optional','email','you@example.com','Add an email only if you want to verify it.')}${contactField('whatsapp','WhatsApp number · Optional','tel','+91 98765 43210','Add a number only if you also want WhatsApp application updates.')}${state.countryStatsCounted?'<p class="section-note">You have already contributed to the country-level totals. No country is stored on your profile.</p>':`<label class="field"><span>Country of residence · Optional</span><select id="signup-country"><option value="">Prefer not to say</option>${Object.entries(countryOptions).map(([code,label])=>`<option value="${code}" ${state.country===code?'selected':''}>${label}</option>`).join('')}</select><small>Contribute to country-level totals. Your country is not saved on your profile, and counts below 10 are not shown publicly. Passport nationality is not used to infer where you live.</small></label><label class="checkbox"><input id="country-consent" type="checkbox" ${state.countryConsent?'checked':''}/><span>I agree to contributing my selected country to these totals.</span></label>`}<button class="text-button" id="omit-details" type="button">Leave contact details blank</button><p class="section-note">By requesting a code, you agree to receive verification messages. A verified WhatsApp number also receives application updates.</p><div class="actions"><button class="secondary" id="back">Back</button><button class="primary" id="next" ${!contactsReady()?'disabled':''}>Save contact preferences ${svg('arrow')}</button></div>`;
+ screen.innerHTML=heading('Contact details (optional).',`Verify an email address or phone number to earn ${onboardingRewards.contacts} free $TIBET. You can still skip this step and receive updates in Announcements.`)+`<div class="privacy-note">${svg('shield')}<div><strong>Updates are already available in the app.</strong><p>Your application updates and important New Tibet announcements arrive in Announcements. You can leave both contact fields blank.</p></div></div>${contactField('email','Email address · Optional','email','you@example.com','Add an email only if you want to verify it.')}${contactField('whatsapp','WhatsApp number · Optional','tel','+91 98765 43210','Add a number only if you also want WhatsApp application updates.')}${state.countryStatsCounted?'<p class="section-note">You have already contributed to the country-level totals. No country is stored on your profile.</p>':`<label class="field"><span>Country of residence · Optional</span><select id="signup-country"><option value="">Prefer not to say</option>${Object.entries(countryOptions).map(([code,label])=>`<option value="${code}" ${state.country===code?'selected':''}>${label}</option>`).join('')}</select><small>Contribute to country-level totals. Your country is not saved on your profile, and counts below 10 are not shown publicly. Passport nationality is not used to infer where you live.</small></label><label class="checkbox"><input id="country-consent" type="checkbox" ${state.countryConsent?'checked':''}/><span>I agree to contributing my selected country to these totals.</span></label>`}<button class="text-button" id="omit-details" type="button">Leave contact details blank</button><p class="section-note">By requesting a code, you agree to receive verification messages. A verified WhatsApp number also receives application updates.</p><div class="actions"><button class="secondary" id="back">Back</button><button class="primary" id="next" ${!contactsReady()?'disabled':''}>Finish setup ${svg('arrow')}</button></div>`;
  document.querySelector('#signup-country')?.addEventListener('change',event=>{state.country=event.target.value;});document.querySelector('#country-consent')?.addEventListener('change',event=>{state.countryConsent=event.target.checked;});
  document.querySelector('#omit-details').onclick=()=>{state.email='';state.whatsapp='';state.country='';state.countryConsent=false;state.verified={};state.codes={};render();notice('Contact details left blank. Your display name is kept and updates will arrive in the app.');};
  for(const factor of ['email','whatsapp']){
@@ -263,7 +260,7 @@ function renderContacts(){
 }
 async function saveContacts(){
  if(busy||!contactsReady())return;busy=true;notice();
- try{if(!demo)await api('account/contacts',{email:normalize('email',state.email),whatsapp:normalize('whatsapp',state.whatsapp),country:state.countryConsent?state.country:'',countryConsent:state.countryConsent});if(state.countryConsent&&state.country){state.countryStatsCounted=true;state.country='';state.countryConsent=false;}state.appTab='profile';navigate(steps.account);notice(demo?'Contact preferences updated in this demo.':'Contact preferences saved.');}catch(error){notice(error.message);}finally{busy=false;}
+ try{if(!demo)await api('account/contacts',{email:normalize('email',state.email),whatsapp:normalize('whatsapp',state.whatsapp),country:state.countryConsent?state.country:'',countryConsent:state.countryConsent});if(state.countryConsent&&state.country){state.countryStatsCounted=true;state.country='';state.countryConsent=false;}setSetupSkipped('contacts',!contactsComplete(state));state.appTab='profile';navigate(steps.account);notice(demo?'Contact preferences updated in this demo.':'Contact preferences saved.');}catch(error){notice(error.message);}finally{busy=false;}
 }
 function contactField(f,label,type,placeholder,hint){const ok=Boolean(state[f].trim())&&state.verified[f]===normalize(f,state[f]);return `<label class="field"><span>${label}</span><input id="${f}" type="${type}" autocomplete="${type==='tel'?'tel':'email'}" value="${esc(state[f])}" placeholder="${placeholder}" maxlength="254"/><small>${hint}</small></label><div class="verification-row"><button class="secondary" id="send-${f}" ${ok?'disabled':''}>${state.codes[f]?'Resend code':'Send code'}</button>${ok?`<span class="tag" id="verified-${f}">✓ Verified</span>`:state.codes[f]?`<input id="code-${f}" inputmode="numeric" autocomplete="one-time-code" maxlength="6" aria-label="${label} verification code" placeholder="000000"/><button class="secondary" id="verify-${f}">Verify</button>${demo?`<small>Test code: <strong>${state.codes[f].code}</strong></small>`:''}`:''}</div>`;}
 const normalize=(f,v)=>f==='email'?v.trim().toLowerCase():v.replace(/[\s()-]/g,'');
@@ -282,11 +279,11 @@ function renderSecurity(){
  <p class="section-note">A passkey also lets you return to your application and Announcements without an email address or phone number. The 12 words restore the wallet; they do not sign you into this inbox.</p>
  <p class="under-button">Ethereum · ${demo?'Demo wallet, no funds or transfers':'Wallet activation not available yet'}</p>
  <details class="details"><summary>How passkeys help prevent lost access</summary><p>On a supported device the passkey encrypts your wallet key. Your biometrics stay on your device. A synced passkey can be recovered through your password manager, reducing reliance on handwritten words. Wallet recovery also needs its encrypted backup and depends on your passkey provider.</p><p>You can record 12 recovery words instead. Anyone with the phrase can restore the wallet; losing it can mean losing access.</p><p>The demo holds wallet material only in this page’s memory. Reloading clears it. Token access and transfers are unavailable.</p></details>
- <div class="actions"><button class="secondary" id="back">Back</button><button class="primary" id="security-next" style="flex:1">Continue</button></div>`;
- document.querySelector('#back').onclick=()=>{state.appTab='profile';navigate(steps.account);};
+ ${!securityComplete(state)?'<button class="text-button" id="security-skip" type="button">Skip for now</button>':''}<div class="actions"><button class="secondary" id="back">Back</button><button class="primary" id="security-next" style="flex:1" ${securityComplete(state)?'':'disabled'}>Continue to contacts</button></div>`;
+ document.querySelector('#back').onclick=()=>navigate(steps.passport);
  document.querySelector('#passkey')?.addEventListener('click',addPasskey);
  document.querySelector('#use-words')?.addEventListener('click',startRecoveryWallet);
- document.querySelector('#security-next').onclick=()=>navigate(steps.contacts);
+ document.querySelector('#security-next').onclick=()=>{if(busy||!securityComplete(state))return;setSetupSkipped('security',false);navigate(steps.contacts);};document.querySelector('#security-skip')?.addEventListener('click',()=>{if(busy)return;setSetupSkipped('security',true);navigate(steps.contacts);});
 }
 async function startRecoveryWallet(){
  if(!demo||busy)return;
@@ -478,6 +475,10 @@ async function resumeLiveSession(){
  catch{sessionToken='';try{sessionStorage.removeItem('new-tibet-session-v1');}catch{}document.querySelector('#signin-status').textContent='Sign in with your passkey to return to your application.';}
 }
 function renderAcceptedAccount(){
+ if(state.appTab==='profile'&&!state.reference&&!state.profileSetup){
+  state.profileSetup=true;state.step=state.profileSetupStep===steps.photos&&nameReady()&&state.book!=='vouched'?steps.photos:steps.document;
+  renderDemoFooter();
+ }
  if(demo){
   const completed=rememberDemoOnboardingStages(state);
   if(!Array.isArray(state.walletRewardReadIds))state.walletRewardReadIds=state.walletRewardRead?[state.reference+':verification-reward',state.reference+':passport-reward']:[];
@@ -530,9 +531,8 @@ async function checkProfileStatus(){
  if(busy)return;busy=true;try{await refreshInbox();notice(state.status==='pending'?'Your application is still awaiting review.':'Your verification status has been updated.');}finally{busy=false;}
 }
 function renderUnverifiedProfile(){
- const reference=state.reference;
- screen.innerHTML=heading('Your profile.',reference?'Complete your verification and account setup here.':'Explore New Tibet now. Join and verify whenever you’re ready.')+`<div class="profile-membership-state"><span>${reference?state.status==='pending'?'Awaiting verification':'Verification declined':'Not verified'}</span><strong>${esc(state.name||'Explorer')}</strong><p>${reference?'Application '+esc(reference):'No signup or personal details needed to explore.'}</p>${!reference?'<button class="secondary profile-use-code" type="button" data-profile-setup="invitation">Use a verification code</button><button class="text-button" id="profile-sign-in" type="button">Already a member? Sign in</button><p id="profile-signin-status" role="status"></p>':''}</div>${reference&&state.status==='declined'?'<p class="section-note">Your application was declined. Keep your reference when contacting New Tibet.</p>':''}${rewardLadder({...state,demoMode:demo})}<p class="profile-access-note">You can browse Ecosystem and read petitions without joining. Chats, wallet actions and member announcements unlock after membership verification. Supporting or creating petitions requires verified Green Book membership.</p>${reference?reviewPreviewControls():''}`;
- screen.querySelector('#profile-sign-in')?.addEventListener('click',signIn);
+ const declined=state.status==='declined';
+ screen.innerHTML=heading(declined?'Application update.':'Application submitted.',declined?'Contact New Tibet for help with your application.':'Your book photos and video are awaiting review. You can continue with optional setup below.')+`<div class="profile-membership-state"><span>${declined?'Verification declined':'Awaiting verification'}</span><strong>${esc(state.name||'Your application')}</strong><p>Application ${esc(state.reference)}</p></div>${declined?`<a class="text-button" href="mailto:hello@newtibet.com?subject=${encodeURIComponent('Application '+state.reference)}">Contact New Tibet</a>`:''}${rewardLadder({...state,demoMode:demo})}${reviewPreviewControls()}`;
  bindProfileLadder();bindReviewControls();
 }
 function renderProfile(){

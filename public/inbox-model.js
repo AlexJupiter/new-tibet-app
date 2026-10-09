@@ -21,8 +21,9 @@ export function saveDemoInbox(storage,state){
  if(!state.reference)return;
  // Store completion dates and reward read IDs, never contacts, media, proofs or wallet keys.
  const demoOnboardingStages=Object.fromEntries(['security','contacts'].filter(id=>Number.isFinite(Date.parse(state.demoOnboardingStages?.[id]))).map(id=>[id,state.demoOnboardingStages[id]]));
+ const onboardingSkipped=['passport','security','contacts'].filter(id=>state.onboardingSkipped?.includes(id));
  const rewardIds=new Set(['verification',...Object.keys(onboardingRewards)].map(id=>state.reference+':'+id+'-reward'));
- const snapshot={version:1,reference:state.reference,status:state.status,book:state.book,createdAt:state.applicationCreatedAt,events:state.inboxEvents.map(({id,reference,status,book,createdAt})=>({id,reference,status,book,createdAt})),read:state.inboxRead.slice(-500),demoPassportTier:state.demoPassportTier===true,passportTierAt:state.demoPassportTier?state.passportTierAt:undefined,demoOnboardingStages,walletRewardRead:state.walletRewardRead===true,walletRewardReadIds:Array.isArray(state.walletRewardReadIds)?state.walletRewardReadIds.filter(id=>rewardIds.has(id)):undefined};
+ const snapshot={version:1,reference:state.reference,status:state.status,book:state.book,createdAt:state.applicationCreatedAt,events:state.inboxEvents.map(({id,reference,status,book,createdAt})=>({id,reference,status,book,createdAt})),read:state.inboxRead.slice(-500),demoPassportTier:state.demoPassportTier===true,passportTierAt:state.demoPassportTier?state.passportTierAt:undefined,demoOnboardingStages,onboardingSkipped,walletRewardRead:state.walletRewardRead===true,walletRewardReadIds:Array.isArray(state.walletRewardReadIds)?state.walletRewardReadIds.filter(id=>rewardIds.has(id)):undefined};
  try{storage.setItem(storageKey,JSON.stringify(snapshot));return true;}catch{return false;}
 }
 export function restoreDemoInbox(storage){
@@ -32,8 +33,9 @@ export function restoreDemoInbox(storage){
   const events=saved.events.filter(event=>event.reference===saved.reference&&statuses.includes(event.status)&&event.book===saved.book&&Number.isFinite(Date.parse(event.createdAt))).map(event=>applicationEvent(event.reference,event.status,event.book,event.createdAt));
   const allowed=new Set([...events,...sampleAnnouncements].map(item=>item.id));
   const demoOnboardingStages=Object.fromEntries(['security','contacts'].filter(id=>Number.isFinite(Date.parse(saved.demoOnboardingStages?.[id]))).map(id=>[id,saved.demoOnboardingStages[id]]));
+  const onboardingSkipped=Array.isArray(saved.onboardingSkipped)?['passport','security','contacts'].filter(id=>saved.onboardingSkipped.includes(id)):[];
   const rewardIds=new Set(['verification',...Object.keys(onboardingRewards)].map(id=>saved.reference+':'+id+'-reward'));
-  return {reference:saved.reference,status:saved.status,book:saved.book,applicationCreatedAt:Number.isFinite(Date.parse(saved.createdAt))?saved.createdAt:events[0]?.createdAt,inboxEvents:events,inboxRead:Array.isArray(saved.read)?saved.read.filter(id=>allowed.has(id)):[],demoPassportTier:saved.demoPassportTier===true,passportTierAt:saved.demoPassportTier&&Number.isFinite(Date.parse(saved.passportTierAt))?saved.passportTierAt:undefined,demoOnboardingStages,walletRewardRead:saved.walletRewardRead===true,walletRewardReadIds:Array.isArray(saved.walletRewardReadIds)?saved.walletRewardReadIds.filter(id=>rewardIds.has(id)):undefined};
+  return {reference:saved.reference,status:saved.status,book:saved.book,applicationCreatedAt:Number.isFinite(Date.parse(saved.createdAt))?saved.createdAt:events[0]?.createdAt,inboxEvents:events,inboxRead:Array.isArray(saved.read)?saved.read.filter(id=>allowed.has(id)):[],demoPassportTier:saved.demoPassportTier===true,passportTierAt:saved.demoPassportTier&&Number.isFinite(Date.parse(saved.passportTierAt))?saved.passportTierAt:undefined,demoOnboardingStages,onboardingSkipped,walletRewardRead:saved.walletRewardRead===true,walletRewardReadIds:Array.isArray(saved.walletRewardReadIds)?saved.walletRewardReadIds.filter(id=>rewardIds.has(id)):undefined};
  }catch{return null;}
 }
 export function clearDemoInbox(storage){try{storage.removeItem(storageKey);}catch{}}

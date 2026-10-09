@@ -100,6 +100,10 @@ p.description { font-size: 16px; line-height: 1.55; color: var(--muted); margin:
 .book-card p { grid-column: 2; grid-row: 2; align-self: start; font-size: 13px; line-height: 1.5; color: var(--muted); margin: 2px 0 0; }
 .vouch-symbol { grid-column: 1; grid-row: 1 / 3; width: 40px; height: 44px; border-radius: 12px; display: grid; place-items: center; color: var(--lapis); background: #e4e9f2; }
 .vouch-symbol svg { width: 26px; height: 26px; }
+.join-invitation .book-card { width: 100%; }
+.join-invitation .field { margin-top: 16px; }
+.join-alternative { font-size: 13px; font-weight: 600; margin: 24px 0 12px; }
+.profile-use-code { display: block; width: 100%; margin-top: 18px; }
 #invite-code, .invite-code-display { font-family: 'IBM Plex Mono', monospace; }
 .profile-invite { margin: 0 0 20px; min-width: 110px; }
 .invite-dialog { color: var(--ink); }

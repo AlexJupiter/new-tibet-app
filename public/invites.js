@@ -21,5 +21,5 @@ export async function redeemDemoInvite(value,storage){
 }
 export function invitationMessage({code,expiresAt},url,demo){
  const link=new URL(url);link.search='';link.hash='';link.searchParams.set('invite',code);
- return `I’m vouching for you to join New Tibet. You don’t need a Green or Blue Book.\n\nYour invitation code: ${code}\n\nJoin here: ${link.href}\n\nChoose “Vouched by a member”, enter this code and choose a display name. A pseudonym is welcome.${demo?'\n\nThis is a demo invitation, not a real membership verification.':`\n\nThis code can be used once and expires on ${new Date(expiresAt).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})}.`}`;
+ return `I’m vouching for you to join New Tibet. You don’t need a Green or Blue Book.\n\nYour invitation code: ${code}\n\nJoin here: ${link.href}\n\nChoose “Use a verification code”, enter this code and choose a display name. A pseudonym is welcome.${demo?'\n\nThis is a demo invitation, not a real membership verification.':`\n\nThis code can be used once and expires on ${new Date(expiresAt).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})}.`}`;
 }

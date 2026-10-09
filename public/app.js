@@ -159,14 +159,34 @@ async function uploadDemoSamples(){
  }catch(error){notice(error.message||'Unable to load the sample. Please try again.');}
  finally{busy=false;renderDemoFooter();}
 }
+function selectMembershipRoute(book){
+ if(state.book!==book){
+  state.book=book;state.photo=null;state.photos={};state.video=null;state.demoVideo=false;
+  if(state.videoURL)URL.revokeObjectURL(state.videoURL);state.videoURL='';
+ }
+ if(book!=='vouched')state.inviteCode='';
+}
 function renderBooks(){
  const emblem='<svg viewBox="0 0 40 40" fill="none" stroke="currentColor"><circle cx="20" cy="18" r="10"/><path d="M20 5v26M7 18h26M11 9l18 18M11 27 29 9M5 34h30"/></svg>';
  const vouched=state.book==='vouched';
- screen.innerHTML=heading('How will you join?','Use your book or an invitation from a verified member.')+`<div class="book-grid" role="group" aria-label="Choose how to join">${['green','blue','vouched'].map(book=>`<button class="book-card ${state.book===book?'selected':''}" data-book="${book}" aria-pressed="${state.book===book}"><span class="radio" aria-hidden="true">${state.book===book?'✓':''}</span>${book==='vouched'?`<div class="vouch-symbol" aria-hidden="true">${svg('check')}</div>`:`<div class="book ${book}" aria-hidden="true">${emblem}<span>${book.toUpperCase()} BOOK</span></div>`}<h3>${book==='vouched'?'Vouched by a member':book==='green'?'Green Book':'Blue Book'}</h3><p>${book==='vouched'?'No book? Enter your invitation code.':book==='green'?'For Green Book holders':'For Blue Book supporters'}</p></button>`).join('')}</div><form id="document-form">${vouched?`<label class="field"><span>Invitation code · Required</span><input id="invite-code" value="${esc(state.inviteCode||'')}" maxlength="64" autocomplete="off" autocapitalize="characters" spellcheck="false" required placeholder="${demo?'DEMO-NT-…':'NT-…'}" aria-describedby="invite-hint"/><small id="invite-hint">Ask a verified Green or Blue Book holder to open Invite on their profile.${demo?' Demo codes work across browsers; real verification and single-use enforcement require the live service.':' Codes can be used once and expire after seven days.'}</small></label>`:''}<label class="field"><span>Display name · Required</span><input id="name" autocomplete="nickname" value="${esc(state.name)}" maxlength="100" required aria-describedby="name-hint" placeholder="Choose a display name"/><small id="name-hint">You don’t need to use your real name. Choose a pseudonym if you’re worried about privacy. This name is displayed in the app.</small></label><div class="helper">${svg('info')}<span>${vouched?'Join as a vouched member without book photos or a video. Petition voting and the 100 free $TIBET book reward still require book verification.':'Four book photos and a short video are required for verification. They may contain personal information.'}</span></div><div class="actions"><button class="primary" id="continue" type="submit" ${!documentReady()?'disabled':''}>${vouched?'Join New Tibet':'Continue'}</button></div></form>`;
- screen.querySelectorAll('[data-book]').forEach(b=>b.onclick=()=>{if(busy)return;state.book=b.dataset.book;state.photo=null;state.photos={};state.video=null;state.demoVideo=false;if(state.videoURL)URL.revokeObjectURL(state.videoURL);state.videoURL='';render();});document.querySelector('#name').oninput=event=>{state.name=event.target.value;document.querySelector('#continue').disabled=!documentReady();};
-
- document.querySelector('#invite-code')?.addEventListener('input',event=>{state.inviteCode=event.target.value;document.querySelector('#continue').disabled=!documentReady();});
- document.querySelector('#document-form').onsubmit=event=>{event.preventDefault();if(documentReady()){state.name=state.name.trim();if(vouched)joinWithInvite();else navigate(steps.photos);}};
+ screen.innerHTML=heading('How will you join?','Use a verification code from an existing verified member, or verify your book.')+`<form id="document-form">
+  <section class="join-invitation" aria-label="Join with a member verification code">
+   <button class="book-card ${vouched?'selected':''}" type="button" data-book="vouched" aria-pressed="${vouched}"><span class="radio" aria-hidden="true">${vouched?'✓':''}</span><div class="vouch-symbol" aria-hidden="true">${svg('check')}</div><h3>Use a verification code</h3><p>Vouched by a member · No book needed</p></button>
+   <label class="field"><span>Member verification code${vouched?' · Required':''}</span><input id="invite-code" value="${esc(state.inviteCode||'')}" maxlength="64" autocomplete="off" autocapitalize="characters" spellcheck="false" ${vouched?'required':''} placeholder="Paste your verification code" aria-describedby="invite-hint"/><small id="invite-hint">A verified member can generate a code using Invite on their profile. Entering a code selects the vouched signup option.${demo?' This is a demo; use a DEMO-NT invitation code.':' Codes can be used once and expire after seven days.'}</small></label>
+  </section>
+  <p class="join-alternative">Or verify a book</p><div class="book-grid" role="group" aria-label="Join with a book">${['green','blue'].map(book=>`<button type="button" class="book-card ${state.book===book?'selected':''}" data-book="${book}" aria-pressed="${state.book===book}"><span class="radio" aria-hidden="true">${state.book===book?'✓':''}</span><div class="book ${book}" aria-hidden="true">${emblem}<span>${book.toUpperCase()} BOOK</span></div><h3>${book==='green'?'Green Book':'Blue Book'}</h3><p>${book==='green'?'For Green Book holders':'For Blue Book supporters'}</p></button>`).join('')}</div>
+  <label class="field"><span>Display name · Required</span><input id="name" autocomplete="nickname" value="${esc(state.name)}" maxlength="100" required aria-describedby="name-hint" placeholder="Choose a display name"/><small id="name-hint">You don’t need to use your real name. Choose a pseudonym if you’re worried about privacy. This name is displayed in the app.</small></label><div class="helper">${svg('info')}<span>${vouched?'Join as a vouched member without book photos or a video. Petition voting and the 100 free $TIBET book reward still require book verification.':'Four book photos and a short video are required for verification. They may contain personal information.'}</span></div><div class="actions"><button class="primary" id="continue" type="submit" ${!documentReady()?'disabled':''}>${vouched?'Join New Tibet':'Continue'}</button></div></form>`;
+ screen.querySelectorAll('[data-book]').forEach(button=>button.onclick=()=>{if(busy)return;selectMembershipRoute(button.dataset.book);render();if(state.book==='vouched')document.querySelector('#invite-code').focus();});
+ document.querySelector('#name').oninput=event=>{state.name=event.target.value;document.querySelector('#continue').disabled=!documentReady();};
+ document.querySelector('#invite-code').oninput=event=>{
+  state.inviteCode=event.target.value;
+  if(state.inviteCode.trim()&&state.book!=='vouched'){
+   const {selectionStart,selectionEnd}=event.target;selectMembershipRoute('vouched');render();
+   const input=document.querySelector('#invite-code');input.focus();input.setSelectionRange(selectionStart,selectionEnd);
+  }
+  document.querySelector('#continue').disabled=!documentReady();
+ };
+ document.querySelector('#document-form').onsubmit=event=>{event.preventDefault();if(documentReady()){state.name=state.name.trim();if(state.book==='vouched')joinWithInvite();else navigate(steps.photos);}};
 }
 async function joinWithInvite(){
  if(busy||!documentReady())return;busy=true;notice();const button=screen.querySelector('#continue'),code=state.inviteCode,name=state.name;button.disabled=true;button.textContent='Joining…';
@@ -490,6 +510,7 @@ function renderAcceptedAccount(){
 function bindProfileLadder(){
  screen.querySelectorAll('[data-profile-setup]').forEach(button=>button.onclick=()=>{
   const action=button.dataset.profileSetup;
+  if(action==='invitation'){if(busy||state.reference)return;selectMembershipRoute('vouched');startProfileSetup(steps.document);document.querySelector('#invite-code')?.focus();return;}
   if(action==='status')return checkProfileStatus();
   const next={join:state.profileSetupStep===steps.photos?steps.photos:steps.document,evidence:steps.photos,passport:steps.passport,security:steps.security,contacts:steps.contacts}[action];
   if(next!==undefined)startProfileSetup(next);
@@ -502,7 +523,7 @@ async function checkProfileStatus(){
 }
 function renderUnverifiedProfile(){
  const reference=state.reference;
- screen.innerHTML=heading('Your profile.',reference?'Complete your verification and account setup here.':'Explore New Tibet now. Join and verify whenever you’re ready.')+`<div class="profile-membership-state"><span>${reference?state.status==='pending'?'Awaiting verification':'Verification declined':'Not verified'}</span><strong>${esc(state.name||'Explorer')}</strong><p>${reference?'Application '+esc(reference):'No signup or personal details needed to explore.'}</p>${!reference?'<button class="text-button" id="profile-sign-in" type="button">Already a member? Sign in</button><p id="profile-signin-status" role="status"></p>':''}</div>${reference&&state.status==='declined'?'<p class="section-note">Your application was declined. Keep your reference when contacting New Tibet.</p>':''}${rewardLadder({...state,demoMode:demo})}<p class="profile-access-note">You can open every tab. Chats, wallet actions, ecosystem services and member announcements unlock after membership verification. Petitions are readable, but supporting or creating them requires verified Green Book membership.</p>${reference?reviewPreviewControls():''}`;
+ screen.innerHTML=heading('Your profile.',reference?'Complete your verification and account setup here.':'Explore New Tibet now. Join and verify whenever you’re ready.')+`<div class="profile-membership-state"><span>${reference?state.status==='pending'?'Awaiting verification':'Verification declined':'Not verified'}</span><strong>${esc(state.name||'Explorer')}</strong><p>${reference?'Application '+esc(reference):'No signup or personal details needed to explore.'}</p>${!reference?'<button class="secondary profile-use-code" type="button" data-profile-setup="invitation">Use a verification code</button><button class="text-button" id="profile-sign-in" type="button">Already a member? Sign in</button><p id="profile-signin-status" role="status"></p>':''}</div>${reference&&state.status==='declined'?'<p class="section-note">Your application was declined. Keep your reference when contacting New Tibet.</p>':''}${rewardLadder({...state,demoMode:demo})}<p class="profile-access-note">You can open every tab. Chats, wallet actions, ecosystem services and member announcements unlock after membership verification. Petitions are readable, but supporting or creating them requires verified Green Book membership.</p>${reference?reviewPreviewControls():''}`;
  screen.querySelector('#profile-sign-in')?.addEventListener('click',signIn);
  bindProfileLadder();bindReviewControls();
 }

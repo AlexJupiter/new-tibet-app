@@ -8,6 +8,7 @@ import {initialDemoBalances,applyDemoVerificationReward,applyDemoPassportReward,
 import {renderAnnouncements} from './announcements.js';
 import {renderEcosystem} from './ecosystem.js';
 import {mountWelcomeSlideshow} from './welcome.js';
+import {canInvite,membershipLabel,createDemoInvite,redeemDemoInvite,invitationMessage} from './invites.js';
 import {recordApplicationEvent,inboxItems,unreadCount,saveDemoInbox,restoreDemoInbox,clearDemoInbox} from './inbox-model.js';
 const config = window.NEW_TIBET_CONFIG || {mode:'demo',apiBase:''};
 const showcaseTab=new URLSearchParams(location.search).get('showcase');
@@ -16,6 +17,8 @@ const demo = showcase || config.mode !== 'live';
 const steps=Object.freeze({document:0,photos:1,video:2,passport:3,security:4,contacts:5,account:6});
 const initialState = () => ({step:-1,book:'green',name:'',email:'',whatsapp:'',country:'',countryConsent:false,countryStatsCounted:false,verified:{},codes:{},photo:null,photos:{},photoKind:'front',evidenceView:'photos',demoPassportTier:false,passportTierAt:'',rewardDays:{},challenge:null,video:null,videoURL:'',passport:null,passportRequest:null,passkey:null,consent:false,reference:'',status:'pending',messages:[],demoSkipped:{contacts:false,passport:false},demoSampleApplicant:false,demoVideo:false,appTab:'announcements',lastAppTab:'profile',applicationCreatedAt:'',inboxEvents:[],inboxItems:[],inboxRead:[],inboxExpanded:'',inboxLoading:false,inboxError:'',petitionSignatures:[],createdPetitions:[],petitionView:'list',petitionDraft:{title:'',body:'',goal:'1000'},chatMessages:[],chatDrafts:{},chatConversation:'community',chatOpen:false,chatSearch:'',wallet:null,walletMethod:'passkey',recoveryStage:'',walletPrfSalt:'',walletDemo:null,walletRewardRead:false,walletView:'home',walletQuote:null,walletReceipt:null,walletSwapInput:'',walletWithdrawInput:'',walletSendInput:'',walletSendSearch:'',walletSendRecipient:''});
 const state = initialState();
+state.inviteCode='';state.invitation=null;
+const invitationCode=new URLSearchParams(location.search).get('invite')||'';
 const accountLayout=matchMedia('(min-width: 900px)');
 accountLayout.addEventListener('change',()=>document.querySelector('.app-tabs')?.setAttribute('aria-orientation',accountLayout.matches?'vertical':'horizontal'));
 let recorder, recordingTimer, passportClient, passportGeneration=0,welcomeSlideshow;
@@ -26,7 +29,7 @@ const icons = {
 };
 const svg=(name)=>`<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name]}</svg>`;
 const esc=(value)=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const bookLabel=()=>state.book==='green'?'Green Book':'Blue Book';
+const bookLabel=()=>state.book==='vouched'?'Vouched by a member':state.book==='green'?'Green Book':'Blue Book';
 const notice=(message='')=>{document.querySelector('#notice').textContent=message;};
 const b64=(bytes)=>btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
 const from64=(str)=>Uint8Array.from(atob(str.replace(/-/g,'+').replace(/_/g,'/')+'='.repeat((4-str.length%4)%4)),c=>c.charCodeAt(0));
@@ -50,11 +53,11 @@ function render(){
  document.querySelector('#signup').classList.toggle('profile-view',state.step===6&&Boolean(state.reference));
  document.querySelector('.onboarding-nav')?.remove();
  if(state.step>=0&&state.step<=1&&!state.reference){
-  document.querySelector('#signup').insertAdjacentHTML('afterbegin',`<nav class="onboarding-nav" aria-label="Application steps"><div class="sidebar-brand"><img src="${new URL('./assets/new-tibet-logo-blue.svg',import.meta.url).href}" alt="New Tibet"/></div><h3>Identity application</h3>${['Choose your book','Verify your book'].map((label,index)=>`<button type="button" data-step="${index}" ${index===state.step?'aria-current="step"':''} ${index>state.step?'disabled':''}><span>${index<state.step?'✓':index+1}</span>${label}</button>`).join('')}<span class="sidebar-note">${demo?'Demo · Nothing is uploaded.':'Your application is private.'}</span></nav>`);
-  document.querySelectorAll('[data-step]').forEach(button=>button.onclick=()=>{const step=Number(button.dataset.step);if(step<=state.step)navigate(step);});
+  document.querySelector('#signup').insertAdjacentHTML('afterbegin',`<nav class="onboarding-nav" aria-label="Application steps"><div class="sidebar-brand"><img src="${new URL('./assets/new-tibet-logo-blue.svg',import.meta.url).href}" alt="New Tibet"/></div><h3>Join New Tibet</h3>${(state.book==='vouched'?['Join with an invitation']:['Choose how to join','Verify your book']).map((label,index)=>`<button type="button" data-step="${index}" ${index===state.step?'aria-current="step"':''} ${index>state.step?'disabled':''}><span>${index<state.step?'✓':index+1}</span>${label}</button>`).join('')}<span class="sidebar-note">${demo?'Demo · Nothing is uploaded.':'Your application is private.'}</span></nav>`);
+  document.querySelectorAll('[data-step]').forEach(button=>button.onclick=()=>{if(busy)return;const step=Number(button.dataset.step);if(step<=state.step)navigate(step);});
  }
  if(state.step===-1)return;
- document.querySelector('#step-label').textContent=state.step===6?'Complete':state.reference?'Optional setup':`Step ${state.step+1} of 2`;document.querySelector('#progress').hidden=Boolean(state.reference);
+ document.querySelector('#step-label').textContent=state.step===6?'Complete':state.reference?'Optional setup':state.book==='vouched'?'Join with an invitation':`Step ${state.step+1} of 2`;document.querySelector('#progress').hidden=Boolean(state.reference)||state.book==='vouched';
  const completed=Math.min(state.step,2);document.querySelector('#progress').setAttribute('aria-valuemax','2');document.querySelector('#progress').setAttribute('aria-valuenow',String(completed));document.querySelector('#progress').setAttribute('aria-valuetext',state.step===6?'Application complete':`Step ${state.step+1} of 2`);document.querySelector('#progress-fill').style.width=`${completed/2*100}%`;
  if(state.step===0)renderBooks();if(state.step===1)renderPhoto();if(state.step===2)renderVideo();if(state.step===steps.passport)renderPassport();if(state.step===steps.security)renderSecurity();if(state.step===steps.contacts)renderContacts();if(state.step===6)renderSuccess();
 }
@@ -65,14 +68,14 @@ function renderDemoFooter(){
  if(!demo)return;
  const button=document.querySelector('#demo-next');
  button.disabled=false;
- button.textContent=state.step===1&&!photoKinds.every(kind=>state.photos[kind])?'Upload sample photos'
+ button.textContent=state.step===0&&state.book==='vouched'?'Use sample invitation':state.step===1&&!photoKinds.every(kind=>state.photos[kind])?'Upload sample photos'
   :state.step===1&&!state.video?'Upload sample video'
   :state.step===6&&state.status==='accepted'?'Restart demo':'Skip';
 }
 async function demoNext(){
  if(!demo||busy)return;
  if(state.step===-1)return navigate(steps.document);
- if(state.step===steps.document){state.name=state.name.trim()||sampleApplicant.name;state.consent=true;return navigate(steps.photos);}
+ if(state.step===steps.document){state.name=state.name.trim()||sampleApplicant.name;if(state.book==='vouched'){state.inviteCode=(await createDemoInvite({status:'accepted',book:'green'})).code;render();return notice('Fictional sample invitation added. Choose Join New Tibet to continue.');}state.consent=true;return navigate(steps.photos);}
  if(state.step===1){
   if(photoKinds.every(kind=>state.photos[kind])&&state.video){state.consent=true;return submit();}
   return uploadDemoSamples();
@@ -98,7 +101,8 @@ async function demoNext(){
   if(state.videoURL)URL.revokeObjectURL(state.videoURL);
   try{clearDemoInbox(localStorage);}catch{}
   Object.assign(state,initialState());
-  const url=new URL(location.href);url.searchParams.delete('preview');history.replaceState(null,'',url);
+  state.inviteCode='';state.invitation=null;
+  const url=new URL(location.href);url.searchParams.delete('preview');url.searchParams.delete('invite');history.replaceState(null,'',url);
   navigate(-1);
  }
 }
@@ -134,10 +138,22 @@ async function uploadDemoSamples(){
 }
 function renderBooks(){
  const emblem='<svg viewBox="0 0 40 40" fill="none" stroke="currentColor"><circle cx="20" cy="18" r="10"/><path d="M20 5v26M7 18h26M11 9l18 18M11 27 29 9M5 34h30"/></svg>';
- screen.innerHTML=heading('Choose your book.','Which document will you use?')+`<div class="book-grid" role="group" aria-label="Choose your document">${['green','blue'].map(book=>`<button class="book-card ${state.book===book?'selected':''}" data-book="${book}" aria-pressed="${state.book===book}"><span class="radio" aria-hidden="true">${state.book===book?'✓':''}</span><div class="book ${book}" aria-hidden="true">${emblem}<span>${book.toUpperCase()} BOOK</span><span>IDENTITY DOCUMENT</span></div><h3>${book==='green'?'Green Book':'Blue Book'}</h3><p>${book==='green'?'For Green Book holders':'For Blue Book supporters'}</p></button>`).join('')}</div><form id="document-form"><label class="field"><span>Display name · Required</span><input id="name" autocomplete="nickname" value="${esc(state.name)}" maxlength="100" required aria-describedby="name-hint" placeholder="Choose a display name"/><small id="name-hint">You don’t need to use your real name. Choose a pseudonym if you’re worried about privacy. This name is displayed in the app.</small></label><div class="helper">${svg('info')}<span>Four book photos and a short video are required for verification. They may contain personal information.</span></div><div class="actions"><button class="primary" id="continue" type="submit" ${!documentReady()?'disabled':''}>Continue</button></div></form>`;
- screen.querySelectorAll('[data-book]').forEach(b=>b.onclick=()=>{state.book=b.dataset.book;state.photo=null;state.photos={};state.video=null;state.demoVideo=false;if(state.videoURL)URL.revokeObjectURL(state.videoURL);state.videoURL='';render();});document.querySelector('#name').oninput=event=>{state.name=event.target.value;document.querySelector('#continue').disabled=!documentReady();};
+ const vouched=state.book==='vouched';
+ screen.innerHTML=heading('How will you join?','Use your book or an invitation from a verified member.')+`<div class="book-grid" role="group" aria-label="Choose how to join">${['green','blue','vouched'].map(book=>`<button class="book-card ${state.book===book?'selected':''}" data-book="${book}" aria-pressed="${state.book===book}"><span class="radio" aria-hidden="true">${state.book===book?'✓':''}</span>${book==='vouched'?`<div class="vouch-symbol" aria-hidden="true">${svg('check')}</div>`:`<div class="book ${book}" aria-hidden="true">${emblem}<span>${book.toUpperCase()} BOOK</span></div>`}<h3>${book==='vouched'?'Vouched by a member':book==='green'?'Green Book':'Blue Book'}</h3><p>${book==='vouched'?'No book? Enter your invitation code.':book==='green'?'For Green Book holders':'For Blue Book supporters'}</p></button>`).join('')}</div><form id="document-form">${vouched?`<label class="field"><span>Invitation code · Required</span><input id="invite-code" value="${esc(state.inviteCode||'')}" maxlength="64" autocomplete="off" autocapitalize="characters" spellcheck="false" required placeholder="${demo?'DEMO-NT-…':'NT-…'}" aria-describedby="invite-hint"/><small id="invite-hint">Ask a verified Green or Blue Book holder to open Invite on their profile.${demo?' Demo codes work across browsers; real verification and single-use enforcement require the live service.':' Codes can be used once and expire after seven days.'}</small></label>`:''}<label class="field"><span>Display name · Required</span><input id="name" autocomplete="nickname" value="${esc(state.name)}" maxlength="100" required aria-describedby="name-hint" placeholder="Choose a display name"/><small id="name-hint">You don’t need to use your real name. Choose a pseudonym if you’re worried about privacy. This name is displayed in the app.</small></label><div class="helper">${svg('info')}<span>${vouched?'Join as a vouched member without book photos or a video. Petition voting and the 100 free $TIBET book reward still require book verification.':'Four book photos and a short video are required for verification. They may contain personal information.'}</span></div><div class="actions"><button class="primary" id="continue" type="submit" ${!documentReady()?'disabled':''}>${vouched?'Join New Tibet':'Continue'}</button></div></form>`;
+ screen.querySelectorAll('[data-book]').forEach(b=>b.onclick=()=>{if(busy)return;state.book=b.dataset.book;state.photo=null;state.photos={};state.video=null;state.demoVideo=false;if(state.videoURL)URL.revokeObjectURL(state.videoURL);state.videoURL='';render();});document.querySelector('#name').oninput=event=>{state.name=event.target.value;document.querySelector('#continue').disabled=!documentReady();};
 
- document.querySelector('#document-form').onsubmit=event=>{event.preventDefault();if(documentReady()){state.name=state.name.trim();navigate(steps.photos);}};
+ document.querySelector('#invite-code')?.addEventListener('input',event=>{state.inviteCode=event.target.value;document.querySelector('#continue').disabled=!documentReady();});
+ document.querySelector('#document-form').onsubmit=event=>{event.preventDefault();if(documentReady()){state.name=state.name.trim();if(vouched)joinWithInvite();else navigate(steps.photos);}};
+}
+async function joinWithInvite(){
+ if(busy||!documentReady())return;busy=true;notice();const button=screen.querySelector('#continue'),code=state.inviteCode,name=state.name;button.disabled=true;button.textContent='Joining…';
+ screen.querySelectorAll('#document-form input').forEach(input=>input.readOnly=true);screen.querySelectorAll('[data-book]').forEach(button=>button.disabled=true);
+ try{
+  if(demo){await redeemDemoInvite(code,localStorage);state.name=name;state.reference='NT-'+crypto.randomUUID().slice(0,8).toUpperCase();state.applicationCreatedAt=new Date().toISOString();recordApplicationEvent(state,'pending');state.status='accepted';recordApplicationEvent(state,'accepted');persistInbox();}
+  else{await session();const result=await api('invites/redeem',{code,name});applyInboxData({items:[],application:result.application});}
+  state.inviteCode='';state.appTab='announcements';const url=new URL(location.href);url.searchParams.delete('invite');history.replaceState(null,'',url);navigate(steps.account);if(!demo)await refreshInbox();
+ }catch(error){notice(error.message);if(button.isConnected){button.disabled=false;button.textContent='Join New Tibet';}}
+ finally{busy=false;if(button.isConnected){screen.querySelectorAll('#document-form input').forEach(input=>input.readOnly=false);screen.querySelectorAll('[data-book]').forEach(button=>button.disabled=false);}}
 }
 const photoKinds=['front','back','identity','challenge'];
 const photoNames={front:'Front cover',back:'Back cover',identity:'Photo / identity page',challenge:'Book + verification code'};
@@ -206,7 +222,7 @@ async function saveContacts(){
 function contactField(f,label,type,placeholder,hint){const ok=Boolean(state[f].trim())&&state.verified[f]===normalize(f,state[f]);return `<label class="field"><span>${label}</span><input id="${f}" type="${type}" autocomplete="${type==='tel'?'tel':'email'}" value="${esc(state[f])}" placeholder="${placeholder}" maxlength="254"/><small>${hint}</small></label><div class="verification-row"><button class="secondary" id="send-${f}" ${ok?'disabled':''}>${state.codes[f]?'Resend code':'Send code'}</button>${ok?`<span class="tag" id="verified-${f}">✓ Verified</span>`:state.codes[f]?`<input id="code-${f}" inputmode="numeric" autocomplete="one-time-code" maxlength="6" aria-label="${label} verification code" placeholder="000000"/><button class="secondary" id="verify-${f}">Verify</button>${demo?`<small>Test code: <strong>${state.codes[f].code}</strong></small>`:''}`:''}</div>`;}
 const normalize=(f,v)=>f==='email'?v.trim().toLowerCase():v.replace(/[\s()-]/g,'');
 function nameReady(){const length=state.name.trim().length;return length>0&&length<=100;}
-function documentReady(){return nameReady();}
+function documentReady(){return nameReady()&&(state.book!=='vouched'||Boolean(state.inviteCode?.trim()));}
 function contactsReady(){return ['email','whatsapp'].every(f=>!state[f].trim()||state.verified[f]===normalize(f,state[f]));}
 function updateNext(){document.querySelector('#next').disabled=!contactsReady();}
 async function sendCode(f){if(busy)return;const value=normalize(f,state[f]);if(f==='email'?!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value):!/^\+[1-9]\d{7,14}$/.test(value))return notice(f==='email'?'Enter a valid email address.':'Enter your WhatsApp number with a country code, for example +919876543210.');if(!state.consent)return notice('Please agree to receive verification and status messages first.');busy=true;const button=document.querySelector('#send-'+f);button.disabled=true;button.textContent='Sending…';try{if(demo){const code=String(crypto.getRandomValues(new Uint32Array(1))[0]%900000+100000);state.codes[f]={code,value,expires:Date.now()+600000,attempts:0};}else{await session();await api('otp/send',{factor:f,value,consent:true});state.codes[f]={value};}render();notice(demo?'A test code is shown below the field. No message was sent.':'Your verification code has been sent. It expires in 10 minutes.');}catch(e){notice(e.message);button.disabled=false;button.textContent='Send code';}finally{busy=false;}}
@@ -409,7 +425,7 @@ async function signIn(){
  finally{busy=false;button.disabled=false;}
 }
 async function resumeLiveSession(){
- if(demo)return;
+ if(demo||invitationCode)return;
  try{sessionToken=sessionStorage.getItem('new-tibet-session-v1')||'';}catch{}
  if(!sessionToken)return;
  try{const data=await api('notifications');if(data.application){applyInboxData(data);state.appTab='announcements';navigate(6);}}
@@ -453,7 +469,7 @@ function renderProfile(){
  const contactsVerified=providedContacts.length>0&&providedContacts.every(factor=>state.verified[factor]===normalize(factor,state[factor]));
  const passportText=state.demoPassportTier?'Enhanced tier · Demo preview':state.passport?.verified?'Verified · 18+':demo&&state.demoSkipped.passport?'Skipped in demo':demo?'Not verified in this demo':'Not verified';
  screen.innerHTML=`<div class="profile-status">${svg('check')}<span>${demo?'Acceptance preview':'Application accepted'}</span></div>`+
- heading('Identity profile.',demo?'Example of an accepted New Tibet application.':'Your application has been approved.')+`
+ heading('Identity profile.',state.book==='vouched'?'You joined through a member’s invitation.':demo?'Example of an accepted New Tibet application.':'Your application has been approved.')+`${canInvite(state)?'<button class="secondary profile-invite" id="profile-invite" type="button" aria-haspopup="dialog">Invite</button>':''}
  <article class="identity-card" aria-label="New Tibet digital identity profile">
   <div class="identity-card-top">
    <img src="${new URL('./assets/new-tibet-logo-blue.svg',import.meta.url).href}" width="152" height="64" alt="New Tibet"/>
@@ -461,11 +477,11 @@ function renderProfile(){
   </div>
   <div class="identity-card-holder">
    <div class="identity-portrait" ${portrait?'':`role="img" aria-label="Profile initials ${esc(profileInitials(name))}"`}>${portrait?`<img src="${sampleApplicant.portrait}" alt="Fictional demo applicant Tenzin Dolma"/>`:esc(profileInitials(name))}</div>
-   <div class="identity-holder-name"><p class="identity-label">${state.name.trim()?"Display name":"Member name"}</p><h3>${esc(name)}</h3><p class="identity-holder-type">${state.book==='blue'?'Blue Book supporter':'Green Book holder'}</p></div>
+   <div class="identity-holder-name"><p class="identity-label">${state.name.trim()?"Display name":"Member name"}</p><h3>${esc(name)}</h3><p class="identity-holder-type">${membershipLabel(state.book)}</p></div>
   </div>
   <div class="identity-card-details"><dl class="identity-fields">
    <div class="identity-reference"><dt>Profile reference</dt><dd>${esc(state.reference)}</dd></div>
-   <div><dt>Document</dt><dd>${bookLabel()}</dd></div>
+   <div><dt>${state.book==='vouched'?'Membership basis':'Document'}</dt><dd>${bookLabel()}</dd></div>
    <div><dt>Status</dt><dd>${demo?'Accepted · preview':'Accepted'}</dd></div>
   </dl><button class="identity-qr" id="identity-qr" type="button" aria-label="Show membership QR code" disabled><span>Preparing QR…</span></button></div>
   <div class="identity-card-bottom"><span>NEW TIBET IDENTITY</span><span>${demo?'PREVIEW ONLY':'DIGITAL PROFILE'}</span></div>
@@ -482,10 +498,33 @@ function renderProfile(){
    <div><dt>Account security</dt><dd>${state.passkey?(demo?'Demo passkey':'Passkey'):contactsVerified?'Verified optional contact':'Not set up'}</dd></div>
   </dl>
  </section>
- <section class="profile-upgrades" aria-label="Optional account setup"><article><h3>${state.demoPassportTier||state.passport?.verified?'Enhanced verification':'Optional NFC verification'}</h3><p>${state.demoPassportTier?'NFC tier preview completed. Another 100 $TIBET was added to the demo wallet.':state.passport?.verified?'Your passport proof has been verified.':'A compatible biometric passport unlocks a higher verification tier and another 100 $TIBET. Your book membership does not depend on it.'}</p><button class="secondary" id="profile-passport" type="button">${state.demoPassportTier||state.passport?.verified?'View passport check':'Add passport check'}</button></article><article><h3>Wallet and account security</h3><p>Set up a passkey with Face ID, fingerprint or PIN. In the demo you can choose 12 recovery words for the wallet instead.</p><button class="secondary" id="profile-security" type="button">Set up security</button></article><article><h3>Contact details · Optional</h3><p>Announcements already keeps you informed. Email and phone number are the lowest-priority setup step.</p><button class="secondary" id="profile-contacts" type="button">Manage contact details</button></article></section><p class="retention-note">Verification information is deleted 60 days after submission. Account details used to provide membership and sign-in remain until your account is deleted.</p>${reviewPreviewControls()}`;
+ <section class="profile-upgrades" aria-label="Optional account setup"><article><h3>${state.demoPassportTier||state.passport?.verified?'Enhanced verification':'Optional NFC verification'}</h3><p>${state.demoPassportTier?'NFC tier preview completed. Another 100 $TIBET was added to the demo wallet.':state.passport?.verified?'Your passport proof has been verified.':'A compatible biometric passport unlocks a higher verification tier and another 100 $TIBET. Your membership does not depend on it.'}</p><button class="secondary" id="profile-passport" type="button">${state.demoPassportTier||state.passport?.verified?'View passport check':'Add passport check'}</button></article><article><h3>Wallet and account security</h3><p>Set up a passkey with Face ID, fingerprint or PIN. In the demo you can choose 12 recovery words for the wallet instead.</p><button class="secondary" id="profile-security" type="button">Set up security</button></article><article><h3>Contact details · Optional</h3><p>Announcements already keeps you informed. Email and phone number are the lowest-priority setup step.</p><button class="secondary" id="profile-contacts" type="button">Manage contact details</button></article></section><p class="retention-note">Verification information is deleted 60 days after submission. Account details used to provide membership and sign-in remain until your account is deleted.</p>${reviewPreviewControls()}`;
  bindReviewControls();
+ screen.querySelector('#profile-invite')?.addEventListener('click',openInvite);
  screen.querySelector('#profile-passport').onclick=()=>navigate(steps.passport);screen.querySelector('#profile-security').onclick=()=>navigate(steps.security);screen.querySelector('#profile-contacts').onclick=()=>navigate(steps.contacts);
  mountProfileCard({root:screen,state,demo,api,config});
+}
+async function openInvite(){
+ if(!canInvite(state)||showcase)return;
+ const opener=screen.querySelector('#profile-invite'),dialog=document.createElement('dialog');dialog.className='invite-dialog';dialog.setAttribute('aria-labelledby','invite-title');
+ dialog.innerHTML='<button class="dialog-close" aria-label="Close invitation">×</button><h2 id="invite-title">Invite someone.</h2><p>Vouch for someone who doesn’t have a Green or Blue Book.</p><div id="invite-content"><p role="status">Preparing your invitation…</p></div>';
+ document.body.appendChild(dialog);dialog.querySelector('.dialog-close').onclick=()=>dialog.close();dialog.addEventListener('close',()=>{dialog.remove();if(opener.isConnected)opener.focus();});dialog.showModal();
+ async function prepareInvitation(){
+ dialog.querySelector('#invite-content').innerHTML='<p role="status">Preparing your invitation…</p>';
+ try{
+  if(!state.invitation||state.invitation.ownerReference!==state.reference||state.invitation.expiresAt&&Date.parse(state.invitation.expiresAt)<=Date.now()){
+   const ownerReference=state.reference,issued=demo?await createDemoInvite(state):await api('invites',{});
+   if(ownerReference!==state.reference)throw new Error('Membership changed. Open Invite again to create a new invitation.');
+   state.invitation={...issued,ownerReference};
+  }
+  if(!dialog.isConnected)return;
+  const message=invitationMessage(state.invitation,location.href,demo);
+  dialog.querySelector('#invite-content').innerHTML=`<p class="invite-code-display">${esc(state.invitation.code)}</p><label class="field"><span>Message to share</span><textarea id="invite-message" rows="8" readonly>${esc(message)}</textarea></label><p>${demo?'Demo invitation · This previews vouching. Codes are not authenticated on this demo website.':'This code can be used once within seven days.'}</p><button class="primary" id="copy-invitation" type="button">Copy invitation</button><button class="text-button" id="new-invitation" type="button">Generate a new code</button><p id="invite-copy-status" role="status"></p>`;
+  dialog.querySelector('#new-invitation').onclick=()=>{state.invitation=null;prepareInvitation();};
+  dialog.querySelector('#copy-invitation').onclick=async()=>{const status=dialog.querySelector('#invite-copy-status');try{await navigator.clipboard.writeText(message);status.textContent='Copied. Paste it into WhatsApp, an email or a message.';}catch{const text=dialog.querySelector('#invite-message');text.focus();text.select();status.textContent='Select and copy the message, then paste it into WhatsApp or an email.';}};
+ }catch(error){if(dialog.isConnected)dialog.querySelector('#invite-content').textContent=error.message;}
+ }
+ await prepareInvitation();
 }
 function simulateReview(status){
  if(!demo||state.step!==6||!['accepted','declined'].includes(status))return;
@@ -502,8 +541,9 @@ document.querySelector('#sign-in').onclick=signIn;
 document.querySelector('#demo-next').onclick=demoNext;
 // Demo-only entry points let the profile and review states be inspected without new media captures.
 const preview=new URLSearchParams(location.search).get('preview');
-let savedInbox=null;if(demo&&!preview&&!showcase)try{savedInbox=restoreDemoInbox(localStorage);}catch{}
+let savedInbox=null;if(demo&&!preview&&!showcase&&!invitationCode)try{savedInbox=restoreDemoInbox(localStorage);}catch{}
 if(savedInbox)Object.assign(state,savedInbox,{step:6,appTab:'announcements',demoSkipped:{contacts:true,passport:true}});
+if(invitationCode&&!showcase)Object.assign(state,{step:0,book:'vouched',inviteCode:invitationCode.slice(0,64)});
 if(demo&&!showcase&&['profile','review','announcements'].includes(preview)){
  Object.assign(state,{step:6,name:sampleApplicant.name,email:sampleApplicant.email,whatsapp:sampleApplicant.whatsapp,demoSampleApplicant:true,reference:'NT-DEMO-0001',status:preview==='review'?'pending':'accepted',appTab:preview==='profile'?'profile':'announcements',passport:{verified:false,preview:true},messages:['New Tibet: We received demo application NT-DEMO-0001.']});recordApplicationEvent(state,'pending');if(state.status==='accepted')recordApplicationEvent(state,'accepted');
 }

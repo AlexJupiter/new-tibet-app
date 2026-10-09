@@ -11,6 +11,7 @@ import {Messages} from './messages.mjs';
 import {createNotifications,applicationSummary} from './notifications.mjs';
 import {createRetention} from './retention.mjs';
 import {createMembershipCards} from './cards.mjs';
+import {createInvites} from './invites.mjs';
 const required=['PASSPORT_UNIQUENESS_SECRET','SESSION_SECRET','FRONTEND_ORIGIN','RP_ID','REVIEW_WEBHOOK_SECRET','REVIEWER_EMAILS','GOOGLE_APPLICATION_CREDENTIALS','GOOGLE_DRIVE_FOLDER_ID','GOOGLE_SHEET_ID'];
 export function createApp(env=process.env,adapters={}){
  const live=env.APP_MODE==='live';const missing=required.filter(key=>!env[key]);if(live&&missing.length)throw new Error('Missing backend settings: '+missing.join(', '));if(live&&(env.SESSION_SECRET.length<32||env.REVIEW_WEBHOOK_SECRET.length<32||env.PASSPORT_UNIQUENESS_SECRET.length<32))throw new Error('Use secrets of at least 32 characters.');if(live&&!env.FRONTEND_ORIGIN.startsWith('https://')&&env.NODE_ENV!=='test')throw new Error('The live frontend must use HTTPS.');
@@ -24,7 +25,8 @@ export function createApp(env=process.env,adapters={}){
  function appByReference(reference){const row=db.prepare('SELECT data FROM applications WHERE reference=?').get(reference);if(!row)throw new Problem('Application not found.',404);return JSON.parse(row.data);}
  function saveApp(app){db.prepare('UPDATE applications SET data=? WHERE reference=?').run(JSON.stringify(app),app.reference);}
  function rate(key,max,window){const now=Date.now();db.prepare('DELETE FROM rate_events WHERE time<?').run(now-86400000);const count=db.prepare('SELECT count(*) AS n FROM rate_events WHERE key=? AND time>?').get(key,now-window).n;if(count>=max)throw new Problem('Too many requests. Please try again later.',429);db.prepare('INSERT INTO rate_events VALUES(?,?)').run(key,now);}
- function queue(reference,kind){db.prepare('INSERT OR IGNORE INTO jobs(id,reference,kind,due) VALUES(?,?,?,?)').run(reference+':'+kind,reference,kind,Date.now());if(kind==='sheet')db.prepare("UPDATE jobs SET state='queued',attempts=0,due=? WHERE id=?").run(Date.now(),reference+':sheet');}
+ function queue(reference,kind){if(kind==='sheet'&&appByReference(reference).book==='vouched')return;db.prepare('INSERT OR IGNORE INTO jobs(id,reference,kind,due) VALUES(?,?,?,?)').run(reference+':'+kind,reference,kind,Date.now());if(kind==='sheet')db.prepare("UPDATE jobs SET state='queued',attempts=0,due=? WHERE id=?").run(Date.now(),reference+':sheet');}
+ const invites=createInvites({db,secret,appByReference,saveSession,notifications,rate});
  async function processJobs(){if(processing||!live)return;processing=true;try{for(const job of db.prepare("SELECT * FROM jobs WHERE state='queued' AND due<=? ORDER BY due LIMIT 10").all(Date.now())){let app=appByReference(job.reference);try{if(job.kind==='sheet'){await store.update(app);if(JSON.stringify(app)!==JSON.stringify(appByReference(job.reference))){queue(app.reference,'sheet');continue;}}else{const result=await messages[job.kind](app);app=appByReference(job.reference);app[job.kind+'Message']='sent';app[job.kind+'MessageId']=result;saveApp(app);queue(app.reference,'sheet'); // A completed sync must be rerun for subsequent notifications.
  db.prepare("UPDATE jobs SET state='queued',attempts=0,due=? WHERE id=?").run(Date.now(),app.reference+':sheet');}db.prepare("UPDATE jobs SET state='sent' WHERE id=?").run(job.id);}catch{const attempts=job.attempts+1;db.prepare('UPDATE jobs SET attempts=?,state=?,due=? WHERE id=?').run(attempts,attempts>=8?'failed':'queued',Date.now()+Math.min(3600000,30000*2**attempts),job.id);if(job.kind!=='sheet'){app=appByReference(job.reference);app[job.kind+'Message']=attempts>=8?'failed':'queued';saveApp(app);queue(app.reference,'sheet');db.prepare("UPDATE jobs SET state='queued',attempts=0,due=? WHERE id=?").run(Date.now(),app.reference+':sheet');}console.error('Integration job failed:',job.kind,'attempt',attempts);}}}finally{processing=false;}}
  const retention=createRetention({db,store,live});
@@ -89,6 +91,11 @@ export function createApp(env=process.env,adapters={}){
  }
  if(path==='/api/session'&&req.method==='POST'){rate(digest(secret,'session:'+ip),20,3600000);const bearer=token(),id=digest(secret,bearer);db.prepare('INSERT INTO sessions VALUES(?,?,?)').run(id,JSON.stringify({verified:{},challenges:{},createdAt:Date.now()}),Date.now()+86400000);return json(res,201,{token:bearer},allowedOrigin);}
  const bearer=String(req.headers.authorization||'').replace(/^Bearer /,'');if(!bearer)throw new Problem('Start a verification session first.',401);const id=digest(secret,bearer),s=readSession(id);const data=req.method==='POST'&&path!=='/api/media/upload'?await body(req):{};if(req.method==='POST'&&path!=='/api/applications'&&s.submitting&&s.submittingAt>Date.now()-120000)throw new Problem('Your application is being submitted. Please wait.',409);
+ if(path==='/api/invites'&&req.method==='POST')return json(res,201,invites.issue(s),allowedOrigin);
+ if(path==='/api/invites/redeem'&&req.method==='POST'){
+  rate(digest(secret,'invite-redemption:'+ip),30,3600000);
+  const app=invites.redeem(s,id,data);return json(res,201,{application:applicationSummary(app)},allowedOrigin);
+ }
  if(path==='/api/auth/options'&&req.method==='POST'){
   rate(digest(secret,'signin:'+id),12,3600000);const auth=await passkeys();
   const options=await auth.generateAuthenticationOptions({rpID:env.RP_ID,userVerification:'required'});

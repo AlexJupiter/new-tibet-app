@@ -30,7 +30,7 @@ export const demoRateCents=12;
 export const initialDemoBalances=(tibetUnits=0)=>({tibetUnits,usdCents:0,recipientCredits:{},gasSpentUnits:0,processed:[],transactions:tibetUnits?[{id:'allocation',type:'allocation',tibetUnits,label:'Sample allocation'}]:[]});
 export const demoVerificationRewardUnits=10000;
 export function applyDemoVerificationReward(wallet,application){
- if(application.status!=='accepted'||!/^NT-[A-Z0-9-]{4,60}$/.test(application.reference||''))return wallet;
+ if(application.status!=='accepted'||!['green','blue'].includes(application.book)||!/^NT-[A-Z0-9-]{4,60}$/.test(application.reference||''))return wallet;
  const id=application.reference+':verification-reward';
  if(wallet.processed.includes(id))return wallet;
  const accepted=application.inboxEvents?.find(event=>event.reference===application.reference&&event.status==='accepted');
@@ -45,7 +45,7 @@ export function applyDemoPassportReward(wallet,application){
 }
 export const demoCampaigns=Object.freeze([{id:'monlam',name:'Monlam AI'},{id:'dzongsar',name:'Dzongsar'}]);
 export function advanceDemoCampaign(state,id){
- if(state.status!=='accepted')throw new Error('Complete book verification before trying a reward campaign.');
+ if(state.status!=='accepted')throw new Error('Complete membership signup before trying a reward campaign.');
  const campaign=demoCampaigns.find(item=>item.id===id);if(!campaign)throw new Error('Unknown reward campaign.');
  state.rewardDays||={};const day=Math.min(7,(state.rewardDays[id]||0)+1);state.rewardDays[id]=day;
  const txid=state.reference+':campaign:'+id;

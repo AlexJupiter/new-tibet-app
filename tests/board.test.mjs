@@ -5,7 +5,7 @@ import {createRetention} from '../backend/retention.mjs';
 import {initialDemoBalances,applyDemoVerificationReward,applyDemoPassportReward,advanceDemoCampaign} from '../public/member-model.js';
 
 test('the optional NFC reward requires acceptance, credits another 100 once and never replenishes spending',()=>{
- const state={status:'accepted',reference:'NT-TEST-100',demoPassportTier:false};
+ const state={status:'accepted',book:'green',reference:'NT-TEST-100',demoPassportTier:false};
  let wallet=applyDemoVerificationReward(initialDemoBalances(),state);
  assert.equal(applyDemoPassportReward(wallet,state),wallet);
  state.demoPassportTier=true;wallet=applyDemoPassportReward(wallet,state);assert.equal(wallet.tibetUnits,20000);

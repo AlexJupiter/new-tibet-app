@@ -9,7 +9,7 @@ import {Problem} from './core.mjs';
 
 const hash=value=>createHash('sha256').update(value).digest('hex');
 const memberLabel=app=>'Member '+app.reference.slice(-6);
-const bookLabel=app=>app.book==='blue'?'Blue Book supporter':'Green Book holder';
+const bookLabel=app=>app.book==='vouched'?'Vouched member':app.book==='blue'?'Blue Book supporter':'Green Book holder';
 const appleKeys=['APPLE_PASS_TYPE_ID','APPLE_TEAM_ID','APPLE_PASS_CERTIFICATE','APPLE_PASS_PRIVATE_KEY','APPLE_WWDR_CERTIFICATE'];
 const googleKeys=['GOOGLE_WALLET_ISSUER_ID','GOOGLE_WALLET_CLASS_ID','GOOGLE_WALLET_CREDENTIALS'];
 const configured=(env,keys)=>keys.every(key=>Boolean(env[key]));

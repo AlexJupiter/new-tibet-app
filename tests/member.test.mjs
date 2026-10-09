@@ -14,7 +14,7 @@ test('new demo wallets are empty until membership acceptance credits the 100 TIB
  }
 });
 test('repeated acceptance never credits another reward or replenishes spent tokens',()=>{
- const application={reference:'NT-REWARD-1234',status:'accepted',applicationCreatedAt:'2026-10-08T11:00:00Z'};
+ const application={reference:'NT-REWARD-1234',status:'accepted',book:'green',applicationCreatedAt:'2026-10-08T11:00:00Z'};
  const credited=applyDemoVerificationReward(initialDemoBalances(),application);
  assert.equal(applyDemoVerificationReward(credited,application),credited);
  const sent=sendDemoBalance(credited,quoteDemoSend(credited,'sonam.tsering','25'),'reward-send');

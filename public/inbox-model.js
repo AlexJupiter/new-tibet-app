@@ -6,7 +6,7 @@ const storageKey='new-tibet-demo-inbox-v1';
 const statuses=['pending','accepted','declined'];
 export function applicationEvent(reference,status,book,createdAt=new Date().toISOString()){
  if(!statuses.includes(status))throw new Error('Invalid application status.');
- return {id:reference+':'+status,kind:'application',reference,status,book,createdAt,title:status==='pending'?'Application received':status==='accepted'?'Membership application accepted':'Membership application declined',body:status==='pending'?'Your membership application has been received and is awaiting review. Your decision will appear here.':status==='accepted'?'Your membership application has been accepted. Open Profile to view your digital membership card.':'Your membership application could not be approved. Keep your reference when contacting New Tibet for help.'};
+ return {id:reference+':'+status,kind:'application',reference,status,book,createdAt,title:book==='vouched'&&status==='pending'?'Invitation received':status==='pending'?'Application received':status==='accepted'?'Membership application accepted':'Membership application declined',body:book==='vouched'&&status==='pending'?'Your member invitation was received. No book photos or video were needed.':status==='pending'?'Your membership application has been received and is awaiting review. Your decision will appear here.':book==='vouched'&&status==='accepted'?'You joined as a vouched member. Open Profile to view your membership card. Green Book petition rights still require book verification.':status==='accepted'?'Your membership application has been accepted. Open Profile to view your digital membership card.':'Your membership application could not be approved. Keep your reference when contacting New Tibet for help.'};
 }
 export function recordApplicationEvent(state,status){
  state.applicationCreatedAt||=new Date().toISOString();
@@ -25,7 +25,7 @@ export function saveDemoInbox(storage,state){
 export function restoreDemoInbox(storage){
  try{
   const raw=storage.getItem(storageKey);if(!raw||raw.length>100000)return null;const saved=JSON.parse(raw);
-  if(saved.version!==1||!/^NT-[A-Z0-9-]{4,60}$/.test(saved.reference)||!statuses.includes(saved.status)||!['green','blue'].includes(saved.book)||!Array.isArray(saved.events)||saved.events.length>200)return null;
+  if(saved.version!==1||!/^NT-[A-Z0-9-]{4,60}$/.test(saved.reference)||!statuses.includes(saved.status)||!['green','blue','vouched'].includes(saved.book)||!Array.isArray(saved.events)||saved.events.length>200)return null;
   const events=saved.events.filter(event=>event.reference===saved.reference&&statuses.includes(event.status)&&event.book===saved.book&&Number.isFinite(Date.parse(event.createdAt))).map(event=>applicationEvent(event.reference,event.status,event.book,event.createdAt));
   const allowed=new Set([...events,...sampleAnnouncements].map(item=>item.id));
   return {reference:saved.reference,status:saved.status,book:saved.book,applicationCreatedAt:Number.isFinite(Date.parse(saved.createdAt))?saved.createdAt:events[0]?.createdAt,inboxEvents:events,inboxRead:Array.isArray(saved.read)?saved.read.filter(id=>allowed.has(id)):[],demoPassportTier:saved.demoPassportTier===true,passportTierAt:saved.demoPassportTier&&Number.isFinite(Date.parse(saved.passportTierAt))?saved.passportTierAt:undefined,walletRewardRead:saved.walletRewardRead===true};

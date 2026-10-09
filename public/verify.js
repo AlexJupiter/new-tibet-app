@@ -1,7 +1,8 @@
+import {membershipLabel} from './invites.js';
 const config=window.NEW_TIBET_CONFIG||{mode:'demo',apiBase:''};
 const result=document.querySelector('#verification-result'),params=new URLSearchParams(location.hash.slice(1));
 const esc=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function details(reference,book){return `<dl class="verification-details"><div><dt>Member reference</dt><dd>${esc(reference)}</dd></div><div><dt>Membership</dt><dd>${book==='blue'?'Blue Book supporter':'Green Book holder'}</dd></div></dl>`;}
+function details(reference,book){return `<dl class="verification-details"><div><dt>Member reference</dt><dd>${esc(reference)}</dd></div><div><dt>Membership</dt><dd>${membershipLabel(book)}</dd></div></dl>`;}
 async function check(){
  if(params.has('demo')){
   result.innerHTML='<div class="verification-status preview">Demo card · Preview only</div><p>This is a sample membership check. It does not confirm a real New Tibet membership.</p>'+details(/^NT-[A-Z0-9-]{4,60}$/.test(params.get('reference')||'')?params.get('reference'):'NT-DEMO-0001',params.get('demo'));return;

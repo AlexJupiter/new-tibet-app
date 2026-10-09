@@ -10,8 +10,10 @@ test('guided setup resumes required evidence and follows optional stages in orde
  assert.equal(nextSetupAction({...visitor,name:'Snow Lion',profileSetupStep:1}),'evidence');
  assert.equal(nextSetupAction({...visitor,name:'Snow Lion',book:'vouched',profileSetupStep:1}),'join');
  const submitted={...visitor,status:'pending',reference:'NT-SETUP-1234'};
- assert.equal(nextSetupAction(submitted),'passport');
+ assert.equal(nextSetupAction(submitted),'security');
  assert.equal(nextSetupAction({...submitted,onboardingSkipped:['passport']}),'security');
+ assert.equal(nextSetupAction({...submitted,onboardingSkipped:['security']}),'passport');
+ assert.equal(nextSetupAction({...submitted,wallet:{ready:true}}),'passport');
  assert.equal(nextSetupAction({...submitted,demoPassportTier:true}),'security');
  assert.equal(nextSetupAction({...submitted,demoPassportTier:true,wallet:{ready:true}}),'contacts');
  const finished={...submitted,onboardingSkipped:['passport','security','contacts']};
@@ -24,11 +26,14 @@ test('progress distinguishes skipped upgrades from completed ones and keeps rewa
  assert.match(setupProgress({...visitor,book:'vouched'},0),/Signup · Step 1 of 1/);
  const submitted={...visitor,status:'pending',reference:'NT-SETUP-1234',onboardingSkipped:['passport']};
  const html=setupProgress(submitted,4);
- assert.match(html,/Optional setup · Step 2 of 3/);assert.doesNotMatch(html,/✓/);
+ assert.match(html,/Optional setup · Step 1 of 3/);assert.doesNotMatch(html,/✓/);
+ assert.match(html,/<strong>Wallet<\/strong>.*<strong>Passport<\/strong>.*<strong>Contacts<\/strong>/);
+ assert.match(setupProgress({...submitted,wallet:{ready:true}},3),/Optional setup · Step 2 of 3/);
  assert.match(setupProgress({...submitted,demoPassportTier:true},4),/✓/);
  const summary=rewardLadder(submitted);
  assert.match(summary,/data-profile-setup="security"/);assert.match(summary,/<details class="journey-details">/);assert.doesNotMatch(summary,/<details[^>]*open/);
  assert.match(summary,/Skipped · Available later/);
+ assert.deepEqual(verificationProgress(submitted).stages.map(stage=>stage.id),['join','book','security','passport','contacts']);
  assert.match(rewardLadder({...submitted,status:'declined'}),/Setup paused/);
  assert.doesNotMatch(rewardLadder({...submitted,status:'declined'}),/data-profile-setup=/);
 });

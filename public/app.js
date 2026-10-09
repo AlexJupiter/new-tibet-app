@@ -61,6 +61,13 @@ function explore(startJoining=false){
  navigate(steps.account);
 }
 function startProfileSetup(step){if(busy)return;state.appTab='profile';state.profileSetup=true;state.profileSetupStep=step;navigate(step);}
+function continueAfterVerification(){
+ state.appTab='profile';
+ if(!securityComplete(state)&&!state.onboardingSkipped.includes('security')){
+  state.profileSetup=true;state.profileSetupStep=steps.security;return navigate(steps.security);
+ }
+ navigate(steps.account);
+}
 function closeProfileSetup(){if(busy)return;state.profileSetupStep=state.step;state.appTab='profile';navigate(steps.account);}
 function setSetupSkipped(id,skipped){state.onboardingSkipped=(state.onboardingSkipped||[]).filter(item=>item!==id);if(skipped)state.onboardingSkipped.push(id);persistInbox();}
 function showProfileSetup(){
@@ -116,7 +123,7 @@ async function demoNext(){
   return uploadDemoSamples();
  }
  if(state.step===2){
-  if(state.video)return navigate(steps.passport);
+  if(state.video)return navigate(steps.security);
   return uploadDemoSamples();
  }
  if(state.step===steps.contacts){
@@ -127,9 +134,9 @@ async function demoNext(){
  }
  if(state.step===steps.passport){
   if(!state.passport?.verified){state.demoSkipped.passport=true;state.passport={verified:false,preview:true};}
-  setSetupSkipped('passport',!state.passport?.verified&&!state.demoPassportTier);return navigate(steps.security);
+  setSetupSkipped('passport',!state.passport?.verified&&!state.demoPassportTier);return navigate(steps.contacts);
  }
- if(state.step===steps.security){setSetupSkipped('security',!securityComplete(state));return navigate(steps.contacts);}
+ if(state.step===steps.security){setSetupSkipped('security',!securityComplete(state));return navigate(steps.passport);}
  if(state.step===6){
   if(state.guest)return startProfileSetup(state.profileSetupStep??steps.document);
   if(state.status!=='accepted')return simulateReview('accepted');
@@ -194,7 +201,7 @@ async function joinWithInvite(){
  try{
   if(demo){await redeemDemoInvite(code,localStorage);state.name=name;state.reference='NT-'+crypto.randomUUID().slice(0,8).toUpperCase();state.applicationCreatedAt=new Date().toISOString();recordApplicationEvent(state,'pending');state.status='accepted';recordApplicationEvent(state,'accepted');persistInbox();}
   else{await session();const result=await api('invites/redeem',{code,name});applyInboxData({items:[],application:result.application});}
-  state.guest=false;clearExplorer(localStorage);state.profileSetupStep=null;state.inviteCode='';state.appTab='profile';const url=new URL(location.href);url.searchParams.delete('invite');history.replaceState(null,'',url);navigate(steps.account);if(!demo)await refreshInbox();
+  state.guest=false;clearExplorer(localStorage);state.profileSetupStep=null;state.inviteCode='';state.appTab='profile';const url=new URL(location.href);url.searchParams.delete('invite');history.replaceState(null,'',url);continueAfterVerification();if(!demo)await refreshInbox();
  }catch(error){notice(error.message);if(button.isConnected){button.disabled=false;button.textContent='Join New Tibet';}}
  finally{busy=false;if(button.isConnected){screen.querySelectorAll('#document-form input').forEach(input=>input.readOnly=false);screen.querySelectorAll('[data-book]').forEach(button=>button.disabled=false);}}
 }
@@ -240,10 +247,10 @@ function renderPassport(){
  ${state.passportRequest?`<div class="passport-qr"><img src="${state.passportRequest.qr}" alt="Scan to open ZKPassport" width="256" height="256"/><p id="passport-progress" role="status">Open the link on your phone or scan this code with ZKPassport.</p><a class="primary" href="${esc(state.passportRequest.url)}" target="_blank" rel="noopener">Open ZKPassport ↗</a></div>`:''}
  ${!verified?`<div class="actions"><button class="primary" id="start-passport">${state.passportRequest?'Start a new passport check':'Verify with ZKPassport'}</button></div>`:''}
  ${demo&&!verified?'<button class="secondary" id="demo-passport-upgrade" type="button">Simulate NFC upgrade · +100 $TIBET</button><p class="under-button">Simulation only. No cryptographic proof is verified.</p>':''}
- <div class="actions"><button class="secondary" id="back">Back</button><button class="${verified?'primary':'secondary'}" id="passport-next">${verified?'Continue to wallet security':'Skip for now'}</button></div>`;
- document.querySelector('#back').onclick=()=>{state.appTab='profile';navigate(steps.account);};
+ <div class="actions"><button class="secondary" id="back">Back</button><button class="${verified?'primary':'secondary'}" id="passport-next">${verified?'Continue to contacts':'Skip for now'}</button></div>`;
+ document.querySelector('#back').onclick=()=>navigate(steps.security);
  if(!verified)document.querySelector('#start-passport').onclick=startPassport;
- document.querySelector('#passport-next').onclick=()=>{if(busy)return;setSetupSkipped('passport',!verified);navigate(steps.security);};
+ document.querySelector('#passport-next').onclick=()=>{if(busy)return;setSetupSkipped('passport',!verified);navigate(steps.contacts);};
  document.querySelector('#demo-passport-upgrade')?.addEventListener('click',()=>{if(!demo||!state.reference)return;state.demoPassportTier=true;state.passportTierAt=new Date().toISOString();persistInbox();render();notice(state.status==='accepted'?'Another 100 $TIBET credited in the demo. No real passport proof or token transfer occurred.':'NFC preview completed. The extra 100 $TIBET will be credited after membership approval.');});
 }
 async function startPassport(){if(busy)return;busy=true;notice();const generation=++passportGeneration;const button=document.querySelector('#start-passport');button.disabled=true;button.textContent='Preparing secure request…';try{const {ZKPassport,NullifierType,qr}=await import('./passport-sdk.js');let challenge;if(demo)challenge={nonce:crypto.randomUUID(),domain:location.hostname,scope:'new-tibet-identity-v1'};else{await session();challenge=await api('passport/challenge',{});}if(generation!==passportGeneration||state.step!==steps.passport)return;passportClient?.clearAllRequests();passportClient=new ZKPassport(challenge.domain);const builder=await passportClient.request({name:'New Tibet Identity',logo:new URL('./assets/new-tibet-symbol.svg',import.meta.url).href,purpose:'Prove age 18+ and prevent duplicate passport registration. No passport details are disclosed.',scope:challenge.scope,devMode:false,validity:3600,uniqueIdentifierType:NullifierType.NON_SALTED});const request=builder.gte('age',18).bind('custom_data',challenge.nonce).facematch('strict').done();const image=await qr(request.url);if(generation!==passportGeneration||state.step!==steps.passport){passportClient.clearAllRequests();return;}state.passportRequest={url:request.url,qr:image};render();const progress=text=>{if(generation===passportGeneration&&state.step===steps.passport){const p=document.querySelector('#passport-progress');if(p)p.textContent=text;}};request.onRequestReceived(()=>progress('Request opened. Follow the instructions on your phone.'));request.onGeneratingProof(()=>progress('Generating your private proofs on your phone…'));request.onReject(()=>progress('You declined the request. Start a new check when ready.'));request.onError(()=>progress('The passport check could not complete. Start a new check and try again.'));request.onSuccess(async({proofs,result})=>{if(generation!==passportGeneration||state.step!==steps.passport)return false;if(demo){progress('Proofs received. This preview has no backend to verify them; your passport is still unverified. Nothing has been stored.');return false;}try{progress('Checking cryptographic proofs and duplicate-passport protection…');await api('passport/verify',{proofs,result});if(generation!==passportGeneration||state.step!==steps.passport)return false;state.passport={verified:true};render();notice('Your age and passport proofs were verified.');return true;}catch(e){progress(e.message);return false;}});}catch(e){notice('Unable to start ZKPassport. '+e.message);}finally{busy=false;if(state.step===steps.passport)document.querySelector('#start-passport')?.removeAttribute('disabled');}}
@@ -256,7 +263,7 @@ function renderContacts(){
   document.querySelector('#'+factor).oninput=event=>{state[factor]=event.target.value;if(state.verified[factor]!==normalize(factor,state[factor])){delete state.verified[factor];document.querySelector('#verified-'+factor)?.remove();document.querySelector('#send-'+factor)?.removeAttribute('disabled');}updateNext();};
   document.querySelector('#send-'+factor).onclick=()=>sendCode(factor);document.querySelector('#verify-'+factor)?.addEventListener('click',()=>verifyCode(factor));
  }
- document.querySelector('#back').onclick=()=>navigate(steps.security);document.querySelector('#next').onclick=()=>{if(contactsReady())submit();};
+ document.querySelector('#back').onclick=()=>navigate(steps.passport);document.querySelector('#next').onclick=()=>{if(contactsReady())submit();};
 }
 async function saveContacts(){
  if(busy||!contactsReady())return;busy=true;notice();
@@ -273,17 +280,17 @@ async function verifyCode(f){if(busy)return;const code=document.querySelector('#
 function renderSecurity(){
  const ready=state.wallet?.ready;
  if(state.walletMethod==='recovery-phrase'&&state.wallet?.words){renderRecoveryWords();return;}
- screen.innerHTML=heading('Wallet security.',`Protect access with a passkey or confirmed 12-word backup to earn ${onboardingRewards.security} free $TIBET.`)+walletDiagram()+`
+ screen.innerHTML=heading('Set up your wallet.',`Set up an Ethereum wallet for your free $TIBET after membership approval. Protect it with a passkey or confirmed 12-word backup to earn ${onboardingRewards.security} more free $TIBET.`)+walletDiagram()+`
  <div class="wallet-explanation"><h3>What is a passkey?</h3><p>A key in your device or password manager, unlocked with Face ID, a fingerprint, or PIN.</p></div>
  ${ready?`<div class="wallet-setup-ready"><span class="tag">✓ ${state.wallet.method==='passkey'?'Passkey wallet protected':'12-word backup confirmed'}</span><p class="wallet-address">${esc(state.wallet.address)}</p>${state.wallet.method==='recovery-phrase'&&!state.passkey?'<button class="secondary" id="passkey">Add an account passkey</button>':''}</div>`:`${state.passkey?'<p class="section-note">✓ Passkey added for account sign-in.</p>':''}<div class="capture-actions">${!state.passkey||demo?`<button class="primary" id="passkey">${state.passkey?'Protect wallet with passkey':'Create with a passkey'}</button>`:''}<button class="text-button" id="use-words" ${!demo?'disabled':''}>Record 12 recovery words instead</button></div>`}
  <p class="section-note">A passkey also lets you return to your application and Announcements without an email address or phone number. The 12 words restore the wallet; they do not sign you into this inbox.</p>
  <p class="under-button">Ethereum · ${demo?'Demo wallet, no funds or transfers':'Wallet activation not available yet'}</p>
  <details class="details"><summary>How passkeys help prevent lost access</summary><p>On a supported device the passkey encrypts your wallet key. Your biometrics stay on your device. A synced passkey can be recovered through your password manager, reducing reliance on handwritten words. Wallet recovery also needs its encrypted backup and depends on your passkey provider.</p><p>You can record 12 recovery words instead. Anyone with the phrase can restore the wallet; losing it can mean losing access.</p><p>The demo holds wallet material only in this page’s memory. Reloading clears it. Token access and transfers are unavailable.</p></details>
- ${!securityComplete(state)?'<button class="text-button" id="security-skip" type="button">Skip for now</button>':''}<div class="actions"><button class="secondary" id="back">Back</button><button class="primary" id="security-next" style="flex:1" ${securityComplete(state)?'':'disabled'}>Continue to contacts</button></div>`;
- document.querySelector('#back').onclick=()=>navigate(steps.passport);
+ ${!securityComplete(state)?'<button class="text-button" id="security-skip" type="button">Skip for now</button>':''}<div class="actions"><button class="secondary" id="back">Back</button><button class="primary" id="security-next" style="flex:1" ${securityComplete(state)?'':'disabled'}>Continue to passport check</button></div>`;
+ document.querySelector('#back').onclick=()=>{state.appTab='profile';navigate(steps.account);};
  document.querySelector('#passkey')?.addEventListener('click',addPasskey);
  document.querySelector('#use-words')?.addEventListener('click',startRecoveryWallet);
- document.querySelector('#security-next').onclick=()=>{if(busy||!securityComplete(state))return;setSetupSkipped('security',false);navigate(steps.contacts);};document.querySelector('#security-skip')?.addEventListener('click',()=>{if(busy)return;setSetupSkipped('security',true);navigate(steps.contacts);});
+ document.querySelector('#security-next').onclick=()=>{if(busy||!securityComplete(state))return;setSetupSkipped('security',false);navigate(steps.passport);};document.querySelector('#security-skip')?.addEventListener('click',()=>{if(busy)return;setSetupSkipped('security',true);navigate(steps.passport);});
 }
 async function startRecoveryWallet(){
  if(!demo||busy)return;
@@ -347,7 +354,7 @@ async function addPasskey(){
  finally{busy=false;}
 }
 async function uploadMedia(kind,blob){const response=await fetch(config.apiBase.replace(/\/$/,'')+'/api/media/upload?kind='+encodeURIComponent(kind)+'&book='+state.book,{method:'POST',headers:{'Content-Type':blob.type,Authorization:'Bearer '+sessionToken,'X-Review-Consent':'2026-10-09'},body:blob});const data=await response.json();if(!response.ok)throw new Error(data.error||'Media upload failed. Please try again.');}
-async function submit(){if(busy)return;if(state.reference)return saveContacts();if(!nameReady()||!state.consent){navigate(steps.document);return notice('Enter a display name and agree to book and video review. A pseudonym is welcome.');}if(!contactsReady())return navigate(steps.contacts);if(!photoKinds.every(k=>state.photos[k]))return navigate(1);if(!state.video)return navigate(2);busy=true;const button=document.querySelector('#next')||document.querySelector('#demo-next');button.disabled=true;button.textContent='Submitting…';try{if(demo){state.status='pending';state.reference='NT-'+crypto.randomUUID().slice(0,8).toUpperCase();state.applicationCreatedAt=new Date().toISOString();recordApplicationEvent(state,'pending');persistInbox();if(state.whatsapp)state.messages.push(`New Tibet: Your application ${state.reference} has been received and is awaiting review.`);}else{for(const kind of photoKinds){button.textContent='Uploading '+photoNames[kind].toLowerCase()+'…';const blob=await(await fetch(state.photos[kind])).blob();await uploadMedia(kind,blob);}button.textContent='Uploading video…';await uploadMedia('video',state.video);button.textContent='Submitting application…';const data=await api('applications',{name:state.name,email:normalize('email',state.email),whatsapp:normalize('whatsapp',state.whatsapp),book:state.book,consent:true,consentVersion:'2026-10-09'});state.reference=data.reference;state.status=data.status;state.notification=data.notification;}state.guest=false;clearExplorer(localStorage);state.profileSetupStep=null;state.appTab='profile';state.photos={};state.video=null;URL.revokeObjectURL(state.videoURL);state.videoURL='';navigate(6);if(!demo)refreshInbox();}catch(e){notice(e.message);button.disabled=false;button.textContent='Submit application →';}finally{busy=false;}}
+async function submit(){if(busy)return;if(state.reference)return saveContacts();if(!nameReady()||!state.consent){navigate(steps.document);return notice('Enter a display name and agree to book and video review. A pseudonym is welcome.');}if(!contactsReady())return navigate(steps.contacts);if(!photoKinds.every(k=>state.photos[k]))return navigate(1);if(!state.video)return navigate(2);busy=true;const button=document.querySelector('#next')||document.querySelector('#demo-next');button.disabled=true;button.textContent='Submitting…';try{if(demo){state.status='pending';state.reference='NT-'+crypto.randomUUID().slice(0,8).toUpperCase();state.applicationCreatedAt=new Date().toISOString();recordApplicationEvent(state,'pending');persistInbox();if(state.whatsapp)state.messages.push(`New Tibet: Your application ${state.reference} has been received and is awaiting review.`);}else{for(const kind of photoKinds){button.textContent='Uploading '+photoNames[kind].toLowerCase()+'…';const blob=await(await fetch(state.photos[kind])).blob();await uploadMedia(kind,blob);}button.textContent='Uploading video…';await uploadMedia('video',state.video);button.textContent='Submitting application…';const data=await api('applications',{name:state.name,email:normalize('email',state.email),whatsapp:normalize('whatsapp',state.whatsapp),book:state.book,consent:true,consentVersion:'2026-10-09'});state.reference=data.reference;state.status=data.status;state.notification=data.notification;}state.guest=false;clearExplorer(localStorage);state.profileSetupStep=null;state.appTab='profile';state.photos={};state.video=null;URL.revokeObjectURL(state.videoURL);state.videoURL='';continueAfterVerification();if(!demo)refreshInbox();}catch(e){notice(e.message);button.disabled=false;button.textContent='Submit application →';}finally{busy=false;}}
 function reviewPreviewControls(){
  if(!demo)return '';
  const selected=state.status;
@@ -421,7 +428,7 @@ async function refreshInbox(){
  const previousStatus=state.status;state.inboxLoading=true;state.inboxError='';
  if(state.step===6&&state.appTab==='announcements')renderAcceptedAccount();
  try{applyInboxData(await api('notifications'));}catch(error){state.inboxError=error.message;}
- finally{state.inboxLoading=false;if(state.step===6){if(state.appTab==='announcements'||state.appTab==='profile'&&state.status!==previousStatus)render();else updateInboxBadge();}}
+ finally{state.inboxLoading=false;if(state.step===steps.account){if(previousStatus!==state.status&&state.status==='accepted'&&!securityComplete(state)&&!state.onboardingSkipped.includes('security'))continueAfterVerification();else if(state.appTab==='announcements'||state.appTab==='profile'&&state.status!==previousStatus)render();else updateInboxBadge();}}
 }
 function updateInboxBadge(){
  const button=document.querySelector('#announcements-button');
@@ -606,7 +613,7 @@ function simulateReview(status){
  const registration=state.messages[0]||`New Tibet: We received demo application ${state.reference}.`;
  const decision=`New Tibet: Your application ${state.reference} has been ${status}. ${status==='accepted'?'Your identity profile is ready.':'Please contact hello@newtibet.com for support.'}`;
  state.messages=[registration,decision];
- navigate(6);
+ if(status==='accepted')continueAfterVerification();else navigate(steps.account);
 }
 document.querySelector('#explore-now').onclick=()=>explore();
 document.querySelector('#sign-in').onclick=signIn;

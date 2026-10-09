@@ -70,7 +70,7 @@ function showProfileSetup(){
 }
 function render(){
  document.querySelector('#mode-banner').hidden=!demo;document.querySelector('#mode-banner').textContent=demo?'Demo':'';
- document.querySelector('#splash').hidden=state.step!==-1;document.querySelector('#interest-section').hidden=state.step!==-1;
+ document.querySelector('#splash').hidden=state.step!==-1;
  document.querySelector('#signup').hidden=state.step===-1;
  document.body.classList.toggle('showing-splash',state.step===-1);
  document.body.classList.toggle('demo-mode',demo);
@@ -607,7 +607,6 @@ function simulateReview(status){
  state.messages=[registration,decision];
  navigate(6);
 }
-document.querySelector('#interest-form').onsubmit=async event=>{event.preventDefault();const form=event.currentTarget,status=document.querySelector('#interest-status');if(!form.reportValidity())return;const button=form.querySelector('button');button.disabled=true;try{if(demo){status.textContent='Demo signup preview. Your email has not been saved and no message is sent.';}else{await api('interest',{email:document.querySelector('#interest-email').value,consent:true});status.textContent='Your interest has been recorded. Contact hello@newtibet.com to unsubscribe.';}form.reset();}catch(error){status.textContent=error.message;}finally{button.disabled=false;}};
 document.querySelector('#explore-now').onclick=()=>explore();
 document.querySelector('#sign-in').onclick=signIn;
 document.querySelector('#demo-next').onclick=demoNext;

@@ -14,7 +14,7 @@ const showcaseTab=new URLSearchParams(location.search).get('showcase');
 const showcase=['profile','wallet','petitions','chat','ecosystem','announcements'].includes(showcaseTab);
 const demo = showcase || config.mode !== 'live';
 const steps=Object.freeze({document:0,photos:1,video:2,passport:3,security:4,contacts:5,account:6});
-const initialState = () => ({step:-1,book:'green',name:'',email:'',whatsapp:'',country:'',countryConsent:false,countryStatsCounted:false,verified:{},codes:{},photo:null,photos:{},photoKind:'front',evidenceView:'photos',demoPassportTier:false,passportTierAt:'',rewardDays:{},challenge:null,video:null,videoURL:'',passport:null,passportRequest:null,passkey:null,consent:false,reference:'',status:'pending',messages:[],demoSkipped:{contacts:false,passport:false},demoSampleApplicant:false,demoVideo:false,appTab:'announcements',applicationCreatedAt:'',inboxEvents:[],inboxItems:[],inboxRead:[],inboxExpanded:'',inboxLoading:false,inboxError:'',petitionSignatures:[],createdPetitions:[],petitionView:'list',petitionDraft:{title:'',body:'',goal:'1000'},chatMessages:[],chatDrafts:{},chatConversation:'community',chatOpen:false,chatSearch:'',wallet:null,walletMethod:'passkey',recoveryStage:'',walletPrfSalt:'',walletDemo:null,walletRewardRead:false,walletView:'home',walletQuote:null,walletReceipt:null,walletSwapInput:'',walletWithdrawInput:'',walletSendInput:'',walletSendSearch:'',walletSendRecipient:''});
+const initialState = () => ({step:-1,book:'green',name:'',email:'',whatsapp:'',country:'',countryConsent:false,countryStatsCounted:false,verified:{},codes:{},photo:null,photos:{},photoKind:'front',evidenceView:'photos',demoPassportTier:false,passportTierAt:'',rewardDays:{},challenge:null,video:null,videoURL:'',passport:null,passportRequest:null,passkey:null,consent:false,reference:'',status:'pending',messages:[],demoSkipped:{contacts:false,passport:false},demoSampleApplicant:false,demoVideo:false,appTab:'announcements',lastAppTab:'profile',applicationCreatedAt:'',inboxEvents:[],inboxItems:[],inboxRead:[],inboxExpanded:'',inboxLoading:false,inboxError:'',petitionSignatures:[],createdPetitions:[],petitionView:'list',petitionDraft:{title:'',body:'',goal:'1000'},chatMessages:[],chatDrafts:{},chatConversation:'community',chatOpen:false,chatSearch:'',wallet:null,walletMethod:'passkey',recoveryStage:'',walletPrfSalt:'',walletDemo:null,walletRewardRead:false,walletView:'home',walletQuote:null,walletReceipt:null,walletSwapInput:'',walletWithdrawInput:'',walletSendInput:'',walletSendSearch:'',walletSendRecipient:''});
 const state = initialState();
 const accountLayout=matchMedia('(min-width: 900px)');
 accountLayout.addEventListener('change',()=>document.querySelector('.app-tabs')?.setAttribute('aria-orientation',accountLayout.matches?'vertical':'horizontal'));
@@ -41,6 +41,7 @@ function render(){
  document.body.classList.toggle('showing-splash',state.step===-1);
  document.body.classList.toggle('demo-mode',demo);
  document.body.classList.toggle('showing-account',state.step===6&&Boolean(state.reference));
+ document.querySelector('#announcements-button').hidden=state.step!==steps.account||!state.reference;
  document.body.classList.toggle('showing-onboarding',state.step>=0&&state.step<=1&&!state.reference);
  document.body.dataset.appTab=state.appTab;
  if(state.step===-1&&!showcase){welcomeSlideshow||=mountWelcomeSlideshow(document.querySelector('#welcome-slideshow'));welcomeSlideshow.setActive(true);}else welcomeSlideshow?.setActive(false);
@@ -346,7 +347,10 @@ function profileInitials(name){
  return (parts.length>1?[parts[0],parts.at(-1)]:parts).map(part=>Array.from(part)[0]).join('').toLocaleUpperCase()||'NT';
 }
 function persistInbox(){if(demo&&!showcase)try{saveDemoInbox(localStorage,state);}catch{}}
-function selectAppTab(tab){state.appTab=tab;notice();renderAcceptedAccount();window.scrollTo(0,0);screen.querySelector('#screen-title')?.focus({preventScroll:true});}
+function selectAppTab(tab){if(tab!=='announcements')state.lastAppTab=tab;state.appTab=tab;notice();renderAcceptedAccount();window.scrollTo(0,0);screen.querySelector('#screen-title')?.focus({preventScroll:true});}
+function closeAnnouncements(){selectAppTab(state.lastAppTab||'profile');document.querySelector('#announcements-button').focus({preventScroll:true});}
+document.querySelector('#announcements-button').onclick=()=>{if(state.step!==steps.account||!state.reference)return;if(state.appTab==='announcements')closeAnnouncements();else selectAppTab('announcements');};
+document.addEventListener('keydown',event=>{if(event.key==='Escape'&&state.step===steps.account&&state.appTab==='announcements'&&!document.querySelector('dialog[open]')){event.preventDefault();closeAnnouncements();}});
 function applyInboxData(data){
  state.inboxItems=(Array.isArray(data.items)?data.items:[]).filter(item=>['application','announcement'].includes(item.kind)&&typeof item.id==='string'&&Number.isFinite(Date.parse(item.createdAt)));
  state.inboxRead=state.inboxItems.filter(item=>item.read).map(item=>item.id);
@@ -361,9 +365,10 @@ async function refreshInbox(){
  finally{state.inboxLoading=false;if(state.step===6){if(state.appTab==='announcements'||state.appTab==='profile'&&state.status!==previousStatus)render();else updateInboxBadge();}}
 }
 function updateInboxBadge(){
- const tab=screen.querySelector('#tab-announcements');if(!tab)return;
- const count=unreadCount(state,demo);tab.querySelector('.tab-unread')?.remove();
- if(count){tab.setAttribute('aria-label',`Announcements, ${count} unread`);const badge=document.createElement('span');badge.className='tab-unread';badge.setAttribute('aria-hidden','true');badge.textContent=count;tab.appendChild(badge);}else tab.removeAttribute('aria-label');
+ const button=document.querySelector('#announcements-button');
+ const count=unreadCount(state,demo);button.querySelector('.notification-unread')?.remove();
+ button.setAttribute('aria-label',count?`Announcements, ${count} unread`:'Announcements');button.setAttribute('aria-expanded',String(state.appTab==='announcements'));
+ if(count){const badge=document.createElement('span');badge.className='notification-unread';badge.setAttribute('aria-hidden','true');badge.textContent=count>99?'99+':count;button.appendChild(badge);}
 }
 function readOpenInbox(){
  if(state.step!==6||state.appTab!=='announcements'||document.hidden)return;
@@ -416,16 +421,17 @@ function renderAcceptedAccount(){
   if(state.appTab==='wallet'&&!document.hidden&&walletRewardUnread(state)){state.walletRewardRead=true;persistInbox();}
  }
  readOpenInbox();
- if(state.appTab==='announcements')renderAnnouncements(screen,state,demo,{refresh:refreshInbox,markRead:markInboxRead});
+ if(state.appTab==='announcements')renderAnnouncements(screen,state,demo,{refresh:refreshInbox,markRead:markInboxRead,close:closeAnnouncements});
  else if(state.appTab==='petitions')renderPetitions(screen,state,demo,notice,renderAcceptedAccount);
  else if(state.appTab==='chat')renderChat(screen,state,demo,renderAcceptedAccount);
  else if(state.appTab==='wallet')renderWallet(screen,state,demo,notice,renderAcceptedAccount);
  else if(state.appTab==='ecosystem')renderEcosystem(screen,state,demo,renderAcceptedAccount,notice);
  else if(state.status==='accepted')renderProfile();else renderApplicationDetails();
  document.body.dataset.appTab=state.appTab;
- const panel=document.createElement('section');panel.id='account-panel';panel.setAttribute('role','tabpanel');panel.setAttribute('aria-labelledby','tab-'+state.appTab);
+ const panel=document.createElement('section');panel.id='account-panel';panel.setAttribute('role',state.appTab==='announcements'?'region':'tabpanel');panel.setAttribute('aria-labelledby',state.appTab==='announcements'?'screen-title':'tab-'+state.appTab);
  while(screen.firstChild)panel.appendChild(screen.firstChild);
- screen.appendChild(panel);screen.insertAdjacentHTML('beforeend',renderAccountTabs(state.appTab,unreadCount(state,demo),demo?walletRewardUnread(state):0));
+ screen.appendChild(panel);screen.insertAdjacentHTML('beforeend',renderAccountTabs(state.appTab,demo?walletRewardUnread(state):0));
+ updateInboxBadge();
  const tabs=[...screen.querySelectorAll('[data-app-tab]')];
  screen.querySelector('.app-tabs').setAttribute('aria-orientation',accountLayout.matches?'vertical':'horizontal');
  const select=selectAppTab;

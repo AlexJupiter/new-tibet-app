@@ -108,7 +108,6 @@ p.description { font-size: 16px; line-height: 1.55; color: var(--muted); margin:
 .invite-dialog textarea { font-size: 14px; }
 .invite-dialog .primary { width: 100%; }
 #invite-copy-status { min-height: 24px; }
-.splash-join { margin-top: 8px; width: 100%; }
 .profile-back { margin: -8px 0 18px; }
 .profile-membership-state { border: 1px solid var(--line); border-radius: 16px; padding: 20px; margin-bottom: 24px; }
 .profile-membership-state > span { display: block; font-size: 12px; font-weight: 600; color: var(--lapis); margin-bottom: 8px; }

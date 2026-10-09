@@ -395,6 +395,7 @@ body.demo-mode.showing-account footer { bottom: calc(72px + env(safe-area-inset-
 .app-tabs button[aria-selected="true"] { color: var(--lapis); font-weight: 600; }
 .app-tabs button:hover { background: var(--soft); }
 .sidebar-brand, .sidebar-note, .onboarding-nav { display: none; }
+.sidebar-brand { color: var(--ink); text-decoration: none; }
 /* Partner directory with locally served website imagery. */
 .ecosystem-intro.description { margin-bottom: 20px; }
 .ecosystem-signin { margin: 0 0 24px; padding: 20px 16px; border-radius: 16px; background: var(--soft); text-align: center; }

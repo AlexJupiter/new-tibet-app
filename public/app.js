@@ -9,7 +9,7 @@ import {onboardingRewards,rememberDemoOnboardingStages,securityComplete,contacts
 import {renderAnnouncements} from './announcements.js';
 import {renderEcosystem} from './ecosystem.js';
 import {mountWelcomeSlideshow} from './welcome.js';
-import {canInvite,membershipLabel,createDemoInvite,redeemDemoInvite,invitationMessage} from './invites.js';
+import {canInvite,membershipLabel,createDemoInvite,redeemDemoInvite,clearDemoInvites,invitationMessage} from './invites.js';
 import {hasMemberAccess,rewardLadder,setupProgress,rememberExplorer,restoreExplorer,clearExplorer} from './profile-progress.js';
 import {renderRestricted} from './restricted.js';
 import {recordApplicationEvent,inboxItems,unreadCount,saveDemoInbox,restoreDemoInbox,clearDemoInbox} from './inbox-model.js';
@@ -42,6 +42,15 @@ const from64=(str)=>Uint8Array.from(atob(str.replace(/-/g,'+').replace(/_/g,'/')
 async function api(path, body){const res=await fetch(config.apiBase.replace(/\/$/,'')+'/api/'+path,{method:body?'POST':'GET',headers:{'Content-Type':'application/json',...(sessionToken?{Authorization:'Bearer '+sessionToken}:{})},...(body?{body:JSON.stringify(body)}:{})});const data=await res.json();if(!res.ok)throw new Error(data.error||'Something went wrong. Please try again.');return data;}
 async function session(){if(!sessionToken){const data=await api('session',{});sessionToken=data.token;if(!demo)try{sessionStorage.setItem('new-tibet-session-v1',sessionToken);}catch{}}}
 function stopCamera(){if(recorder?.state==='recording'){recorder.onstop=null;recorder.stop();}recorder=null;clearInterval(recordingTimer);if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;}
+function restartDemo(){
+ if(!demo||showcase)return;
+ stopCamera();passportGeneration++;passportClient?.clearAllRequests();
+ state.wallet?.words?.fill('');
+ if(state.videoURL)URL.revokeObjectURL(state.videoURL);
+ try{clearDemoInbox(localStorage);clearExplorer(localStorage);clearDemoInvites(localStorage);}catch{}
+ // A fresh document also discards pending demo operations, drafts and dialog state.
+ location.replace(new URL('./',location.href).href);
+}
 function navigate(step){if(step===steps.video){step=steps.photos;state.evidenceView="video";}else if(step===steps.photos){state.evidenceView="photos";}if(state.step===steps.security&&step!==steps.security&&state.wallet?.words){state.wallet.words.fill('');state.wallet=null;state.recoveryStage='';}stopCamera();if(state.step===steps.passport&&step!==steps.passport){passportGeneration++;passportClient?.clearAllRequests();state.passportRequest=null;}if(step===steps.account)state.profileSetup=false;state.step=step;notice();render();window.scrollTo(0,0);document.querySelector(step===-1?'#splash-title':'#screen-title')?.focus({preventScroll:true});}
 function explore(startJoining=false){
  if(busy)return;
@@ -77,7 +86,7 @@ function render(){
  document.querySelector('#signup').classList.toggle('profile-view',inApp);
  document.querySelector('.onboarding-nav')?.remove();
  if(!state.profileSetup&&state.step>=0&&state.step<=1&&!state.reference){
-  document.querySelector('#signup').insertAdjacentHTML('afterbegin',`<nav class="onboarding-nav" aria-label="Application steps"><div class="sidebar-brand"><img src="${new URL('./assets/new-tibet-logo-blue.svg',import.meta.url).href}" alt="New Tibet"/></div><h3>Join New Tibet</h3>${(state.book==='vouched'?['Join with an invitation']:['Choose how to join','Verify your book']).map((label,index)=>`<button type="button" data-step="${index}" ${index===state.step?'aria-current="step"':''} ${index>state.step?'disabled':''}><span>${index<state.step?'✓':index+1}</span>${label}</button>`).join('')}<span class="sidebar-note">${demo?'Demo · Nothing is uploaded.':'Your application is private.'}</span></nav>`);
+  document.querySelector('#signup').insertAdjacentHTML('afterbegin',`<nav class="onboarding-nav" aria-label="Application steps"><a class="sidebar-brand" href="./" data-demo-home aria-label="New Tibet home"><img src="${new URL('./assets/new-tibet-logo-blue.svg',import.meta.url).href}" alt=""/></a><h3>Join New Tibet</h3>${(state.book==='vouched'?['Join with an invitation']:['Choose how to join','Verify your book']).map((label,index)=>`<button type="button" data-step="${index}" ${index===state.step?'aria-current="step"':''} ${index>state.step?'disabled':''}><span>${index<state.step?'✓':index+1}</span>${label}</button>`).join('')}<span class="sidebar-note">${demo?'Demo · Nothing is uploaded.':'Your application is private.'}</span></nav>`);
   document.querySelectorAll('[data-step]').forEach(button=>button.onclick=()=>{if(busy)return;const step=Number(button.dataset.step);if(step<=state.step)navigate(step);});
  }
  if(state.step===-1)return;
@@ -123,17 +132,7 @@ async function demoNext(){
  if(state.step===6){
   if(state.guest)return startProfileSetup(state.profileSetupStep??steps.document);
   if(state.status!=='accepted')return simulateReview('accepted');
-  stopCamera();passportGeneration++;passportClient?.clearAllRequests();
-  if(state.videoURL)URL.revokeObjectURL(state.videoURL);
-  try{clearDemoInbox(localStorage);}catch{}
-  clearExplorer(localStorage);
-  Object.assign(state,initialState());
-  state.inviteCode='';state.invitation=null;
-  state.guest=false;state.profileSetup=false;state.profileSetupStep=null;
-  state.demoOnboardingStages={};state.walletRewardReadIds=[];
-  state.onboardingSkipped=[];
-  const url=new URL(location.href);url.searchParams.delete('preview');url.searchParams.delete('invite');history.replaceState(null,'',url);
-  navigate(-1);
+  return restartDemo();
  }
 }
 async function uploadDemoSamples(){
@@ -613,6 +612,10 @@ document.querySelector('#interest-form').onsubmit=async event=>{event.preventDef
 document.querySelector('#explore-now').onclick=()=>explore();
 document.querySelector('#sign-in').onclick=signIn;
 document.querySelector('#demo-next').onclick=demoNext;
+document.addEventListener('click',event=>{
+ if(!demo||showcase||event.defaultPrevented||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
+ if(event.target.closest?.('[data-demo-home]')){event.preventDefault();restartDemo();}
+});
 // Demo-only entry points let the profile and review states be inspected without new media captures.
 const preview=new URLSearchParams(location.search).get('preview');
 let savedInbox=null;if(demo&&!preview&&!showcase&&!invitationCode)try{savedInbox=restoreDemoInbox(localStorage);}catch{}

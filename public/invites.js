@@ -5,6 +5,7 @@ const normalize=value=>String(value||'').trim().toUpperCase();
 const fingerprint=async text=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text)))).map(n=>n.toString(16).padStart(2,'0')).join('').toUpperCase();
 const checksum=async text=>(await fingerprint(text)).slice(0,6);
 const usedKey='new-tibet-used-demo-invites-v1';
+export function clearDemoInvites(storage){try{storage.removeItem(usedKey);}catch{}}
 export async function createDemoInvite(state){
  if(!canInvite(state))throw new Error('Only verified Green or Blue Book holders can invite someone.');
  const payload=Array.from(crypto.getRandomValues(new Uint8Array(5))).map(n=>n.toString(16).padStart(2,'0')).join('').toUpperCase();

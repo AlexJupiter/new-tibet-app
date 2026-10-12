@@ -11,7 +11,7 @@ import {renderAnnouncements} from './announcements.js';
 import {renderEcosystem} from './ecosystem.js';
 import {mountWelcomeSlideshow} from './welcome.js';
 import {canInvite,membershipLabel,createDemoInvite,redeemDemoInvite,clearDemoInvites,invitationMessage} from './invites.js';
-import {hasMemberAccess,rewardLadder,setupProgress,rememberExplorer,restoreExplorer,clearExplorer} from './profile-progress.js';
+import {hasMemberAccess,rewardLadder,rememberExplorer,restoreExplorer,clearExplorer} from './profile-progress.js';
 import {renderRestricted} from './restricted.js';
 import {recordApplicationEvent,inboxItems,unreadCount,saveDemoInbox,restoreDemoInbox,clearDemoInbox} from './inbox-model.js';
 const config = window.NEW_TIBET_CONFIG || {mode:'demo',apiBase:''};
@@ -83,7 +83,12 @@ function setSetupSkipped(id,skipped){state.onboardingSkipped=(state.onboardingSk
 function showProfileSetup(){
  state.profileSetupStep=state.step;
  if(state.step===steps.document)renderBooks();else if(state.step===steps.photos)renderPhoto();else if(state.step===steps.passport)renderPassport();else if(state.step===steps.security)renderSecurity();else if(state.step===steps.contacts)renderContacts();
- screen.insertAdjacentHTML('afterbegin',`${state.reference?'<button class="text-button profile-back" id="profile-setup-close" type="button">← Back to Profile</button>':''}${setupProgress(state,state.step)}`);
+ screen.querySelector('#screen-title')?.remove();
+ const form=document.createDocumentFragment();while(screen.firstChild)form.appendChild(screen.firstChild);
+ const currentStage=({0:'join',1:'book',3:'passport',4:'security',5:'contacts'})[state.step];
+ screen.innerHTML=`${state.reference?'<button class="text-button profile-back" id="profile-setup-close" type="button">← Back to Profile</button>':''}${heading(state.reference?'Complete your profile.':'Join New Tibet.','Follow the steps below. Every completed stage earns free $TIBET.')}${rewardLadder({...state,demoMode:demo},{currentStage})}`;
+ screen.querySelector('[data-stage-form]').appendChild(form);
+ bindProfileLadder();
  screen.querySelector('#profile-setup-close')?.addEventListener('click',closeProfileSetup);
 }
 function render(){
@@ -224,8 +229,8 @@ function renderPhoto(){
  if(state.evidenceView==='video')renderVideo();else renderPhotoCapture();
  screen.querySelector('#screen-title').textContent='Verify your book.';
  screen.querySelector('.description').textContent='Provide four book photos and a short video. No passport or contact details are required to join.';
- const nav=document.createElement('div');nav.className='evidence-nav';nav.setAttribute('role','group');nav.setAttribute('aria-label','Verification evidence');
- nav.innerHTML=`<button type="button" data-evidence="photos" aria-pressed="${state.evidenceView==='photos'}">Book photos ${Object.keys(state.photos).length===4?'✓':''}</button><button type="button" data-evidence="video" ${!photoKinds.every(kind=>state.photos[kind])&&!state.video?'disabled':''} aria-pressed="${state.evidenceView==='video'}">Video ${state.video?'✓':''}</button>`;
+ const nav=document.createElement('div');nav.className='evidence-nav';
+ nav.innerHTML=`<strong>${state.evidenceView==='photos'?'1. Book photos':'2. Verification video'}</strong>${state.evidenceView==='video'?'<button class="text-button" type="button" data-evidence="photos">Review photos</button>':''}`;
  screen.querySelector('.description').after(nav);
  nav.querySelectorAll('button').forEach(button=>button.onclick=()=>{stopCamera();state.evidenceView=button.dataset.evidence;render();});
  screen.querySelector('#back')?.remove();
@@ -534,6 +539,9 @@ function renderAcceptedAccount(){
  });
 }
 function bindProfileLadder(){
+ screen.querySelectorAll('.signup-stage > summary').forEach(summary=>summary.addEventListener('click',()=>{
+  screen.querySelectorAll('.signup-stage').forEach(stage=>{if(stage!==summary.parentElement)stage.open=false;});
+ }));
  screen.querySelectorAll('[data-profile-setup]').forEach(button=>button.onclick=()=>{
   const action=button.dataset.profileSetup;
   if(action==='invitation'){if(busy||state.reference)return;selectMembershipRoute('vouched');startProfileSetup(steps.document);document.querySelector('#invite-code')?.focus();return;}
@@ -628,6 +636,11 @@ function simulateReview(status){
 document.querySelector('#explore-now').onclick=()=>explore();
 document.querySelector('#sign-in').onclick=signIn;
 document.querySelector('#demo-next').onclick=demoNext;
+document.querySelector('#demo-launch').onclick=()=>{
+ if(!demo||showcase||busy)return;
+ Object.assign(state,initialState(),{step:steps.account,book:'green',name:sampleApplicant.name,demoSampleApplicant:true,reference:'NT-DEMO-'+crypto.randomUUID().slice(0,8).toUpperCase(),status:'accepted',appTab:'profile',applicationCreatedAt:new Date().toISOString(),guest:false,profileSetup:false,profileSetupStep:null,demoOnboardingStages:{},walletRewardReadIds:[],onboardingSkipped:[],rewardCelebrations:['join:credited','book:credited']});
+ recordApplicationEvent(state,'pending');recordApplicationEvent(state,'accepted');clearExplorer(localStorage);persistInbox();navigate(steps.account);
+};
 document.addEventListener('click',event=>{
  if(!demo||showcase||event.defaultPrevented||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
  if(event.target.closest?.('[data-demo-home]')){event.preventDefault();restartDemo();}
@@ -647,5 +660,6 @@ if(showcase){
  document.body.classList.add('showcase-mode');document.body.inert=true;
 }
 window.addEventListener('pagehide',stopCamera);document.querySelector('#year').textContent=new Date().getFullYear();document.querySelector('#privacy').onclick=()=>document.querySelector('#privacy-dialog').showModal();document.querySelector('#close-privacy').onclick=()=>document.querySelector('#privacy-dialog').close();render();resumeLiveSession();
+if(showcase&&showcaseTab==='profile')requestAnimationFrame(()=>{const card=document.querySelector('.identity-card');if(card)window.scrollTo(0,card.getBoundingClientRect().top+scrollY-68);});
 setInterval(()=>{if(!demo&&state.step===6&&state.reference&&!document.hidden)refreshInbox();},30000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&state.step===6&&state.reference){if(['announcements','wallet'].includes(state.appTab))renderAcceptedAccount();if(!demo)refreshInbox();}});

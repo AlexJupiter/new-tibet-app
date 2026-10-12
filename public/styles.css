@@ -870,14 +870,16 @@ details[open] > summary .accordion-chevron { transform: rotate(225deg); }
 .chat-technology-header > div { min-width: 0; }
 .chat-technology-header strong { display: block; font-size: 12px; line-height: 1.4; }
 .chat-technology-header span { display: block; margin-top: 2px; font-size: 11px; line-height: 1.5; color: var(--ink); }
-.mesh-info-button { display: flex; align-items: center; justify-content: center; gap: 8px; flex-shrink: 0; height: 44px; padding: 6px; border: 0; border-radius: 10px; background: #edf0f6; color: var(--lapis); }
-.mesh-info-button:hover { background: #dce3f0; }
+.mesh-info-button { flex-shrink: 0; height: 44px; padding: 4px; border: 0; background: transparent; color: var(--lapis); font-size: 12px; font-weight: 500; white-space: nowrap; text-decoration: underline; text-underline-offset: 3px; }
+.mesh-info-button:hover { text-decoration-thickness: 2px; }
 @media (max-width: 899px) {
  .showing-account[data-app-tab='chat'] .header-inner, .showing-account[data-app-tab='chat'] .header-actions { gap: 8px; }
  .chat-technology-header { flex-shrink: 0; margin-right: 0; }
+ .chat-technology-header .mesh-mini { width: 32px; }
  .chat-technology-header > div { display: none; }
 }
-@media (max-width: 350px) { .showing-account[data-app-tab='chat'] .header .mode-banner { display: none; } }
+@media (max-width: 430px) { .showing-account[data-app-tab='chat'] .header .mode-banner { display: none; } }
+@media (max-width: 350px) { .showing-account[data-app-tab='chat'] .header .about-link { display: none; } }
 
 .petition-sign-dialog { color: var(--ink); }
 .dialog-eyebrow { color: var(--lapis); font-size: 11px; letter-spacing: 1px; margin: 0 0 12px; }
@@ -919,3 +921,18 @@ details[open] > summary .accordion-chevron { transform: rotate(225deg); }
 .chat-about-dialog { max-height: calc(100svh - 40px); overflow-y: auto; }
 
 .chat-about-dialog h2 { font-size: 26px; letter-spacing: -.6px; }
+.chat-about-header { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 16px; }
+.chat-about-header h2 { flex: 1; min-width: 0; margin: 0; }
+.chat-about-header .dialog-close { float: none; flex-shrink: 0; margin: -6px -6px 0 0; }
+.chat-about-dialog .mesh-about-intro { margin: 0 0 18px; }
+.mesh-how-steps { list-style: none; counter-reset: mesh-step; padding: 0; margin: 24px 0; }
+.mesh-how-steps li { counter-increment: mesh-step; position: relative; padding-left: 38px; margin: 0 0 20px; font-size: 14px; line-height: 1.6; }
+.mesh-how-steps li::before { content: counter(mesh-step); position: absolute; left: 0; top: 0; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; color: #fff; background: var(--lapis); font-size: 12px; }
+.mesh-how-steps p { margin: 5px 0 0; }
+.mesh-why h3 { margin: 0 0 6px; }
+.mesh-why p { margin: 0 0 20px; }
+.mesh-about-details { border-top: 1px solid var(--line); }
+.mesh-about-details summary { min-height: 48px; padding: 14px 0; color: var(--lapis); font-size: 14px; font-weight: 500; cursor: pointer; }
+.mesh-about-details p { margin: 0 0 16px; }
+.chat-about-dialog .mesh-prototype-note { margin: 20px 0 0; padding: 14px; border-radius: 12px; background: var(--soft); font-size: 12px; }
+.chat-about-dialog .mesh-source { font-size: 12px; margin: 16px 0 0; }

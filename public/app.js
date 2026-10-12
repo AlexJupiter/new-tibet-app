@@ -133,6 +133,7 @@ function showProfileSetup(){
  screen.querySelector('#profile-setup-close')?.addEventListener('click',closeProfileSetup);
 }
 function render(){
+ document.querySelector('.header-inner .chat-technology-header')?.remove();
  document.querySelector('#mode-banner').hidden=!demo;document.querySelector('#mode-banner').textContent=demo?'Demo':'';
  document.querySelector('#splash').hidden=state.step!==-1;
  document.querySelector('#signup').hidden=state.step===-1;
@@ -545,6 +546,7 @@ async function resumeLiveSession(){
  catch{sessionToken='';try{sessionStorage.removeItem('new-tibet-session-v1');}catch{}document.querySelector('#signin-status').textContent='Sign in with your passkey to return to your application.';}
 }
 function renderAcceptedAccount(){
+ document.querySelector('.header-inner .chat-technology-header')?.remove();
  if(state.appTab==='profile'&&!state.reference&&!state.profileSetup){
   state.profileSetup=true;state.step=state.profileSetupStep===steps.photos&&nameReady()&&state.book!=='vouched'?steps.photos:steps.document;
   renderDemoFooter();
@@ -567,6 +569,8 @@ function renderAcceptedAccount(){
  else if(state.appTab==='wallet')renderWallet(screen,state,demo,notice,renderAcceptedAccount,()=>startProfileSetup(steps.security));
  else if(state.appTab==='ecosystem')renderEcosystem(screen,state,demo,renderAcceptedAccount,notice);
  else if(hasMemberAccess(state))renderProfile();else renderUnverifiedProfile();
+ const meshControl=screen.querySelector('.chat-technology-header');
+ if(meshControl)document.querySelector('.header-actions').before(meshControl);
  document.body.dataset.appTab=state.appTab;
  const panel=document.createElement('section');panel.id='account-panel';panel.setAttribute('role',state.appTab==='announcements'?'region':'tabpanel');panel.setAttribute('aria-labelledby',state.appTab==='announcements'?'screen-title':'tab-'+state.appTab);
  while(screen.firstChild)panel.appendChild(screen.firstChild);
@@ -615,7 +619,7 @@ function renderProfile(){
  const contactsVerified=providedContacts.length>0&&providedContacts.every(factor=>state.verified[factor]===normalize(factor,state[factor]));
  const passportText=state.demoPassportTier?'Enhanced tier · Demo preview':state.passport?.verified?'Verified · 18+':demo&&state.demoSkipped.passport?'Skipped in demo':demo?'Not verified in this demo':'Not verified';
  screen.innerHTML=`<div class="profile-status">${svg('check')}<span>${demo?'Acceptance preview':'Application accepted'}</span></div>`+
- heading('Identity profile.',!securityComplete(state)?'Your membership is verified. Set up your wallet to receive your free $TIBET.':state.book==='vouched'?'You joined through a member’s invitation.':demo?'Example of an accepted New Tibet application.':'Your application has been approved.')+rewardLadder({...state,demoMode:demo})+`${canInvite(state)?'<button class="secondary profile-invite" id="profile-invite" type="button" aria-haspopup="dialog">Invite</button>':''}
+ heading('Identity profile.',!securityComplete(state)?'Your membership is verified. Set up your wallet to receive your free $TIBET.':state.book==='vouched'?'You joined through a member’s invitation.':demo?'Example of an accepted New Tibet application.':'Your application has been approved.')+`${canInvite(state)?'<button class="secondary profile-invite" id="profile-invite" type="button" aria-haspopup="dialog">Invite</button>':''}
  ${profileIdentityCard(state,{demo,portrait:portrait?sampleApplicant.portrait:''})}
  ${demo?'<p class="identity-preview-note">Demo profile · No identity document has been issued.</p>':''}
  ${cardControls(demo)}
@@ -629,7 +633,7 @@ function renderProfile(){
    <div><dt>Account security</dt><dd>${state.demoSimulatedStages?.includes('security')&&!state.wallet?.ready?'Simulated wallet setup':state.passkey?(demo?'Demo passkey':'Passkey'):state.demoOnboardingStages?.security?'Completed in demo · Reconnect wallet':contactsVerified?'Verified optional contact':'Not set up'}</dd></div>
   </dl>
  </section>
- <p class="retention-note">Verification information is deleted 60 days after submission. Account details used to provide membership and sign-in remain until your account is deleted.</p>${reviewPreviewControls()}`;
+ <p class="retention-note">Verification information is deleted 60 days after submission. Account details used to provide membership and sign-in remain until your account is deleted.</p>${reviewPreviewControls()}`+rewardLadder({...state,demoMode:demo});
  bindReviewControls();
  bindProfileLadder();
  screen.querySelector('#profile-invite')?.addEventListener('click',openInvite);

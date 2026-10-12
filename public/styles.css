@@ -734,7 +734,7 @@ body.showing-account:is([data-app-tab='chat'],[data-app-tab='announcements']) { 
 .showing-account:is([data-app-tab='chat'],[data-app-tab='announcements']) .workspace { position: fixed; top: 52px; left: 0; right: 0; bottom: calc(134px + env(safe-area-inset-bottom)); width: auto; max-width: none; margin: 0; padding: 0; }
 .showing-account:is([data-app-tab='chat'],[data-app-tab='announcements']) :is(.surface,#screen,#account-panel) { height: 100%; max-width: none; margin: 0; min-height: 0; }
 .showing-account:is([data-app-tab='chat'],[data-app-tab='announcements']) #notice { display: none; }
-.showing-account[data-app-tab='chat'] .chat-app { display: grid; grid-template-columns: minmax(0,1fr); grid-template-rows: minmax(0,1fr) auto; height: 100%; border: 0; border-radius: 0; min-height: 0; }
+.showing-account[data-app-tab='chat'] .chat-app { display: grid; grid-template-columns: minmax(0,1fr); grid-template-rows: minmax(0,1fr); height: 100%; border: 0; border-radius: 0; min-height: 0; }
 .showing-account[data-app-tab='chat'] .chat-list { grid-row: 1; display: flex; flex-direction: column; width: 100%; min-height: 0; }
 .showing-account[data-app-tab='chat'] .conversation-list { min-height: 0; overflow-y: auto; flex: 1; }
 .showing-account[data-app-tab='chat'] .chat-app.conversation-open .chat-list { display: none; }
@@ -861,15 +861,20 @@ details[open] > summary .accordion-chevron { transform: rotate(225deg); }
 .membership-details .text-button { flex-shrink: 0; }
 .setup-journey > .section-note { font-size: 11px; line-height: 1.65; padding: 16px 20px; margin: 0; border-top: 1px solid var(--line); }
 
-/* A single explanation control at the bottom of the messenger. */
-.chat-technology-footer { grid-row: 2; grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; padding: 10px 16px; min-height: 66px; border-top: 1px solid var(--line); background: #fff; color: var(--lapis); }
-.chat-technology-footer .mesh-mini { flex-shrink: 0; width: 48px; }
-.chat-technology-footer > div { flex: 0 1 auto; min-width: 0; }
-.chat-technology-footer strong { display: block; font-size: 12px; line-height: 1.4; }
-.chat-technology-footer span { display: block; margin-top: 3px; font-size: 11px; line-height: 1.5; color: var(--ink); }
-.mesh-info-button { display: grid; place-items: center; flex-shrink: 0; width: 44px; height: 44px; border: 0; border-radius: 50%; background: #edf0f6; color: var(--lapis); }
+/* Mesh information fits inside the existing 52px app header. */
+.chat-technology-header { display: flex; align-items: center; gap: 10px; min-width: 0; margin-right: auto; color: var(--lapis); }
+.chat-technology-header .mesh-mini { flex-shrink: 0; width: 48px; height: 32px; }
+.chat-technology-header > div { min-width: 0; }
+.chat-technology-header strong { display: block; font-size: 12px; line-height: 1.4; }
+.chat-technology-header span { display: block; margin-top: 2px; font-size: 11px; line-height: 1.5; color: var(--ink); }
+.mesh-info-button { display: flex; align-items: center; justify-content: center; gap: 8px; flex-shrink: 0; height: 44px; padding: 6px; border: 0; border-radius: 10px; background: #edf0f6; color: var(--lapis); }
 .mesh-info-button:hover { background: #dce3f0; }
-.restricted-chat .chat-technology-footer { margin-top: auto; padding: 12px 0 0; }
+@media (max-width: 899px) {
+ .showing-account[data-app-tab='chat'] .header-inner, .showing-account[data-app-tab='chat'] .header-actions { gap: 8px; }
+ .chat-technology-header { flex-shrink: 0; margin-right: 0; }
+ .chat-technology-header > div { display: none; }
+}
+@media (max-width: 350px) { .showing-account[data-app-tab='chat'] .header .mode-banner { display: none; } }
 
 .petition-sign-dialog { color: var(--ink); }
 .dialog-eyebrow { color: var(--lapis); font-size: 11px; letter-spacing: 1px; margin: 0 0 12px; }

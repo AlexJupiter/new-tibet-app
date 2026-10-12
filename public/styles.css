@@ -206,6 +206,7 @@ input::placeholder, textarea::placeholder { color: var(--ink); opacity: 1; }
 .capture-label { text-align: center; font-size: 12px; line-height: 1.5; color: var(--muted); margin: 12px 0 0; }
 .capture-actions { display: flex; flex-direction: column; align-items: stretch; gap: 4px; margin-top: 24px; }
 .capture-actions .secondary { background: transparent; color: var(--lapis); }
+.capture-actions .sample-media-action { background: #edf0f6; border: 1px solid var(--line); color: var(--lapis); }
 .navigation { margin-top: 20px; }
 .navigation .secondary { background: transparent; color: var(--muted); padding-left: 0; }
 .challenge-card { margin: 18px 0 22px; padding: 18px 20px; border-radius: 14px; background: var(--soft); }

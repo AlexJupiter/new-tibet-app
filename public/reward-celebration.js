@@ -19,11 +19,17 @@ export function claimStageCelebration(state,stage){
  if(state.status==='accepted'&&!eligibleOnboardingRewards(state).some(item=>item.stage===stage))return null;
  const key=stage+':'+(state.status==='accepted'?'credited':'completed');
  if(state.rewardCelebrations?.includes(key))return null;
- return claim(state,[{stage,amount:onboardingRewards[stage],label:stage==='book'&&state.status!=='accepted'?'Book verification submitted':onboardingRewardLabels[stage]}]);
+ return claim(state,[{stage,amount:onboardingRewards[stage],label:state.status!=='accepted'&&['join','book'].includes(stage)?stage==='book'?'Book verification submitted':'Membership details saved':onboardingRewardLabels[stage]}]);
 }
 export function claimApprovalCelebration(state){
  const items=eligibleOnboardingRewards(state).filter(item=>!state.rewardCelebrations?.includes(item.stage+':credited'));
  return claim(state,items,true);
+}
+export function claimMembershipCelebration(state){
+ if(!state.reference||!['green','blue'].includes(state.book))return null;
+ const rewards=['book','join'].map(stage=>claimStageCelebration(state,stage)).filter(Boolean);
+ if(!rewards.length)return null;
+ return {...rewards[0],items:rewards.flatMap(reward=>reward.items),amount:rewards.reduce((sum,reward)=>sum+reward.amount,0)};
 }
 
 export function showRewardCelebration(reward,{demo,onContinue}){
@@ -33,7 +39,7 @@ export function showRewardCelebration(reward,{demo,onContinue}){
  const description=reward.accepted?(demo?'Your reward is now in the wallet activity timeline.':'Token distribution is planned; no tokens have been transferred.'):'The New Tibet Foundation will add this reward after your membership is approved.';
  const dialog=document.createElement('dialog');
  dialog.className='reward-celebration-dialog';dialog.setAttribute('aria-labelledby','reward-celebration-title');dialog.setAttribute('aria-describedby','reward-celebration-description');
- dialog.innerHTML=`<div class="reward-confetti" aria-hidden="true">${Array.from({length:36},(_,i)=>`<span style="--confetti-x:${(i*29+7)%100}%;--confetti-drift:${(i*17)%101-50}px;--confetti-delay:${i%6*.07}s;--confetti-turn:${i%2?-540:540}deg;--confetti-color:${['#eb8739','#1c2c60','#42705a','#f0b552'][i%4]}"></span>`).join('')}</div><div class="reward-celebration-content"><div class="reward-seal" aria-hidden="true"><svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6"/></svg></div><p class="reward-congratulations">Congratulations</p><h2 id="reward-celebration-title">${title}</h2><div class="reward-celebration-amount"><strong>+${reward.amount}</strong><span>free $TIBET</span></div><p class="reward-celebration-status">${status}</p><p class="reward-celebration-source">From New Tibet Foundation</p>${reward.items.length>1?`<ul class="reward-celebration-breakdown" aria-label="Rewards earned">${reward.items.map(item=>`<li><span>${onboardingRewardLabels[item.stage]}</span><strong>+${item.amount}</strong></li>`).join('')}</ul>`:`<p class="reward-celebration-stage">${reward.items[0].label}</p>`}<p id="reward-celebration-description">${description}</p>${demo?'<p class="reward-celebration-demo">Demo reward · No real tokens transferred</p>':''}<button class="primary" type="button" id="reward-celebration-continue" autofocus>Continue</button></div>`;
+ dialog.innerHTML=`<div class="reward-confetti" aria-hidden="true">${Array.from({length:36},(_,i)=>`<span style="--confetti-x:${(i*29+7)%100}%;--confetti-drift:${(i*17)%101-50}px;--confetti-delay:${i%6*.07}s;--confetti-turn:${i%2?-540:540}deg;--confetti-color:${['#eb8739','#1c2c60','#42705a','#f0b552'][i%4]}"></span>`).join('')}</div><div class="reward-celebration-content"><div class="reward-seal" aria-hidden="true"><svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6"/></svg></div><p class="reward-congratulations">Congratulations</p><h2 id="reward-celebration-title">${title}</h2><div class="reward-celebration-amount"><strong>+${reward.amount}</strong><span>free $TIBET</span></div><p class="reward-celebration-status">${status}</p><p class="reward-celebration-source">From New Tibet Foundation</p>${reward.items.length>1?`<ul class="reward-celebration-breakdown" aria-label="Rewards earned">${reward.items.map(item=>`<li><span>${item.label||onboardingRewardLabels[item.stage]}</span><strong>+${item.amount}</strong></li>`).join('')}</ul>`:`<p class="reward-celebration-stage">${reward.items[0].label}</p>`}<p id="reward-celebration-description">${description}</p>${demo?'<p class="reward-celebration-demo">Demo reward · No real tokens transferred</p>':''}<button class="primary" type="button" id="reward-celebration-continue" autofocus>Continue</button></div>`;
  let finished=false;
  const finish=()=>{if(finished)return;finished=true;dialog.close();dialog.remove();onContinue?.();document.querySelector('#screen-title')?.focus({preventScroll:true});};
  dialog.querySelector('button').onclick=finish;

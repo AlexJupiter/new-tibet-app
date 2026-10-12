@@ -20,14 +20,22 @@ export function nextSetupAction(state){
  const progress=verificationProgress(state);
  return ['security','passport','contacts'].find(id=>!progress.stages.find(stage=>stage.id===id).done&&!state.onboardingSkipped?.includes(id))||null;
 }
+export function signupStages(state){
+ const progress=verificationProgress(state),joined=Boolean(state.reference),vouched=state.book==='vouched';
+ const joining=progress.stages.find(stage=>stage.id==='join'),book=progress.stages.find(stage=>stage.id==='book');
+ const reward=joining.reward+(vouched?0:book.reward),done=hasMemberAccess(state)&&(vouched||book.done);
+ const evidence=state.profileSetupStep===1&&String(state.name||'').trim()&&!vouched;
+ const label=done?`${reward} coins earned`:joined?state.status==='declined'?'Contact support':'Awaiting approval':evidence?'Photos and video':'Choose how to join';
+ const detail=joined?(vouched?'You joined through a member’s invitation. No book photos or video are required.':book.detail):vouched?'Choose a display name or pseudonym and redeem a verified member’s invitation code.':'Choose your Green or Blue Book and a display name, then provide four book photos and a short video. Verification information is deleted after 60 days.';
+ return [{id:'membership',title:'Join New Tibet',detail,done,reward,label,action:done?null:joined?'status':evidence?'evidence':'join'},...progress.stages.filter(stage=>!['join','book'].includes(stage.id))];
+}
 export function rewardLadder(state,{currentStage}={}){
- const progress=verificationProgress(state),next=nextSetupAction(state),expanded=currentStage||next;
- return `<section class="verification-ladder setup-journey" aria-labelledby="verification-ladder-title"><div class="ladder-heading"><div><h3 id="verification-ladder-title">${state.status==='declined'?'Setup paused':'Your signup steps'}</h3><p>Earn up to ${progress.available} free $TIBET</p></div><span class="ladder-earned">${progress.earned}<small>$TIBET earned</small></span></div><div class="signup-stage-list">${progress.stages.map((item,index)=>{
-  const active=item.id===currentStage,skipped=!item.done&&state.onboardingSkipped?.includes(item.id),detailsSaved=item.id==='join'&&!state.reference&&currentStage==='book';
-  const label=detailsSaved?'Membership details saved':skipped?'Skipped · Available later':item.label;
-  const unavailable=item.id==='book'&&state.book==='vouched';
-  const actionable=state.status!=='declined'&&item.action&&!unavailable&&!(item.id==='book'&&currentStage==='join');
-  return `<details class="signup-stage ${item.done||detailsSaved?'complete':''} ${active?'current':''}" name="signup-stages" data-verification-stage="${item.id}" ${active?'aria-current="step"':''} ${item.id===expanded?'open':''}><summary><span class="ladder-number" aria-hidden="true">${item.done||detailsSaved?'✓':index+1}</span><span class="signup-stage-heading"><strong>${item.title.replace(' · Optional','')}</strong><small>${index>1?'Optional · ':''}${unavailable?'Not required with an invitation':label}</small></span><span class="signup-stage-reward">${unavailable?`<s>+${item.reward}</s>`:`+${item.reward}`}<small>${unavailable?'Book route only':'free $TIBET'}</small></span><span class="accordion-chevron" aria-hidden="true"></span></summary><div class="signup-stage-body" ${active?`data-stage-form="${item.id}"`:''}>${active?'':`<p>${item.detail}</p>${actionable?`<button class="primary" type="button" data-profile-setup="${item.action}">${detailsSaved?'Edit membership':item.done?'Manage step':item.action==='status'?'Check verification status':item.id==='join'?'Start signup':`Continue · +${item.reward} $TIBET`}</button>`:''}`}</div></details>`;
+ const progress=verificationProgress(state),stageId=id=>['join','book','evidence'].includes(id)?'membership':id;
+ currentStage=stageId(currentStage);const expanded=currentStage||stageId(nextSetupAction(state));
+ return `<section class="verification-ladder setup-journey" aria-labelledby="verification-ladder-title"><div class="ladder-heading"><div><h3 id="verification-ladder-title">${state.status==='declined'?'Setup paused':'Your signup steps'}</h3><p>Earn up to ${progress.available} free $TIBET</p></div><span class="ladder-earned">${progress.earned}<small>$TIBET earned</small></span></div><div class="signup-stage-list">${signupStages(state).map((item,index)=>{
+  const active=item.id===currentStage,skipped=!item.done&&state.onboardingSkipped?.includes(item.id),label=skipped?'Skipped · Available later':item.label;
+  const actionable=state.status!=='declined'&&item.action;
+  return `<details class="signup-stage ${item.done?'complete':''} ${active?'current':''}" name="signup-stages" data-verification-stage="${item.id}" ${active?'aria-current="step"':''} ${item.id===expanded?'open':''}><summary><span class="ladder-number" aria-hidden="true">${item.done?'✓':index+1}</span><span class="signup-stage-heading"><strong>${item.title.replace(' · Optional','')}</strong><small>${index>0?'Optional · ':''}${label}</small></span><span class="signup-stage-reward">+${item.reward}<small>free $TIBET</small></span><span class="accordion-chevron" aria-hidden="true"></span></summary><div class="signup-stage-body" ${active?`data-stage-form="${item.id}"`:''}>${active?'':`<p>${item.detail}</p>${actionable?`<button class="primary" type="button" data-profile-setup="${item.action}">${item.done?'Manage step':item.action==='status'?'Check verification status':item.id==='membership'?'Continue signup':`Continue · +${item.reward} $TIBET`}</button>`:''}`}</div></details>`;
  }).join('')}</div><p class="section-note">Rewards from the New Tibet Foundation are credited once after membership acceptance. Optional steps can be skipped. ${state.demoMode?'Demo rewards only; no real tokens are issued.':'Token distribution is planned.'}</p></section>`;
 }
 const guestKey='new-tibet-explore-v1';

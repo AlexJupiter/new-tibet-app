@@ -834,6 +834,11 @@ details[open] > summary .accordion-chevron { transform: rotate(225deg); }
 .signup-stage-body .text-button { width: auto; padding-left: 0; padding-right: 0; }
 .signup-stage-body .book-card { text-align: left; }
 .signup-stage-body .book-card h3 { font-size: 14px; }
+.membership-details { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; margin-bottom: 8px; border-bottom: 1px solid var(--line); }
+.membership-details > div { flex: 1; min-width: 0; }
+.membership-details small { display: block; font-size: 11px; margin-bottom: 5px; }
+.membership-details strong { display: block; font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+.membership-details .text-button { flex-shrink: 0; }
 .setup-journey > .section-note { font-size: 11px; line-height: 1.65; padding: 16px 20px; margin: 0; border-top: 1px solid var(--line); }
 
 /* A single explanation control at the bottom of the messenger. */

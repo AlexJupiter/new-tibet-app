@@ -6,7 +6,7 @@ import {renderAccountTabs,renderPetitions,renderChat} from './account.js';
 import {renderWallet} from './wallet.js';
 import {initialDemoBalances,applyDemoOnboardingRewards,walletRewardUnread} from './member-model.js';
 import {onboardingRewards,rememberDemoOnboardingStages,securityComplete,contactsComplete} from './onboarding-rewards.js';
-import {claimStageCelebration,claimApprovalCelebration,showRewardCelebration} from './reward-celebration.js';
+import {claimStageCelebration,claimApprovalCelebration,claimMembershipCelebration,showRewardCelebration} from './reward-celebration.js';
 import {renderAnnouncements} from './announcements.js';
 import {renderEcosystem} from './ecosystem.js';
 import {mountWelcomeSlideshow} from './welcome.js';
@@ -69,6 +69,7 @@ function presentReward(reward,continuation){
  persistInbox();showRewardCelebration(reward,{demo,onContinue:continuation});
 }
 function celebrateStage(stage,continuation){if(showcase){continuation?.();return;}presentReward(claimStageCelebration(state,stage),continuation);}
+function celebrateMembership(continuation){if(showcase){continuation?.();return;}presentReward(claimMembershipCelebration(state),continuation);}
 function celebrateApproval(continuation){if(showcase){continuation?.();return;}presentReward(claimApprovalCelebration(state),continuation);}
 function completeWalletSetup(){setSetupSkipped('security',false);celebrateStage('security',()=>navigate(steps.passport));}
 function continueAfterVerification(){
@@ -85,7 +86,7 @@ function showProfileSetup(){
  if(state.step===steps.document)renderBooks();else if(state.step===steps.photos)renderPhoto();else if(state.step===steps.passport)renderPassport();else if(state.step===steps.security)renderSecurity();else if(state.step===steps.contacts)renderContacts();
  screen.querySelector('#screen-title')?.remove();
  const form=document.createDocumentFragment();while(screen.firstChild)form.appendChild(screen.firstChild);
- const currentStage=({0:'join',1:'book',3:'passport',4:'security',5:'contacts'})[state.step];
+ const currentStage=({0:'membership',1:'membership',3:'passport',4:'security',5:'contacts'})[state.step];
  screen.innerHTML=`${state.reference?'<button class="text-button profile-back" id="profile-setup-close" type="button">← Back to Profile</button>':''}${heading(state.reference?'Complete your profile.':'Join New Tibet.','Follow the steps below. Every completed stage earns free $TIBET.')}${rewardLadder({...state,demoMode:demo},{currentStage})}`;
  screen.querySelector('[data-stage-form]').appendChild(form);
  bindProfileLadder();
@@ -132,7 +133,7 @@ function renderDemoFooter(){
 async function demoNext(){
  if(!demo||busy)return;
  if(state.step===-1)return explore(true);
- if(state.step===steps.document){state.name=state.name.trim()||sampleApplicant.name;if(state.book==='vouched'){state.inviteCode=(await createDemoInvite({status:'accepted',book:'green'})).code;render();return notice('Fictional sample invitation added. Choose Join New Tibet to continue.');}state.consent=true;return celebrateStage('join',()=>navigate(steps.photos));}
+ if(state.step===steps.document){state.name=state.name.trim()||sampleApplicant.name;if(state.book==='vouched'){state.inviteCode=(await createDemoInvite({status:'accepted',book:'green'})).code;render();return notice('Fictional sample invitation added. Choose Join New Tibet to continue.');}state.consent=true;return navigate(steps.photos);}
  if(state.step===1){
   if(photoKinds.every(kind=>state.photos[kind])&&state.video){state.consent=true;return submit();}
   return uploadDemoSamples();
@@ -202,12 +203,12 @@ function renderBooks(){
   <div class="book-grid membership-options" role="group" aria-label="Choose how to join">${['green','blue','vouched'].map(book=>`<button type="button" class="book-card ${book==='vouched'?'code-choice ':''}${state.book===book?'selected':''}" data-book="${book}" aria-pressed="${state.book===book}"><span class="radio" aria-hidden="true">${state.book===book?'✓':''}</span>${book==='vouched'?`<div class="vouch-symbol" aria-hidden="true">${svg('trust')}</div>`:`<div class="book ${book}" aria-hidden="true">${emblem}</div>`}<h3>${book==='vouched'?'Use a verification code':book==='green'?'Green Book':'Blue Book'}</h3>${book==='vouched'?'<p>Vouched by a member · No book needed</p>':''}</button>`).join('')}</div>
   ${vouched?`<label class="field"><span>Member verification code · Required</span><input id="invite-code" value="${esc(state.inviteCode||'')}" maxlength="64" autocomplete="off" autocapitalize="characters" spellcheck="false" required placeholder="Paste your verification code" aria-describedby="invite-hint"/><small id="invite-hint">Ask a verified member to generate a code using Invite on their profile.${demo?' Use a DEMO-NT code in this demo.':''}</small></label>`:''}
   <label class="field"><span>Display name · Required</span><input id="name" autocomplete="nickname" value="${esc(state.name)}" maxlength="100" required aria-describedby="name-hint" placeholder="Choose a display name"/><small id="name-hint">You can use a pseudonym instead of your real name. This name appears in the app.</small></label>
-  <div class="helper">${svg('info')}<span>${vouched?'Join with your code, without book photos or a video. The book reward and petition voting require book verification.':'Next: four book photos and a short video. Verification information is deleted after 60 days.'}</span></div><div class="actions"><button class="primary" id="continue" type="submit" ${!documentReady()?'disabled':''}>${vouched?'Join New Tibet':'Continue to verification'}</button></div></form>
+  <div class="helper">${svg('info')}<span>${vouched?'Join with your code, without book photos or a video. The book reward and petition voting require book verification.':'Next: four book photos and a short video. Verification information is deleted after 60 days.'}</span></div><div class="actions"><button class="primary" id="continue" type="submit" ${!documentReady()?'disabled':''}>${vouched?'Join New Tibet':'Continue to book photos'}</button></div></form>
   <button class="text-button signup-sign-in" id="profile-sign-in" type="button">Already a member? Sign in</button><p id="profile-signin-status" role="status"></p>`;
  screen.querySelectorAll('[data-book]').forEach(button=>button.onclick=()=>{if(busy)return;selectMembershipRoute(button.dataset.book);render();if(state.book==='vouched')document.querySelector('#invite-code').focus();});
  document.querySelector('#name').oninput=event=>{state.name=event.target.value;document.querySelector('#continue').disabled=!documentReady();};
  document.querySelector('#invite-code')?.addEventListener('input',event=>{state.inviteCode=event.target.value;document.querySelector('#continue').disabled=!documentReady();});
- document.querySelector('#document-form').onsubmit=event=>{event.preventDefault();if(documentReady()){state.name=state.name.trim();if(state.book==='vouched')joinWithInvite();else celebrateStage('join',()=>navigate(steps.photos));}};
+ document.querySelector('#document-form').onsubmit=event=>{event.preventDefault();if(documentReady()){state.name=state.name.trim();if(state.book==='vouched')joinWithInvite();else navigate(steps.photos);}};
  document.querySelector('#profile-sign-in').onclick=signIn;
 }
 async function joinWithInvite(){
@@ -227,11 +228,12 @@ function evidenceReady(){return photoKinds.every(k=>state.photos[k])&&Boolean(st
 function renderPhoto(){
  if(demo&&!state.challenge)state.challenge={code:String(crypto.getRandomValues(new Uint32Array(1))[0]%900000+100000)};
  if(state.evidenceView==='video')renderVideo();else renderPhotoCapture();
- screen.querySelector('#screen-title').textContent='Verify your book.';
+ screen.querySelector('#screen-title').textContent='Join New Tibet.';
  screen.querySelector('.description').textContent='Provide four book photos and a short video. No passport or contact details are required to join.';
  const nav=document.createElement('div');nav.className='evidence-nav';
  nav.innerHTML=`<strong>${state.evidenceView==='photos'?'1. Book photos':'2. Verification video'}</strong>${state.evidenceView==='video'?'<button class="text-button" type="button" data-evidence="photos">Review photos</button>':''}`;
  screen.querySelector('.description').after(nav);
+ const membership=document.createElement('div');membership.className='membership-details';membership.innerHTML=`<div><small>Membership details</small><strong>${esc(state.name)} · ${bookLabel()}</strong></div><button class="text-button" id="edit-membership" type="button">Edit</button>`;nav.before(membership);membership.querySelector('button').onclick=()=>navigate(steps.document);
  nav.querySelectorAll('button').forEach(button=>button.onclick=()=>{stopCamera();state.evidenceView=button.dataset.evidence;render();});
  screen.querySelector('#back')?.remove();
  if(state.evidenceView==='video'){screen.querySelector('#video-next').hidden=true;}else{screen.insertAdjacentHTML('beforeend','<button class="text-button evidence-step-back" id="evidence-back" type="button">← Back to membership</button>');screen.querySelector('#evidence-back').onclick=()=>navigate(steps.document);return;}
@@ -369,7 +371,7 @@ async function addPasskey(){
  finally{busy=false;}
 }
 async function uploadMedia(kind,blob){const response=await fetch(config.apiBase.replace(/\/$/,'')+'/api/media/upload?kind='+encodeURIComponent(kind)+'&book='+state.book,{method:'POST',headers:{'Content-Type':blob.type,Authorization:'Bearer '+sessionToken,'X-Review-Consent':'2026-10-09'},body:blob});const data=await response.json();if(!response.ok)throw new Error(data.error||'Media upload failed. Please try again.');}
-async function submit(){if(busy)return;if(state.reference)return saveContacts();if(!nameReady()||!state.consent){navigate(steps.document);return notice('Enter a display name and agree to book and video review. A pseudonym is welcome.');}if(!contactsReady())return navigate(steps.contacts);if(!photoKinds.every(k=>state.photos[k]))return navigate(1);if(!state.video)return navigate(2);busy=true;const button=document.querySelector('#next')||document.querySelector('#demo-next');button.disabled=true;button.textContent='Submitting…';try{if(demo){state.status='pending';state.reference='NT-'+crypto.randomUUID().slice(0,8).toUpperCase();state.applicationCreatedAt=new Date().toISOString();recordApplicationEvent(state,'pending');persistInbox();if(state.whatsapp)state.messages.push(`New Tibet: Your application ${state.reference} has been received and is awaiting review.`);}else{for(const kind of photoKinds){button.textContent='Uploading '+photoNames[kind].toLowerCase()+'…';const blob=await(await fetch(state.photos[kind])).blob();await uploadMedia(kind,blob);}button.textContent='Uploading video…';await uploadMedia('video',state.video);button.textContent='Submitting application…';const data=await api('applications',{name:state.name,email:normalize('email',state.email),whatsapp:normalize('whatsapp',state.whatsapp),book:state.book,consent:true,consentVersion:'2026-10-09'});state.reference=data.reference;state.status=data.status;state.notification=data.notification;}state.guest=false;clearExplorer(localStorage);state.profileSetupStep=null;state.appTab='profile';state.photos={};state.video=null;URL.revokeObjectURL(state.videoURL);state.videoURL='';celebrateStage('book',continueAfterVerification);if(!demo)refreshInbox();}catch(e){notice(e.message);button.disabled=false;button.textContent='Submit application →';}finally{busy=false;}}
+async function submit(){if(busy)return;if(state.reference)return saveContacts();if(!nameReady()||!state.consent){navigate(steps.document);return notice('Enter a display name and agree to book and video review. A pseudonym is welcome.');}if(!contactsReady())return navigate(steps.contacts);if(!photoKinds.every(k=>state.photos[k]))return navigate(1);if(!state.video)return navigate(2);busy=true;const button=document.querySelector('#next')||document.querySelector('#demo-next');button.disabled=true;button.textContent='Submitting…';try{if(demo){state.status='pending';state.reference='NT-'+crypto.randomUUID().slice(0,8).toUpperCase();state.applicationCreatedAt=new Date().toISOString();recordApplicationEvent(state,'pending');persistInbox();if(state.whatsapp)state.messages.push(`New Tibet: Your application ${state.reference} has been received and is awaiting review.`);}else{for(const kind of photoKinds){button.textContent='Uploading '+photoNames[kind].toLowerCase()+'…';const blob=await(await fetch(state.photos[kind])).blob();await uploadMedia(kind,blob);}button.textContent='Uploading video…';await uploadMedia('video',state.video);button.textContent='Submitting application…';const data=await api('applications',{name:state.name,email:normalize('email',state.email),whatsapp:normalize('whatsapp',state.whatsapp),book:state.book,consent:true,consentVersion:'2026-10-09'});state.reference=data.reference;state.status=data.status;state.notification=data.notification;}state.guest=false;clearExplorer(localStorage);state.profileSetupStep=null;state.appTab='profile';state.photos={};state.video=null;URL.revokeObjectURL(state.videoURL);state.videoURL='';celebrateMembership(continueAfterVerification);if(!demo)refreshInbox();}catch(e){notice(e.message);button.disabled=false;button.textContent='Submit application →';}finally{busy=false;}}
 function reviewPreviewControls(){
  if(!demo)return '';
  const selected=state.status;

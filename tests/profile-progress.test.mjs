@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {hasMemberAccess,verificationProgress,nextSetupAction,rewardLadder,rememberExplorer,restoreExplorer,clearExplorer} from '../public/profile-progress.js';
+import {hasMemberAccess,verificationProgress,nextSetupAction,signupStages,rewardLadder,rememberExplorer,restoreExplorer,clearExplorer} from '../public/profile-progress.js';
 import {inboxItems,unreadCount} from '../public/inbox-model.js';
 import {applyDemoVerificationReward,applyDemoPassportReward,initialDemoBalances,canUsePetitions} from '../public/member-model.js';
 
@@ -24,10 +24,13 @@ test('guided setup resumes required evidence and follows optional stages in orde
 test('progress distinguishes skipped upgrades and exposes every reward in a sequential accordion',()=>{
  const submitted={...visitor,status:'pending',reference:'NT-SETUP-1234',onboardingSkipped:['passport']};
  const summary=rewardLadder(submitted);
- assert.match(summary,/data-profile-setup="security"/);assert.equal((summary.match(/data-verification-stage=/g)||[]).length,5);assert.equal((summary.match(/ name="signup-stages"/g)||[]).length,5);assert.equal((summary.match(/ open>/g)||[]).length,1);assert.match(summary,/data-verification-stage="security"[^>]*open/);
+ assert.match(summary,/data-profile-setup="security"/);assert.equal((summary.match(/data-verification-stage=/g)||[]).length,4);assert.equal((summary.match(/ name="signup-stages"/g)||[]).length,4);assert.equal((summary.match(/ open>/g)||[]).length,1);assert.match(summary,/data-verification-stage="security"[^>]*open/);
  assert.match(summary,/Skipped · Available later/);
- assert.deepEqual(verificationProgress(submitted).stages.map(stage=>stage.id),['join','book','security','passport','contacts']);
- const form=rewardLadder(visitor,{currentStage:'join'});assert.match(form,/data-stage-form="join"/);assert.match(form,/data-stage-form="join"><\/div>/);assert.doesNotMatch(form,/data-profile-setup="join"/);
+ assert.deepEqual(signupStages(submitted).map(stage=>stage.id),['membership','security','passport','contacts']);
+ assert.equal(signupStages(submitted)[0].reward,110);assert.equal(signupStages(submitted)[0].done,false);
+ assert.equal(signupStages({...submitted,status:'accepted'})[0].done,true);
+ assert.equal(signupStages({...submitted,status:'accepted',book:'vouched'})[0].reward,10);
+ const form=rewardLadder(visitor,{currentStage:'join'});assert.match(form,/data-stage-form="membership"/);assert.match(form,/data-stage-form="membership"><\/div>/);assert.doesNotMatch(form,/data-profile-setup="join"/);
  assert.equal(verificationProgress({...submitted,book:"vouched"}).available,130);
  assert.match(rewardLadder({...submitted,status:'declined'}),/Setup paused/);
  assert.doesNotMatch(rewardLadder({...submitted,status:'declined'}),/data-profile-setup=/);

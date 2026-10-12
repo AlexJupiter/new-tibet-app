@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {claimStageCelebration,claimApprovalCelebration} from '../public/reward-celebration.js';
+import {claimStageCelebration,claimApprovalCelebration,claimMembershipCelebration} from '../public/reward-celebration.js';
 import {initialDemoBalances,applyDemoOnboardingRewards} from '../public/member-model.js';
 import {saveDemoInbox,restoreDemoInbox} from '../public/inbox-model.js';
 
@@ -28,4 +28,16 @@ test('celebration state survives reload, filters private values and treats older
  const raw=[...map.values()][0];assert(!raw.includes('private@example.org'));const restored=restoreDemoInbox(storage);assert.equal(claimStageCelebration(restored,'book'),null);
  restored.status='accepted';assert.equal(claimApprovalCelebration(restored).amount,110);saveDemoInbox(storage,restored);assert.equal(claimApprovalCelebration(restoreDemoInbox(storage)),null);
  const [key,value]=[...map.entries()][0],legacy=JSON.parse(value);delete legacy.rewardCelebrations;map.set(key,JSON.stringify(legacy));assert.equal(claimApprovalCelebration(restoreDemoInbox(storage)),null);
+});
+
+test('merged membership celebrates joining and book verification together without duplicate rewards',()=>{
+ assert.equal(claimMembershipCelebration({name:'Draft',book:'green',status:'guest'}),null);
+ const state=application(),reward=claimMembershipCelebration(state);
+ assert.equal(reward.amount,110);assert.equal(reward.accepted,false);assert.equal(reward.items.length,2);
+ assert.equal(reward.items[0].label,'Book verification submitted');assert.equal(claimMembershipCelebration(state),null);
+ assert.equal(applyDemoOnboardingRewards(initialDemoBalances(),state).tibetUnits,0);
+ state.status='accepted';assert.equal(claimApprovalCelebration(state).amount,110);
+ assert.equal(applyDemoOnboardingRewards(initialDemoBalances(),state).tibetUnits,11000);
+ const legacy=application();claimStageCelebration(legacy,'join');assert.equal(claimMembershipCelebration(legacy).amount,100);
+ const invited={...application(),book:'vouched',status:'accepted'};assert.equal(claimMembershipCelebration(invited),null);assert.equal(claimStageCelebration(invited,'join').amount,10);
 });

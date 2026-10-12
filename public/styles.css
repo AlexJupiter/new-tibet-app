@@ -31,7 +31,7 @@ button, a { transition: background-color .15s, border-color .15s; }
 .header-inner { max-width: 1120px; min-height: 52px; margin: auto; padding: 4px 24px; display: flex; align-items: center; justify-content: space-between; }
 .header-actions { display: flex; align-items: center; gap: 16px; }
 .notification-button { position: relative; display: grid; place-items: center; width: 44px; height: 44px; flex-shrink: 0; padding: 0; border: 0; border-radius: 12px; background: transparent; color: var(--lapis); }
-.notification-button:hover, .notification-button[aria-expanded='true'] { background: #edf0f6; }
+.notification-button:hover { background: #edf0f6; }
 .notification-unread { position: absolute; top: 2px; right: 0; display: grid; place-items: center; min-width: 17px; height: 17px; padding: 0 4px; border: 2px solid #fff; border-radius: 999px; background: var(--lapis); color: #fff; font-size: 9px; line-height: 1; font-weight: 600; }
 .brand { display: flex; text-decoration: none; }
 .brand img { display: block; width: 76px; height: 32px; object-fit: contain; }
@@ -379,7 +379,11 @@ body.demo-mode.showing-account footer { bottom: calc(72px + env(safe-area-inset-
 .app-tabs { position: fixed; bottom: 0; left: 0; right: 0; z-index: 6; display: grid; grid-template-columns: repeat(5,minmax(44px,1fr)); max-width: 560px; margin: auto; padding: 8px 4px max(8px,env(safe-area-inset-bottom)); min-height: calc(72px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: #fff; }
 .app-tabs button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; min-height: 54px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); font-size: 11px; }
 .app-tabs button > svg { flex-shrink: 0; width: 22px; height: 22px; }
-.app-tabs button[aria-selected="true"], .app-tabs button[aria-selected="true"]:hover { color: #fff; background: var(--lapis); font-weight: 600; }
+.app-tabs button[aria-selected="true"], .app-tabs button[aria-selected="true"]:hover { background: transparent; }
+.app-tabs button[aria-selected="true"] > svg { color: var(--lapis); }
+.app-tabs button[aria-selected="true"] .tab-icon-fill { fill: currentColor; }
+.app-tabs button[aria-selected="true"] .tab-icon-detail { stroke: #fff; }
+.app-tabs button[aria-selected="true"] .tab-icon-dot { fill: #fff; }
 .app-tabs button:hover { background: var(--soft); }
 .sidebar-brand, .sidebar-note, .onboarding-nav { display: none; }
 .sidebar-brand { color: var(--ink); text-decoration: none; }
@@ -619,7 +623,6 @@ body.demo-mode.showing-account footer { bottom: calc(72px + env(safe-area-inset-
  .sidebar-note { display: block; font-size: 11px; color: var(--muted); line-height: 1.6; padding: 12px; margin-top: auto; }
  .app-tabs button { display: flex; flex-direction: row; gap: 8px; justify-content: flex-start; padding: 12px 10px; font-size: 14px; min-height: 48px; }
  .app-tabs .tab-label { flex: 1; min-width: 0; text-align: left; overflow: hidden; text-overflow: ellipsis; }
- .app-tabs button[aria-selected='true'] { background: var(--lapis); }
  body.demo-mode.showing-account footer { bottom: 0; max-width: 1120px; padding-left: 40px; padding-right: 40px; }
  .showing-onboarding .surface-top { display: none; }
  .onboarding-nav h3 { padding: 0 12px; margin: 0 0 16px; font-size: 12px; color: var(--muted); font-weight: 500; }
@@ -824,8 +827,8 @@ body.showing-account:is([data-app-tab='chat'],[data-app-tab='announcements']) { 
 .field select { width: 100%; min-height: 48px; padding: 12px; border: 1px solid #cbd2e2; border-radius: 10px; background: #fff; color: var(--ink); font: inherit; }
 .showing-splash main { flex-direction: column; }
 .showing-account .demo-launch { display: none; }
-.notification-button[aria-expanded='true'] { background: var(--lapis); color: #fff; }
-.app-tabs button[aria-selected='true'] .tab-unread { background: #fff; color: var(--lapis); }
+.notification-button[aria-expanded='true'], .notification-button[aria-expanded='true']:hover { background: transparent; }
+.notification-button[aria-expanded='true'] .notification-icon-body { fill: currentColor; }
 
 /* One vertical signup path, with every stage and reward visible. */
 .setup-journey { padding: 0; overflow: hidden; margin: 24px 0; }

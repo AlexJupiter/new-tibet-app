@@ -5,11 +5,11 @@ import {confirmPetitionSignature} from './petition-signing.js';
 const esc=value=>String(value).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const icon=paths=>`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
 const tabIcons={
- petitions:icon('<path d="M7 3h9l4 4v14H4V3Z"/><path d="M15 3v5h5M8 12h8m-8 4h5"/>'),
- chat:icon('<path d="M21 11a9 9 0 0 1-9 9 10 10 0 0 1-4-1l-5 2 2-5a9 9 0 1 1 16-5Z"/><path d="M8 10h8m-8 4h5"/>'),
- profile:icon('<rect x="2" y="4" width="20" height="16" rx="3"/><circle cx="8" cy="10" r="2"/><path d="M5 16v-1a3 3 0 0 1 6 0v1m4-7h4m-4 4h4"/>'),
- wallet:icon('<rect x="3" y="6" width="18" height="15" rx="3"/><path d="M4 6V4a2 2 0 0 1 2-2h13v4m-2 7h4v5h-4a2.5 2.5 0 0 1 0-5Z"/>'),
- ecosystem:icon('<rect x="3" y="3" width="6" height="6" rx="1.5"/><rect x="15" y="3" width="6" height="6" rx="1.5"/><rect x="3" y="15" width="6" height="6" rx="1.5"/><rect x="15" y="15" width="6" height="6" rx="1.5"/><path d="M9 6h6M6 9v6m12-6v6M9 18h6"/>')
+ petitions:icon('<path class="tab-icon-fill" d="M7 3h9l4 4v14H4V3Z"/><path class="tab-icon-detail" d="M15 3v5h5M8 12h8m-8 4h5"/>'),
+ chat:icon('<path class="tab-icon-fill" d="M21 11a9 9 0 0 1-9 9 10 10 0 0 1-4-1l-5 2 2-5a9 9 0 1 1 16-5Z"/><path class="tab-icon-detail" d="M8 10h8m-8 4h5"/>'),
+ profile:icon('<rect class="tab-icon-fill" x="2" y="4" width="20" height="16" rx="3"/><circle class="tab-icon-detail tab-icon-dot" cx="8" cy="10" r="2"/><path class="tab-icon-detail" d="M5 16v-1a3 3 0 0 1 6 0v1m4-7h4m-4 4h4"/>'),
+ wallet:icon('<rect class="tab-icon-fill" x="3" y="6" width="18" height="15" rx="3"/><path d="M4 6V4a2 2 0 0 1 2-2h13v4"/><path class="tab-icon-detail" d="M17 13h4v5h-4a2.5 2.5 0 0 1 0-5Z"/>'),
+ ecosystem:icon('<rect class="tab-icon-fill" x="3" y="3" width="6" height="6" rx="1.5"/><rect class="tab-icon-fill" x="15" y="3" width="6" height="6" rx="1.5"/><rect class="tab-icon-fill" x="3" y="15" width="6" height="6" rx="1.5"/><rect class="tab-icon-fill" x="15" y="15" width="6" height="6" rx="1.5"/><path d="M9 6h6M6 9v6m12-6v6M9 18h6"/>')
 };
 export function renderAccountTabs(selected,walletUnread=0){
  const primary=memberTabs.filter(tab=>tab!=='announcements'),focusTab=primary.includes(selected)?selected:'profile';

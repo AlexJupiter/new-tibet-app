@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {onboardingRewards,onboardingRewardTotal,rememberDemoOnboardingStages} from '../public/onboarding-rewards.js';
+import {onboardingRewards,onboardingRewardTotal,rememberDemoOnboardingStages,securityComplete,eligibleOnboardingRewards} from '../public/onboarding-rewards.js';
 import {verificationProgress,rewardLadder} from '../public/profile-progress.js';
-import {applyDemoOnboardingRewards,initialDemoBalances,walletRewardUnread,quoteDemoSend,sendDemoBalance} from '../public/member-model.js';
+import {applyDemoOnboardingRewards,applyDemoVerificationReward,applyDemoPassportReward,initialDemoBalances,walletRewardUnread,quoteDemoSend,sendDemoBalance} from '../public/member-model.js';
 import {saveDemoInbox,restoreDemoInbox} from '../public/inbox-model.js';
 const member=()=>({reference:'NT-STAGES-1234',book:'green',status:'accepted',applicationCreatedAt:'2026-10-09T10:00:00Z',inboxEvents:[{id:'NT-STAGES-1234:accepted',reference:'NT-STAGES-1234',status:'accepted',book:'green',createdAt:'2026-10-09T11:00:00Z'}],inboxRead:[],walletRewardReadIds:[]});
 test('every onboarding stage has a reward and ledger credits match the ladder without repeated payouts',()=>{
@@ -18,18 +18,20 @@ test('every onboarding stage has a reward and ledger credits match the ladder wi
 });
 test('unfinished and skipped stages earn nothing; membership acceptance gates all credits',()=>{
  const empty=initialDemoBalances(),state=member();
- assert.equal(applyDemoOnboardingRewards(empty,state).tibetUnits,11000);
+ assert.equal(applyDemoOnboardingRewards(empty,state),empty);
+ assert.equal(verificationProgress(state).pending,110);
  for(const status of ['guest','pending','declined']){
   const unverified={...state,status,demoPassportTier:true,wallet:{ready:true},email:'member@example.org',verified:{email:'member@example.org'}};
   assert.equal(applyDemoOnboardingRewards(empty,unverified),empty);assert.equal(verificationProgress(unverified).earned,0);
  }
  assert.equal(applyDemoOnboardingRewards(empty,{...state,reference:''}),empty);
  const vouched={...state,book:'vouched',wallet:{ready:false,words:['unconfirmed']},email:'member@example.org',verified:{email:'different@example.org'}};
- assert.equal(applyDemoOnboardingRewards(empty,vouched).tibetUnits,1000);assert.equal(verificationProgress(vouched).earned,10);
- assert.equal(applyDemoOnboardingRewards(empty,{...vouched,demoPassportTier:true}).tibetUnits,11000);
+ assert.equal(applyDemoOnboardingRewards(empty,vouched),empty);assert.equal(verificationProgress(vouched).earned,0);
+ assert.equal(applyDemoOnboardingRewards(empty,{...vouched,demoPassportTier:true}),empty);
+ assert.equal(applyDemoOnboardingRewards(empty,{...vouched,wallet:{ready:true},demoPassportTier:true}).tibetUnits,12000);
 });
 test('new completion rewards notify after a previous wallet visit and survive reload without storing private details',()=>{
- const state=member();state.walletDemo=applyDemoOnboardingRewards(initialDemoBalances(),state);
+ const state={...member(),wallet:{ready:true}};state.walletDemo=applyDemoOnboardingRewards(initialDemoBalances(),state);
  assert.equal(walletRewardUnread(state),1);state.walletRewardReadIds=state.walletDemo.transactions.map(tx=>tx.id);state.walletRewardRead=true;assert.equal(walletRewardUnread(state),0);
  Object.assign(state,{name:'Private name',email:'private@example.org',verified:{email:'private@example.org'},wallet:{ready:true,words:['private recovery word'],privateKey:'private-wallet-key'}});
  assert.equal(rememberDemoOnboardingStages(state),true);assert.equal(rememberDemoOnboardingStages(state),false);
@@ -40,4 +42,21 @@ test('new completion rewards notify after a previous wallet visit and survive re
  assert.equal(restored.walletDemo.tibetUnits,13000);assert.equal(verificationProgress(restored).earned,130);assert.equal(walletRewardUnread(restored),1);
  restored.walletRewardReadIds=restored.walletDemo.transactions.map(tx=>tx.id);saveDemoInbox(storage,restored);const read=restoreDemoInbox(storage);read.walletDemo=applyDemoOnboardingRewards(initialDemoBalances(),read);assert.equal(walletRewardUnread(read),0);
  assert.equal(applyDemoOnboardingRewards(read.walletDemo,read),read.walletDemo);
+});
+test('verified rewards wait for a completed wallet and release once with the wallet setup reward',()=>{
+ const empty=initialDemoBalances(),state={...member(),demoPassportTier:true,email:'a@example.org',verified:{email:'a@example.org'},onboardingSkipped:['security']};
+ for(const wallet of [undefined,{ready:false,words:['not confirmed']}]){
+  state.wallet=wallet;state.passkey={id:'account-only',prfSupported:false};
+  assert.equal(securityComplete(state),false);
+  assert.equal(applyDemoOnboardingRewards(empty,state),empty);
+  assert.equal(applyDemoVerificationReward(empty,state),empty);assert.equal(applyDemoPassportReward(empty,state),empty);
+  assert.equal(verificationProgress(state).earned,0);assert.equal(verificationProgress(state).pending,220);assert.equal(walletRewardUnread({...state,walletDemo:empty}),0);
+ }
+ assert.equal(eligibleOnboardingRewards(state).length,4);
+ state.wallet={ready:true};state.demoOnboardingStages={security:'2026-10-09T13:00:00Z',contacts:'2026-10-09T12:00:00Z'};
+ const wallet=applyDemoOnboardingRewards(empty,state);assert.equal(wallet.tibetUnits,23000);assert.equal(wallet.transactions.length,5);
+ assert(wallet.transactions.every(tx=>Date.parse(tx.createdAt)===Date.parse(state.demoOnboardingStages.security)));
+ assert.equal(verificationProgress(state).pending,0);assert.equal(walletRewardUnread({...state,walletDemo:wallet}),1);
+ assert.equal(applyDemoOnboardingRewards(wallet,state),wallet);
+ assert.equal(securityComplete({...member(),demoOnboardingStages:{security:'invalid'}}),false);
 });

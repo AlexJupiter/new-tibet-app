@@ -6,7 +6,7 @@ import {renderAccountTabs,renderPetitions,renderChat} from './account.js';
 import {renderWallet} from './wallet.js';
 import {initialDemoBalances,applyDemoOnboardingRewards,walletRewardUnread} from './member-model.js';
 import {onboardingRewards,rememberDemoOnboardingStages,securityComplete,contactsComplete} from './onboarding-rewards.js';
-import {claimStageCelebration,claimApprovalCelebration,claimMembershipCelebration,showRewardCelebration} from './reward-celebration.js';
+import {claimStageCelebration,claimApprovalCelebration,claimMembershipCelebration,claimWalletCelebration,showRewardCelebration} from './reward-celebration.js';
 import {renderAnnouncements} from './announcements.js';
 import {renderEcosystem} from './ecosystem.js';
 import {mountWelcomeSlideshow} from './welcome.js';
@@ -66,15 +66,15 @@ function startProfileSetup(step){if(busy)return;state.appTab='profile';state.pro
 function presentReward(reward,continuation){
  if(!reward||showcase){continuation?.();return;}
  if(demo){rememberDemoOnboardingStages(state);state.walletDemo=applyDemoOnboardingRewards(state.walletDemo||initialDemoBalances(),state);}
- persistInbox();showRewardCelebration(reward,{demo,onContinue:continuation});
+ persistInbox();showRewardCelebration(reward,{demo,onContinue:reward.accepted&&!reward.walletReady?continueAfterVerification:continuation});
 }
 function celebrateStage(stage,continuation){if(showcase){continuation?.();return;}presentReward(claimStageCelebration(state,stage),continuation);}
 function celebrateMembership(continuation){if(showcase){continuation?.();return;}presentReward(claimMembershipCelebration(state),continuation);}
 function celebrateApproval(continuation){if(showcase){continuation?.();return;}presentReward(claimApprovalCelebration(state),continuation);}
-function completeWalletSetup(){setSetupSkipped('security',false);celebrateStage('security',()=>navigate(steps.passport));}
+function completeWalletSetup(){if(!securityComplete(state))return;setSetupSkipped('security',false);presentReward(claimWalletCelebration(state),()=>navigate(steps.passport));}
 function continueAfterVerification(){
  state.appTab='profile';
- if(!securityComplete(state)&&!state.onboardingSkipped.includes('security')){
+ if(!securityComplete(state)){
   state.profileSetup=true;state.profileSetupStep=steps.security;return navigate(steps.security);
  }
  navigate(steps.account);
@@ -128,7 +128,7 @@ function renderDemoFooter(){
  button.disabled=false;
  button.textContent=state.step===0&&state.book==='vouched'?'Use sample invitation':state.step===1&&!photoKinds.every(kind=>state.photos[kind])?'Upload sample photos'
   :state.step===1&&!state.video?'Upload sample video'
-  :state.step===6&&state.guest?'Start verification':state.step===6&&state.status==='accepted'?'Restart demo':'Skip';
+  :state.step===steps.security&&!securityComplete(state)?'Set up later':state.step===6&&state.guest?'Start verification':state.step===6&&state.status==='accepted'?'Restart demo':'Skip';
 }
 async function demoNext(){
  if(!demo||busy)return;
@@ -299,13 +299,13 @@ async function verifyCode(f){if(busy)return;const code=document.querySelector('#
 function renderSecurity(){
  const ready=state.wallet?.ready;
  if(state.walletMethod==='recovery-phrase'&&state.wallet?.words){renderRecoveryWords();return;}
- screen.innerHTML=heading('Set up your wallet.',`Set up an Ethereum wallet for your free $TIBET after membership approval. Protect it with a passkey or confirmed 12-word backup to earn ${onboardingRewards.security} more free $TIBET.`)+walletDiagram()+`
+ screen.innerHTML=heading('Set up your wallet.',`Wallet setup is required to receive your free $TIBET after verification. Create an Ethereum wallet with a passkey or confirmed 12-word backup, and earn ${onboardingRewards.security} more free $TIBET.`)+walletDiagram()+`
  <div class="wallet-explanation"><h3>What is a passkey?</h3><p>A key in your device or password manager, unlocked with Face ID, a fingerprint, or PIN.</p></div>
  ${ready?`<div class="wallet-setup-ready"><span class="tag">✓ ${state.wallet.method==='passkey'?'Passkey wallet protected':'12-word backup confirmed'}</span><p class="wallet-address">${esc(state.wallet.address)}</p>${state.wallet.method==='recovery-phrase'&&!state.passkey?'<button class="secondary" id="passkey">Add an account passkey</button>':''}</div>`:`${state.passkey?'<p class="section-note">✓ Passkey added for account sign-in.</p>':''}<div class="capture-actions">${!state.passkey||demo?`<button class="primary" id="passkey">${state.passkey?'Protect wallet with passkey':'Create with a passkey'}</button>`:''}<button class="text-button" id="use-words" ${!demo?'disabled':''}>Record 12 recovery words instead</button></div>`}
  <p class="section-note">A passkey also lets you return to your application and Announcements without an email address or phone number. The 12 words restore the wallet; they do not sign you into this inbox.</p>
  <p class="under-button">Ethereum · ${demo?'Demo wallet, no funds or transfers':'Wallet activation not available yet'}</p>
  <details class="details"><summary>How passkeys help prevent lost access</summary><p>On a supported device the passkey encrypts your wallet key. Your biometrics stay on your device. A synced passkey can be recovered through your password manager, reducing reliance on handwritten words. Wallet recovery also needs its encrypted backup and depends on your passkey provider.</p><p>You can record 12 recovery words instead. Anyone with the phrase can restore the wallet; losing it can mean losing access.</p><p>The demo holds wallet material only in this page’s memory. Reloading clears it. Token access and transfers are unavailable.</p></details>
- ${!securityComplete(state)?'<button class="text-button" id="security-skip" type="button">Skip for now</button>':''}<div class="actions"><button class="secondary" id="back">Back</button><button class="primary" id="security-next" style="flex:1" ${securityComplete(state)?'':'disabled'}>Continue to passport check</button></div>`;
+ ${!securityComplete(state)?'<p class="section-note">You can explore the app without a wallet. Your $TIBET rewards stay pending until you set one up.</p><button class="text-button" id="security-skip" type="button">Set up later</button>':''}<div class="actions"><button class="secondary" id="back">Back</button><button class="primary" id="security-next" style="flex:1" ${securityComplete(state)?'':'disabled'}>Continue to passport check</button></div>`;
  document.querySelector('#back').onclick=()=>{state.appTab='profile';navigate(steps.account);};
  document.querySelector('#passkey')?.addEventListener('click',addPasskey);
  document.querySelector('#use-words')?.addEventListener('click',startRecoveryWallet);
@@ -447,7 +447,7 @@ async function refreshInbox(){
  const previousStatus=state.status;state.inboxLoading=true;state.inboxError='';
  if(state.step===6&&state.appTab==='announcements')renderAcceptedAccount();
  try{applyInboxData(await api('notifications'));}catch(error){state.inboxError=error.message;}
- finally{state.inboxLoading=false;if(state.step===steps.account){if(previousStatus!==state.status&&state.status==='accepted')celebrateApproval(()=>{if(!securityComplete(state)&&!state.onboardingSkipped.includes('security'))continueAfterVerification();else render();});else if(state.appTab==='announcements'||state.appTab==='profile'&&state.status!==previousStatus)render();else updateInboxBadge();}}
+ finally{state.inboxLoading=false;if(state.step===steps.account){if(previousStatus!==state.status&&state.status==='accepted')celebrateApproval(()=>{if(!securityComplete(state))continueAfterVerification();else render();});else if(state.appTab==='announcements'||state.appTab==='profile'&&state.status!==previousStatus)render();else updateInboxBadge();}}
 }
 function updateInboxBadge(){
  const button=document.querySelector('#announcements-button');
@@ -520,7 +520,7 @@ function renderAcceptedAccount(){
  else if(!hasMemberAccess(state)&&['wallet','chat','announcements'].includes(state.appTab))renderRestricted(screen,state,()=>selectAppTab('profile'),closeAnnouncements);
  else if(state.appTab==='petitions')renderPetitions(screen,state,demo,notice,renderAcceptedAccount);
  else if(state.appTab==='chat')renderChat(screen,state,demo,renderAcceptedAccount);
- else if(state.appTab==='wallet')renderWallet(screen,state,demo,notice,renderAcceptedAccount);
+ else if(state.appTab==='wallet')renderWallet(screen,state,demo,notice,renderAcceptedAccount,()=>startProfileSetup(steps.security));
  else if(state.appTab==='ecosystem')renderEcosystem(screen,state,demo,renderAcceptedAccount,notice);
  else if(hasMemberAccess(state))renderProfile();else renderUnverifiedProfile();
  document.body.dataset.appTab=state.appTab;
@@ -561,7 +561,7 @@ async function checkProfileStatus(){
 }
 function renderUnverifiedProfile(){
  const declined=state.status==='declined';
- screen.innerHTML=heading(declined?'Application update.':'Application submitted.',declined?'Contact New Tibet for help with your application.':'Your book photos and video are awaiting review. You can continue with optional setup below.')+`<div class="profile-membership-state"><span>${declined?'Verification declined':'Awaiting verification'}</span><strong>${esc(state.name||'Your application')}</strong><p>Application ${esc(state.reference)}</p></div>${declined?`<a class="text-button" href="mailto:hello@newtibet.com?subject=${encodeURIComponent('Application '+state.reference)}">Contact New Tibet</a>`:''}${rewardLadder({...state,demoMode:demo})}${reviewPreviewControls()}`;
+ screen.innerHTML=heading(declined?'Application update.':'Application submitted.',declined?'Contact New Tibet for help with your application.':'Your book photos and video are awaiting review. Set up your wallet next to receive your $TIBET once verified.')+`<div class="profile-membership-state"><span>${declined?'Verification declined':'Awaiting verification'}</span><strong>${esc(state.name||'Your application')}</strong><p>Application ${esc(state.reference)}</p></div>${declined?`<a class="text-button" href="mailto:hello@newtibet.com?subject=${encodeURIComponent('Application '+state.reference)}">Contact New Tibet</a>`:''}${rewardLadder({...state,demoMode:demo})}${reviewPreviewControls()}`;
  bindProfileLadder();bindReviewControls();
 }
 function renderProfile(){
@@ -571,7 +571,7 @@ function renderProfile(){
  const contactsVerified=providedContacts.length>0&&providedContacts.every(factor=>state.verified[factor]===normalize(factor,state[factor]));
  const passportText=state.demoPassportTier?'Enhanced tier · Demo preview':state.passport?.verified?'Verified · 18+':demo&&state.demoSkipped.passport?'Skipped in demo':demo?'Not verified in this demo':'Not verified';
  screen.innerHTML=`<div class="profile-status">${svg('check')}<span>${demo?'Acceptance preview':'Application accepted'}</span></div>`+
- heading('Identity profile.',state.book==='vouched'?'You joined through a member’s invitation.':demo?'Example of an accepted New Tibet application.':'Your application has been approved.')+rewardLadder({...state,demoMode:demo})+`${canInvite(state)?'<button class="secondary profile-invite" id="profile-invite" type="button" aria-haspopup="dialog">Invite</button>':''}
+ heading('Identity profile.',!securityComplete(state)?'Your membership is verified. Set up your wallet to receive your free $TIBET.':state.book==='vouched'?'You joined through a member’s invitation.':demo?'Example of an accepted New Tibet application.':'Your application has been approved.')+rewardLadder({...state,demoMode:demo})+`${canInvite(state)?'<button class="secondary profile-invite" id="profile-invite" type="button" aria-haspopup="dialog">Invite</button>':''}
  <article class="identity-card" aria-label="New Tibet digital identity profile">
   <div class="identity-card-top">
    <img src="${new URL('./assets/new-tibet-logo-blue.svg',import.meta.url).href}" width="152" height="64" alt="New Tibet"/>
@@ -642,7 +642,7 @@ document.querySelector('#sign-in').onclick=signIn;
 document.querySelector('#demo-next').onclick=demoNext;
 document.querySelector('#demo-launch').onclick=()=>{
  if(!demo||showcase||busy)return;
- Object.assign(state,initialState(),{step:steps.account,book:'green',name:sampleApplicant.name,demoSampleApplicant:true,reference:'NT-DEMO-'+crypto.randomUUID().slice(0,8).toUpperCase(),status:'accepted',appTab:'profile',applicationCreatedAt:new Date().toISOString(),guest:false,profileSetup:false,profileSetupStep:null,demoOnboardingStages:{},walletRewardReadIds:[],onboardingSkipped:[],rewardCelebrations:['join:credited','book:credited']});
+ Object.assign(state,initialState(),{step:steps.account,book:'green',name:sampleApplicant.name,demoSampleApplicant:true,reference:'NT-DEMO-'+crypto.randomUUID().slice(0,8).toUpperCase(),status:'accepted',appTab:'profile',applicationCreatedAt:new Date().toISOString(),guest:false,profileSetup:false,profileSetupStep:null,demoOnboardingStages:{},walletRewardReadIds:[],onboardingSkipped:[],rewardCelebrations:['join:unlocked','book:unlocked']});
  recordApplicationEvent(state,'pending');recordApplicationEvent(state,'accepted');clearExplorer(localStorage);persistInbox();navigate(steps.account);
 };
 document.addEventListener('click',event=>{
@@ -659,7 +659,7 @@ if(demo&&!showcase&&['profile','review','announcements'].includes(preview)){
  Object.assign(state,{step:6,name:sampleApplicant.name,email:sampleApplicant.email,whatsapp:sampleApplicant.whatsapp,demoSampleApplicant:true,reference:'NT-DEMO-0001',status:preview==='review'?'pending':'accepted',appTab:preview==='profile'?'profile':'announcements',passport:{verified:false,preview:true},messages:['New Tibet: We received demo application NT-DEMO-0001.']});recordApplicationEvent(state,'pending');if(state.status==='accepted')recordApplicationEvent(state,'accepted');
 }
 if(showcase){
- Object.assign(state,{step:6,name:sampleApplicant.name,demoSampleApplicant:true,reference:'NT-SHOWCASE-0001',status:'accepted',appTab:showcaseTab,chatOpen:true,passport:{verified:false,preview:true}});
+ Object.assign(state,{step:6,name:sampleApplicant.name,demoSampleApplicant:true,reference:'NT-SHOWCASE-0001',status:'accepted',appTab:showcaseTab,chatOpen:true,passport:{verified:false,preview:true},demoOnboardingStages:{security:new Date().toISOString()}});
  recordApplicationEvent(state,'pending');recordApplicationEvent(state,'accepted');
  document.body.classList.add('showcase-mode');document.body.inert=true;
 }

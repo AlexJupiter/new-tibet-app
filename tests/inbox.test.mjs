@@ -44,7 +44,7 @@ test('demo receipts survive reload without retaining identity details, media, or
 });
 test('wallet reward read state survives reload and existing accepted receipts receive the new reward once',()=>{
  const map=new Map(),storage={setItem:(key,value)=>map.set(key,value),getItem:key=>map.get(key),removeItem:key=>map.delete(key)};
- const state={reference:'NT-REWARD-1234',status:'accepted',book:'green',applicationCreatedAt:'2026-10-08T10:00:00Z',inboxEvents:[],inboxRead:[]};
+ const state={reference:'NT-REWARD-1234',status:'accepted',book:'green',applicationCreatedAt:'2026-10-08T10:00:00Z',demoOnboardingStages:{security:'2026-10-08T09:00:00Z'},inboxEvents:[],inboxRead:[]};
  recordApplicationEvent(state,'accepted');saveDemoInbox(storage,state);
  // Older receipt versions have no wallet-reward read flag.
  const key=[...map.keys()][0],legacy=JSON.parse(map.get(key));delete legacy.walletRewardRead;map.set(key,JSON.stringify(legacy));

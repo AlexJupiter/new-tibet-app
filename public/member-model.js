@@ -1,4 +1,4 @@
-import {onboardingRewards,eligibleOnboardingRewards} from './onboarding-rewards.js';
+import {onboardingRewards,creditableOnboardingRewards,securityComplete} from './onboarding-rewards.js';
 export const memberTabs=['profile','wallet','chat','petitions','ecosystem','announcements'];
 export const samplePetitions=Object.freeze([
  {id:'english-access',category:'Accessibility',title:'English access to CTA documents and sessions',summary:'Guarantee English access to official documents and parliamentary sessions through translations and subtitles.',body:'Do you think the CTA should guarantee that all official documents and parliamentary sessions are accessible in English, for example by providing translations and subtitles?',supporters:1842,goal:2500},
@@ -31,25 +31,22 @@ export const demoRateCents=12;
 export const initialDemoBalances=(tibetUnits=0)=>({tibetUnits,usdCents:0,recipientCredits:{},gasSpentUnits:0,processed:[],transactions:tibetUnits?[{id:'allocation',type:'allocation',tibetUnits,label:'Sample allocation'}]:[]});
 export const demoVerificationRewardUnits=onboardingRewards.book*100;
 export function applyDemoVerificationReward(wallet,application){
- if(application.status!=='accepted'||!['green','blue'].includes(application.book)||!/^NT-[A-Z0-9-]{4,60}$/.test(application.reference||''))return wallet;
+ const reward=creditableOnboardingRewards(application).find(item=>item.stage==='book');if(!reward)return wallet;
  const id=application.reference+':verification-reward';
  if(wallet.processed.includes(id))return wallet;
- const accepted=application.inboxEvents?.find(event=>event.reference===application.reference&&event.status==='accepted');
- const createdAt=[accepted?.createdAt,application.applicationCreatedAt].find(value=>Number.isFinite(Date.parse(value)))||new Date().toISOString();
+ const createdAt=reward.createdAt;
  return {...wallet,tibetUnits:wallet.tibetUnits+demoVerificationRewardUnits,processed:[...wallet.processed,id],transactions:[{id,type:'reward',tibetUnits:demoVerificationRewardUnits,label:'Verification successful',createdAt},...wallet.transactions]};
 }
 export const demoPassportRewardUnits=onboardingRewards.passport*100;
 export function applyDemoPassportReward(wallet,application){
- if(application.status!=='accepted'||!(application.demoPassportTier===true||application.passport?.verified===true)||!/^NT-[A-Z0-9-]{4,60}$/.test(application.reference||''))return wallet;
+ const reward=creditableOnboardingRewards(application).find(item=>item.stage==='passport');if(!reward)return wallet;
  const id=application.reference+':passport-reward';if(wallet.processed.includes(id))return wallet;
- const accepted=application.inboxEvents?.find(event=>event.reference===application.reference&&event.status==='accepted');
- const times=[application.passportTierAt,accepted?.createdAt].map(value=>Date.parse(value)).filter(Number.isFinite);
- const createdAt=times.length?new Date(Math.max(...times)).toISOString():new Date().toISOString();
+ const createdAt=reward.createdAt;
  return {...wallet,tibetUnits:wallet.tibetUnits+demoPassportRewardUnits,processed:[...wallet.processed,id],transactions:[{id,type:'passport-reward',tibetUnits:demoPassportRewardUnits,label:'NFC verification upgrade',createdAt},...wallet.transactions]};
 }
 export function applyDemoOnboardingRewards(wallet,application){
  wallet=applyDemoPassportReward(applyDemoVerificationReward(wallet,application),application);
- for(const reward of eligibleOnboardingRewards(application).filter(item=>!['book','passport'].includes(item.stage))){
+ for(const reward of creditableOnboardingRewards(application).filter(item=>!['book','passport'].includes(item.stage))){
   const id=application.reference+':'+reward.stage+'-reward';
   if(wallet.processed.includes(id))continue;
   const tibetUnits=reward.amount*100;
@@ -60,6 +57,7 @@ export function applyDemoOnboardingRewards(wallet,application){
 export const demoCampaigns=Object.freeze([{id:'monlam',name:'Monlam AI'},{id:'dzongsar',name:'Dzongsar'}]);
 export function advanceDemoCampaign(state,id){
  if(state.status!=='accepted')throw new Error('Complete membership signup before trying a reward campaign.');
+ if(!securityComplete(state))throw new Error('Set up your wallet before receiving campaign rewards.');
  const campaign=demoCampaigns.find(item=>item.id===id);if(!campaign)throw new Error('Unknown reward campaign.');
  state.rewardDays||={};const day=Math.min(7,(state.rewardDays[id]||0)+1);state.rewardDays[id]=day;
  const txid=state.reference+':campaign:'+id;

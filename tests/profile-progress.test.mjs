@@ -12,12 +12,12 @@ test('guided setup resumes required evidence and follows optional stages in orde
  const submitted={...visitor,status:'pending',reference:'NT-SETUP-1234'};
  assert.equal(nextSetupAction(submitted),'security');
  assert.equal(nextSetupAction({...submitted,onboardingSkipped:['passport']}),'security');
- assert.equal(nextSetupAction({...submitted,onboardingSkipped:['security']}),'passport');
+ assert.equal(nextSetupAction({...submitted,onboardingSkipped:['security']}),'security');
  assert.equal(nextSetupAction({...submitted,wallet:{ready:true}}),'passport');
  assert.equal(nextSetupAction({...submitted,demoPassportTier:true}),'security');
  assert.equal(nextSetupAction({...submitted,demoPassportTier:true,wallet:{ready:true}}),'contacts');
  const finished={...submitted,onboardingSkipped:['passport','security','contacts']};
- assert.equal(nextSetupAction(finished),null);assert.equal(verificationProgress(finished).earned,0);
+ assert.equal(nextSetupAction(finished),'security');assert.equal(verificationProgress(finished).earned,0);
  assert.equal(nextSetupAction({...submitted,status:'declined'}),null);
  assert.equal(nextSetupAction({...submitted,status:'accepted',demoPassportTier:true,wallet:{ready:true},email:'a@example.org',verified:{email:'a@example.org'}}),null);
 });
@@ -47,14 +47,14 @@ test('exploring does not create membership, reveal announcements or grant coins 
  assert.equal(inboxItems({...pending,status:'accepted'},true).length,3);
 });
 test('reward progress matches confirmed credit eligibility for every stage',()=>{
- const approved={...visitor,reference:'NT-APPROVED-123',status:'accepted'};
+ const approved={...visitor,reference:'NT-APPROVED-123',status:'accepted',wallet:{ready:true}};
  for(const book of ['green','blue']){
-  const state={...approved,book};assert.equal(hasMemberAccess(state),true);assert.equal(verificationProgress(state).earned,110);
-  assert.equal(verificationProgress({...state,demoPassportTier:true}).earned,210);
-  assert.equal(verificationProgress({...state,passport:{verified:true}}).earned,210);
+  const state={...approved,book};assert.equal(hasMemberAccess(state),true);assert.equal(verificationProgress(state).earned,120);
+  assert.equal(verificationProgress({...state,demoPassportTier:true}).earned,220);
+  assert.equal(verificationProgress({...state,passport:{verified:true}}).earned,220);
  }
- assert.equal(verificationProgress({...approved,book:'vouched'}).earned,10);
- assert.equal(verificationProgress({...approved,book:'vouched',demoPassportTier:true}).earned,110);
+ assert.equal(verificationProgress({...approved,book:'vouched'}).earned,20);
+ assert.equal(verificationProgress({...approved,book:'vouched',demoPassportTier:true}).earned,120);
  const pendingNFC={...approved,status:'pending',demoPassportTier:true,passportTierAt:'2026-10-09T10:00:00Z'};
  assert.equal(verificationProgress(pendingNFC).earned,0);assert.equal(verificationProgress(pendingNFC).stages.find(stage=>stage.id==='passport').done,true);
  assert.equal(verificationProgress(pendingNFC).stages.find(stage=>stage.id==='passport').action,null);
@@ -65,6 +65,15 @@ test('reward progress matches confirmed credit eligibility for every stage',()=>
  const progress=verificationProgress(draft);assert.equal(progress.earned,0);assert.equal(progress.stages.find(stage=>stage.id==='book').action,'evidence');
  assert.equal(progress.stages.find(stage=>stage.id==='security').reward,10);assert.equal(progress.stages.find(stage=>stage.id==='contacts').reward,10);
  assert.equal(verificationProgress({...draft,book:'vouched'}).stages.find(stage=>stage.id==='book').action,'join');
+});
+test('wallet setup is the required next step after verification, even when deferred',()=>{
+ const state={...visitor,reference:'NT-APPROVED-123',status:'accepted',onboardingSkipped:['security']};
+ const stages=signupStages(state),wallet=stages.find(stage=>stage.id==='security'),html=rewardLadder({...state,demoMode:true});
+ assert.equal(stages[0].done,true);assert.match(stages[0].label,/Coins waiting for wallet/);
+ assert.equal(wallet.done,false);assert.equal(wallet.action,'security');assert.match(wallet.label,/Required to receive/);assert.doesNotMatch(wallet.title,/Optional/);
+ assert.equal(nextSetupAction(state),'security');assert.match(html,/110 free \$TIBET waiting for wallet setup/);assert.match(html,/Set up wallet to receive \$TIBET/);
+ assert.doesNotMatch(html,/Optional · Required to receive/);
+ assert.equal(nextSetupAction({...state,passkey:{id:'account-only'}}),'security');
 });
 test('exploration persists only a preference, without identity details, and handles disabled storage',()=>{
  const values=new Map(),storage={getItem:key=>values.get(key),setItem:(key,value)=>values.set(key,value),removeItem:key=>values.delete(key)};

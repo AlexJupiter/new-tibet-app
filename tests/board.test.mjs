@@ -5,7 +5,7 @@ import {createRetention} from '../backend/retention.mjs';
 import {initialDemoBalances,applyDemoVerificationReward,applyDemoPassportReward,advanceDemoCampaign} from '../public/member-model.js';
 
 test('the optional NFC reward requires acceptance, credits another 100 once and never replenishes spending',()=>{
- const state={status:'accepted',book:'green',reference:'NT-TEST-100',demoPassportTier:false};
+ const state={status:'accepted',book:'green',reference:'NT-TEST-100',wallet:{ready:true},demoPassportTier:false};
  let wallet=applyDemoVerificationReward(initialDemoBalances(),state);
  assert.equal(applyDemoPassportReward(wallet,state),wallet);
  state.demoPassportTier=true;wallet=applyDemoPassportReward(wallet,state);assert.equal(wallet.tibetUnits,20000);
@@ -14,13 +14,14 @@ test('the optional NFC reward requires acceptance, credits another 100 once and 
  assert.equal(applyDemoPassportReward(initialDemoBalances(),{...state,status:'pending'}).tibetUnits,0);
 });
 test('demo learning campaigns credit after seven simulated days once, require acceptance and keep separate campaigns',()=>{
- const state={status:'accepted',reference:'NT-TEST-100',rewardDays:{},walletDemo:initialDemoBalances(10000)};
+ const state={status:'accepted',reference:'NT-TEST-100',wallet:{ready:true},rewardDays:{},walletDemo:initialDemoBalances(10000)};
  for(let i=0;i<6;i++)advanceDemoCampaign(state,'monlam');assert.equal(state.walletDemo.tibetUnits,10000);
  advanceDemoCampaign(state,'monlam');assert.equal(state.walletDemo.tibetUnits,20000);
  advanceDemoCampaign(state,'monlam');assert.equal(state.walletDemo.tibetUnits,20000);
  for(let i=0;i<7;i++)advanceDemoCampaign(state,'dzongsar');assert.equal(state.walletDemo.tibetUnits,30000);
  assert.throws(()=>advanceDemoCampaign({...state,status:'pending'},'monlam'));
  assert.throws(()=>advanceDemoCampaign(state,'unknown'));
+ assert.throws(()=>advanceDemoCampaign({...state,wallet:null},'monlam'),/Set up your wallet/);
 });
 function retentionFixture(){
  const db=new DatabaseSync(':memory:');db.exec('CREATE TABLE applications(reference TEXT PRIMARY KEY,data TEXT NOT NULL); CREATE TABLE sessions(id TEXT PRIMARY KEY,data TEXT NOT NULL,expires INTEGER);');

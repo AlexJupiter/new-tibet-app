@@ -2,19 +2,19 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {canUsePetitions,petitionsFor,createPetition,supportPetition,supporterCount,samplePetitions,initialDemoBalances,applyDemoVerificationReward,walletRewardUnread,parseAmount,quoteDemoSwap,swapDemoBalance,withdrawDemoBalance,searchDemoRecipients,findDemoRecipient,quoteDemoSend,sendDemoBalance} from '../public/member-model.js';
 const applicant=(book='green',status='accepted')=>({book,status,reference:'NT-MEMBER-123',name:'Tenzin Dolma',createdPetitions:[],petitionSignatures:[]});
-test('new demo wallets are empty until membership acceptance credits the 100 TIBET reward',()=>{
+test('new demo wallets are empty until membership acceptance and wallet setup credit the 100 TIBET reward',()=>{
  const empty=initialDemoBalances();assert.equal(empty.tibetUnits,0);assert.deepEqual(empty.transactions,[]);
  for(const status of ['pending','declined'])assert.equal(applyDemoVerificationReward(empty,{reference:'NT-REWARD-1234',status}),empty);
  assert.equal(applyDemoVerificationReward(empty,{status:'accepted'}),empty);
  for(const book of ['green','blue']){
-  const application={reference:'NT-REWARD-1234',status:'accepted',book,applicationCreatedAt:'2026-10-08T10:00:00Z',inboxEvents:[{reference:'NT-OTHER-5678',status:'accepted',createdAt:'2026-10-08T09:00:00Z'},{reference:'NT-REWARD-1234',status:'accepted',createdAt:'2026-10-08T11:00:00Z'}]};
+  const application={reference:'NT-REWARD-1234',status:'accepted',book,wallet:{ready:true},applicationCreatedAt:'2026-10-08T10:00:00Z',inboxEvents:[{reference:'NT-OTHER-5678',status:'accepted',createdAt:'2026-10-08T09:00:00Z'},{reference:'NT-REWARD-1234',status:'accepted',createdAt:'2026-10-08T11:00:00Z'}]};
   const wallet=applyDemoVerificationReward(empty,application);assert.equal(wallet.tibetUnits,10000);assert.equal(wallet.transactions.length,1);
-  assert.equal(wallet.transactions[0].type,'reward');assert.equal(wallet.transactions[0].createdAt,'2026-10-08T11:00:00Z');assert.equal(empty.tibetUnits,0);
+  assert.equal(wallet.transactions[0].type,'reward');assert.equal(Date.parse(wallet.transactions[0].createdAt),Date.parse('2026-10-08T11:00:00Z'));assert.equal(empty.tibetUnits,0);
   assert.equal(walletRewardUnread({...application,walletDemo:wallet}),1);assert.equal(walletRewardUnread({...application,walletDemo:wallet,walletRewardRead:true}),0);
  }
 });
 test('repeated acceptance never credits another reward or replenishes spent tokens',()=>{
- const application={reference:'NT-REWARD-1234',status:'accepted',book:'green',applicationCreatedAt:'2026-10-08T11:00:00Z'};
+ const application={reference:'NT-REWARD-1234',status:'accepted',book:'green',wallet:{ready:true},applicationCreatedAt:'2026-10-08T11:00:00Z'};
  const credited=applyDemoVerificationReward(initialDemoBalances(),application);
  assert.equal(applyDemoVerificationReward(credited,application),credited);
  const sent=sendDemoBalance(credited,quoteDemoSend(credited,'sonam.tsering','25'),'reward-send');

@@ -1,6 +1,6 @@
 import {sampleApplicant} from './demo-profile.js';
 import {loadImage} from './images.js';
-import {cardControls,mountProfileCard} from './card.js';
+import {cardControls,mountProfileCard,profileIdentityCard} from './card.js';
 import {passportDiagram,walletDiagram} from './diagrams.js';
 import {renderAccountTabs,renderPetitions,renderChat} from './account.js';
 import {renderWallet} from './wallet.js';
@@ -11,7 +11,7 @@ import {renderAnnouncements} from './announcements.js';
 import {renderEcosystem} from './ecosystem.js';
 import {mountWelcomeSlideshow} from './welcome.js';
 import {canInvite,membershipLabel,createDemoInvite,redeemDemoInvite,clearDemoInvites,invitationMessage} from './invites.js';
-import {hasMemberAccess,rewardLadder,rememberExplorer,restoreExplorer,clearExplorer} from './profile-progress.js';
+import {hasMemberAccess,nextSetupAction,rewardLadder,rememberExplorer,restoreExplorer,clearExplorer} from './profile-progress.js';
 import {renderRestricted} from './restricted.js';
 import {recordApplicationEvent,inboxItems,unreadCount,saveDemoInbox,restoreDemoInbox,clearDemoInbox} from './inbox-model.js';
 const config = window.NEW_TIBET_CONFIG || {mode:'demo',apiBase:''};
@@ -54,7 +54,7 @@ function restartDemo(){
  // A fresh document also discards pending demo operations, drafts and dialog state.
  location.replace(new URL('./',location.href).href);
 }
-function navigate(step){if(step===steps.video){step=steps.photos;state.evidenceView="video";}else if(step===steps.photos){state.evidenceView="photos";}if(state.step===steps.security&&step!==steps.security&&state.wallet?.words){state.wallet.words.fill('');state.wallet=null;state.recoveryStage='';}stopCamera();if(state.step===steps.passport&&step!==steps.passport){passportGeneration++;passportClient?.clearAllRequests();state.passportRequest=null;}if(step===steps.account)state.profileSetup=false;state.step=step;notice();render();window.scrollTo(0,0);document.querySelector(step===-1?'#splash-title':'#screen-title')?.focus({preventScroll:true});}
+function navigate(step){if(step===steps.video){step=steps.photos;state.evidenceView="video";}else if(step===steps.photos){state.evidenceView="photos";}if(state.step===steps.security&&step!==steps.security&&state.wallet?.words){state.wallet.words.fill('');state.wallet=null;state.recoveryStage='';}stopCamera();if(state.step===steps.passport&&step!==steps.passport){passportGeneration++;passportClient?.clearAllRequests();state.passportRequest=null;}if(step===steps.account)state.profileSetup=false;state.step=step;notice();render();window.scrollTo(0,0);document.querySelector(step===-1?'#splash-title':'#screen-title')?.focus({preventScroll:true});if(state.profileSetup&&state.reference&&state.status==='pending')requestAnimationFrame(()=>{if(state.profileSetup&&state.step===step)screen.querySelector('.signup-stage.current')?.scrollIntoView({block:'start'});});}
 function explore(startJoining=false){
  if(busy)return;
  if(state.reference){state.appTab='profile';return navigate(steps.account);}
@@ -79,6 +79,15 @@ function continueAfterVerification(){
  }
  navigate(steps.account);
 }
+function continueAfterBookSubmission(){state.appTab='profile';navigate(steps.account);}
+function processingIdentityPreview(){
+ const portrait=demo&&state.demoSampleApplicant?sampleApplicant.portrait:'';
+ return profileIdentityCard(state,{demo,portrait})+'<p class="identity-processing-note" role="status">Your ID becomes active once your book is verified.</p>';
+}
+function processingNextAction(){
+ const action=nextSetupAction(state),labels={security:'Set up your wallet',passport:'Verify a passport',contacts:'Add contact details'};
+ return labels[action]?`<button class="primary processing-next" type="button" data-profile-setup="${action}">Next: ${labels[action]}</button>`:'';
+}
 function closeProfileSetup(){if(busy)return;state.profileSetupStep=state.step;state.appTab='profile';navigate(steps.account);}
 function setSetupSkipped(id,skipped){state.onboardingSkipped=(state.onboardingSkipped||[]).filter(item=>item!==id);if(skipped)state.onboardingSkipped.push(id);persistInbox();}
 function showProfileSetup(){
@@ -87,7 +96,8 @@ function showProfileSetup(){
  screen.querySelector('#screen-title')?.remove();
  const form=document.createDocumentFragment();while(screen.firstChild)form.appendChild(screen.firstChild);
  const currentStage=({0:'membership',1:'membership',3:'passport',4:'security',5:'contacts'})[state.step];
- screen.innerHTML=`${state.reference?'<button class="text-button profile-back" id="profile-setup-close" type="button">← Back to Profile</button>':''}${heading(state.reference?'Complete your profile.':'Join New Tibet.','Follow the steps below. Every completed stage earns free $TIBET.')}${rewardLadder({...state,demoMode:demo},{currentStage})}`;
+ const processing=state.reference&&state.status==='pending';
+ screen.innerHTML=`${state.reference?'<button class="text-button profile-back" id="profile-setup-close" type="button">← Back to Profile</button>':''}${heading(processing?'Identity profile.':state.reference?'Complete your profile.':'Join New Tibet.',processing?'Your book is being reviewed. Continue your setup below.':'Follow the steps below. Every completed stage earns free $TIBET.')}${processing?processingIdentityPreview():''}${rewardLadder({...state,demoMode:demo},{currentStage})}`;
  screen.querySelector('[data-stage-form]').appendChild(form);
  bindProfileLadder();
  screen.querySelector('#profile-setup-close')?.addEventListener('click',closeProfileSetup);
@@ -373,7 +383,7 @@ async function addPasskey(){
  finally{busy=false;}
 }
 async function uploadMedia(kind,blob){const response=await fetch(config.apiBase.replace(/\/$/,'')+'/api/media/upload?kind='+encodeURIComponent(kind)+'&book='+state.book,{method:'POST',headers:{'Content-Type':blob.type,Authorization:'Bearer '+sessionToken,'X-Review-Consent':'2026-10-09'},body:blob});const data=await response.json();if(!response.ok)throw new Error(data.error||'Media upload failed. Please try again.');}
-async function submit(){if(busy)return;if(state.reference)return saveContacts();if(!nameReady()||!state.consent){navigate(steps.document);return notice('Enter a display name and agree to book and video review. A pseudonym is welcome.');}if(!contactsReady())return navigate(steps.contacts);if(!photoKinds.every(k=>state.photos[k]))return navigate(1);if(!state.video)return navigate(2);busy=true;const button=document.querySelector('#next')||document.querySelector('#demo-next');button.disabled=true;button.textContent='Submitting…';try{if(demo){state.status='pending';state.reference='NT-'+crypto.randomUUID().slice(0,8).toUpperCase();state.applicationCreatedAt=new Date().toISOString();recordApplicationEvent(state,'pending');persistInbox();if(state.whatsapp)state.messages.push(`New Tibet: Your application ${state.reference} has been received and is awaiting review.`);}else{for(const kind of photoKinds){button.textContent='Uploading '+photoNames[kind].toLowerCase()+'…';const blob=await(await fetch(state.photos[kind])).blob();await uploadMedia(kind,blob);}button.textContent='Uploading video…';await uploadMedia('video',state.video);button.textContent='Submitting application…';const data=await api('applications',{name:state.name,email:normalize('email',state.email),whatsapp:normalize('whatsapp',state.whatsapp),book:state.book,consent:true,consentVersion:'2026-10-09'});state.reference=data.reference;state.status=data.status;state.notification=data.notification;}state.guest=false;clearExplorer(localStorage);state.profileSetupStep=null;state.appTab='profile';state.photos={};state.video=null;URL.revokeObjectURL(state.videoURL);state.videoURL='';celebrateMembership(continueAfterVerification);if(!demo)refreshInbox();}catch(e){notice(e.message);button.disabled=false;button.textContent='Submit application →';}finally{busy=false;}}
+async function submit(){if(busy)return;if(state.reference)return saveContacts();if(!nameReady()||!state.consent){navigate(steps.document);return notice('Enter a display name and agree to book and video review. A pseudonym is welcome.');}if(!contactsReady())return navigate(steps.contacts);if(!photoKinds.every(k=>state.photos[k]))return navigate(1);if(!state.video)return navigate(2);busy=true;const button=document.querySelector('#next')||document.querySelector('#demo-next');button.disabled=true;button.textContent='Submitting…';try{if(demo){state.status='pending';state.reference='NT-'+crypto.randomUUID().slice(0,8).toUpperCase();state.applicationCreatedAt=new Date().toISOString();recordApplicationEvent(state,'pending');persistInbox();if(state.whatsapp)state.messages.push(`New Tibet: Your application ${state.reference} has been received and is awaiting review.`);}else{for(const kind of photoKinds){button.textContent='Uploading '+photoNames[kind].toLowerCase()+'…';const blob=await(await fetch(state.photos[kind])).blob();await uploadMedia(kind,blob);}button.textContent='Uploading video…';await uploadMedia('video',state.video);button.textContent='Submitting application…';const data=await api('applications',{name:state.name,email:normalize('email',state.email),whatsapp:normalize('whatsapp',state.whatsapp),book:state.book,consent:true,consentVersion:'2026-10-09'});state.reference=data.reference;state.status=data.status;state.notification=data.notification;}state.guest=false;clearExplorer(localStorage);state.profileSetupStep=null;state.appTab='profile';state.photos={};state.video=null;URL.revokeObjectURL(state.videoURL);state.videoURL='';celebrateMembership(continueAfterBookSubmission);if(!demo)refreshInbox();}catch(e){notice(e.message);button.disabled=false;button.textContent='Submit application →';}finally{busy=false;}}
 function reviewPreviewControls(){
  if(!demo)return '';
  const selected=state.status;
@@ -426,10 +436,6 @@ function renderApplicationDetails(){
   }catch(error){notice(error.message);}
   finally{busy=false;if(button.isConnected){button.disabled=false;button.textContent='Check application status';}}
  });
-}
-function profileInitials(name){
- const parts=String(name).trim().split(/\s+/u).filter(Boolean);
- return (parts.length>1?[parts[0],parts.at(-1)]:parts).map(part=>Array.from(part)[0]).join('').toLocaleUpperCase()||'NT';
 }
 function persistInbox(){if(demo&&!showcase)try{saveDemoInbox(localStorage,state);}catch{}}
 function selectAppTab(tab){if(busy)return;if(tab!=='announcements')state.lastAppTab=tab;state.appTab=tab;if(state.profileSetup){state.profileSetupStep=state.step;return navigate(steps.account);}notice();renderAcceptedAccount();window.scrollTo(0,0);screen.querySelector('#screen-title')?.focus({preventScroll:true});}
@@ -561,7 +567,7 @@ async function checkProfileStatus(){
 }
 function renderUnverifiedProfile(){
  const declined=state.status==='declined';
- screen.innerHTML=heading(declined?'Application update.':'Application submitted.',declined?'Contact New Tibet for help with your application.':'Your book photos and video are awaiting review. Set up your wallet next to receive your $TIBET once verified.')+`<div class="profile-membership-state"><span>${declined?'Verification declined':'Awaiting verification'}</span><strong>${esc(state.name||'Your application')}</strong><p>Application ${esc(state.reference)}</p></div>${declined?`<a class="text-button" href="mailto:hello@newtibet.com?subject=${encodeURIComponent('Application '+state.reference)}">Contact New Tibet</a>`:''}${rewardLadder({...state,demoMode:demo})}${reviewPreviewControls()}`;
+ screen.innerHTML=heading(declined?'Application update.':'Identity profile.',declined?'Contact New Tibet for help with your application.':'Your book is being reviewed. Continue your setup below.')+(declined?`<div class="profile-membership-state"><span>Verification declined</span><strong>${esc(state.name||'Your application')}</strong><p>Application ${esc(state.reference)}</p></div><a class="text-button" href="mailto:hello@newtibet.com?subject=${encodeURIComponent('Application '+state.reference)}">Contact New Tibet</a>`:processingIdentityPreview()+processingNextAction())+rewardLadder({...state,demoMode:demo},{expandNext:false})+reviewPreviewControls();
  bindProfileLadder();bindReviewControls();
 }
 function renderProfile(){
@@ -572,22 +578,7 @@ function renderProfile(){
  const passportText=state.demoPassportTier?'Enhanced tier · Demo preview':state.passport?.verified?'Verified · 18+':demo&&state.demoSkipped.passport?'Skipped in demo':demo?'Not verified in this demo':'Not verified';
  screen.innerHTML=`<div class="profile-status">${svg('check')}<span>${demo?'Acceptance preview':'Application accepted'}</span></div>`+
  heading('Identity profile.',!securityComplete(state)?'Your membership is verified. Set up your wallet to receive your free $TIBET.':state.book==='vouched'?'You joined through a member’s invitation.':demo?'Example of an accepted New Tibet application.':'Your application has been approved.')+rewardLadder({...state,demoMode:demo})+`${canInvite(state)?'<button class="secondary profile-invite" id="profile-invite" type="button" aria-haspopup="dialog">Invite</button>':''}
- <article class="identity-card" aria-label="New Tibet digital identity profile">
-  <div class="identity-card-top">
-   <img src="${new URL('./assets/new-tibet-logo-blue.svg',import.meta.url).href}" width="152" height="64" alt="New Tibet"/>
-   <span class="identity-card-kind">${demo?'Demo profile':'Digital identity'}</span>
-  </div>
-  <div class="identity-card-holder">
-   <div class="identity-portrait" ${portrait?'':`role="img" aria-label="Profile initials ${esc(profileInitials(name))}"`}>${portrait?`<img src="${sampleApplicant.portrait}" alt="Fictional demo applicant Tenzin Dolma"/>`:esc(profileInitials(name))}</div>
-   <div class="identity-holder-name"><p class="identity-label">${state.name.trim()?"Display name":"Member name"}</p><h3>${esc(name)}</h3><p class="identity-holder-type">${membershipLabel(state.book)}</p></div>
-  </div>
-  <div class="identity-card-details"><dl class="identity-fields">
-   <div class="identity-reference"><dt>Profile reference</dt><dd>${esc(state.reference)}</dd></div>
-   <div><dt>${state.book==='vouched'?'Membership basis':'Document'}</dt><dd>${bookLabel()}</dd></div>
-   <div><dt>Status</dt><dd>${demo?'Accepted · preview':'Accepted'}</dd></div>
-  </dl><button class="identity-qr" id="identity-qr" type="button" aria-label="Show membership QR code" disabled><span>Preparing QR…</span></button></div>
-  <div class="identity-card-bottom"><span>NEW TIBET IDENTITY</span><span>${demo?'PREVIEW ONLY':'DIGITAL PROFILE'}</span></div>
- </article>
+ ${profileIdentityCard(state,{demo,portrait:portrait?sampleApplicant.portrait:''})}
  ${demo?'<p class="identity-preview-note">Demo profile · No identity document has been issued.</p>':''}
  ${cardControls(demo)}
  <section class="profile-details" aria-labelledby="profile-details-title">

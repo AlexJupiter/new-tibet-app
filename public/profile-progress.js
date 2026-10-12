@@ -26,13 +26,13 @@ export function signupStages(state){
  const joining=progress.stages.find(stage=>stage.id==='join'),book=progress.stages.find(stage=>stage.id==='book');
  const reward=joining.reward+(vouched?0:book.reward),done=hasMemberAccess(state)&&(vouched||book.done);
  const evidence=state.profileSetupStep===1&&String(state.name||'').trim()&&!vouched;
- const label=done?securityComplete(state)?`${reward} coins received`:'Verified · Coins waiting for wallet':joined?state.status==='declined'?'Contact support':'Awaiting approval':evidence?'Photos and video':'Choose how to join';
+ const label=done?securityComplete(state)?`${reward} coins received`:'Verified · Coins waiting for wallet':joined?state.status==='declined'?'Contact support':'Book uploaded · Processing':evidence?'Photos and video':'Choose how to join';
  const detail=joined?(vouched?'You joined through a member’s invitation. No book photos or video are required.':book.detail):vouched?'Choose a display name or pseudonym and redeem a verified member’s invitation code.':'Choose your Green or Blue Book and a display name, then provide four book photos and a short video. Verification information is deleted after 60 days.';
  return [{id:'membership',title:'Join New Tibet',detail,done,reward,label,action:done?null:joined?'status':evidence?'evidence':'join'},...progress.stages.filter(stage=>!['join','book'].includes(stage.id))];
 }
-export function rewardLadder(state,{currentStage}={}){
+export function rewardLadder(state,{currentStage,expandNext=true}={}){
  const progress=verificationProgress(state),stageId=id=>['join','book','evidence'].includes(id)?'membership':id;
- currentStage=stageId(currentStage);const expanded=currentStage||stageId(nextSetupAction(state));
+ currentStage=stageId(currentStage);const expanded=currentStage||(expandNext?stageId(nextSetupAction(state)):null);
  return `<section class="verification-ladder setup-journey" aria-labelledby="verification-ladder-title"><div class="ladder-heading"><div><h3 id="verification-ladder-title">${state.status==='declined'?'Setup paused':'Your signup steps'}</h3><p>Earn up to ${progress.available} free $TIBET</p></div><span class="ladder-earned">${progress.earned}<small>$TIBET earned</small></span></div><div class="signup-stage-list">${signupStages(state).map((item,index)=>{
   const active=item.id===currentStage,skipped=item.id!=='security'&&!item.done&&state.onboardingSkipped?.includes(item.id),label=skipped?'Skipped · Available later':item.label;
   const actionable=state.status!=='declined'&&item.action;

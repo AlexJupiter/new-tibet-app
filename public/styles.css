@@ -283,6 +283,17 @@ input::placeholder, textarea::placeholder { color: var(--ink); opacity: 1; }
 .identity-qr { display: flex; flex-direction: column; align-items: center; gap: 7px; width: 128px; padding: 0; border: 0; border-radius: 9px; background: transparent; color: var(--lapis); font-size: 9px; line-height: 1.4; }
 .identity-qr img { width: 128px; height: 128px; border-radius: 8px; }
 .identity-qr:disabled { min-height: 128px; opacity: 1; justify-content: center; background: #ffffff80; }
+.identity-processing { padding: 20px; }
+.identity-processing .identity-card-top, .identity-processing .identity-card-holder { margin-bottom: 18px; }
+.identity-processing .identity-card-holder { grid-template-columns: 58px minmax(0, 1fr); gap: 16px; }
+.identity-processing .identity-portrait { width: 58px; height: 72px; font-size: 22px; }
+.identity-processing .identity-card-details { grid-template-columns: minmax(0, 1fr) 88px; gap: 14px; }
+.identity-processing .identity-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.identity-processing .identity-card-bottom { margin-top: 18px; padding-top: 12px; }
+.identity-processing-status { display: inline-flex; align-items: center; gap: 6px; padding: 7px 10px; border: 1px solid #d8bc8f; border-radius: 999px; color: #644611; background: #fcf3e5; font-size: 11px; font-weight: 600; line-height: 1.4; white-space: nowrap; }
+.identity-qr-placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 9px; min-height: 88px; padding: 8px; border: 1px solid #d6ddeb; border-radius: 8px; background: #ffffffb3; color: var(--lapis); font-size: 9px; line-height: 1.5; text-align: center; }
+.identity-processing-note { margin: 12px 0 0; color: var(--ink); font-size: 12px; line-height: 1.6; }
+.processing-next { margin-top: 16px; }
 .card-wallet { margin-top: 28px; }
 .card-wallet h3 { margin: 0 0 8px; font-size: 17px; }
 .card-wallet > p { font-size: 14px; line-height: 1.6; color: var(--muted); margin: 0 0 16px; }
@@ -814,7 +825,7 @@ body.showing-account:is([data-app-tab='chat'],[data-app-tab='announcements']) { 
 .setup-journey .ladder-heading h3 { font-size: 18px; }
 .setup-journey .ladder-heading p { margin: 6px 0 0; line-height: 1.5; }
 .setup-journey .ladder-earned { font-size: 26px; flex-shrink: 0; }
-.signup-stage { border-top: 1px solid var(--line); }
+.signup-stage { border-top: 1px solid var(--line); scroll-margin-top: 72px; }
 .signup-stage > summary { display: flex; align-items: center; gap: 12px; min-height: 90px; padding: 18px 16px; cursor: pointer; list-style: none; }
 .signup-stage > summary::-webkit-details-marker, .ecosystem-developer > summary::-webkit-details-marker { display: none; }
 .signup-stage > summary:hover { background: #f7f8fb; }

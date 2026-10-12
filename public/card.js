@@ -1,6 +1,32 @@
 import {membershipLabel} from './invites.js';
 import {loadImage} from './images.js';
 const esc=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function profileInitials(name){
+ const parts=String(name).trim().split(/\s+/u).filter(Boolean);
+ return (parts.length>1?[parts[0],parts.at(-1)]:parts).map(part=>Array.from(part)[0]).join('').toLocaleUpperCase()||'NT';
+}
+export function profileIdentityCard(state,{demo=false,portrait=''}={}){
+ const processing=state.status==='pending',declined=state.status==='declined',accepted=state.status==='accepted'&&Boolean(state.reference);
+ const name=String(state.name||'').trim()||'Member '+String(state.reference||'').slice(-6);
+ const book=state.book==='vouched'?'Vouched by a member':state.book==='green'?'Green Book':'Blue Book';
+ const status=processing?'Processing':declined?'Not approved':accepted?(demo?'Accepted · preview':'Accepted'):'Not verified';
+ return `<article class="identity-card ${processing?'identity-processing':''}" data-identity-status="${processing?'processing':accepted?'accepted':'unverified'}" aria-label="${processing?'New Tibet ID preview · Processing':'New Tibet digital identity profile'}">
+  <div class="identity-card-top">
+   <img src="${new URL('./assets/new-tibet-logo-blue.svg',import.meta.url).href}" width="152" height="64" alt="New Tibet"/>
+   ${processing?'<span class="identity-processing-status"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Processing</span>':`<span class="identity-card-kind">${demo?'Demo profile':'Digital identity'}</span>`}
+  </div>
+  <div class="identity-card-holder">
+   <div class="identity-portrait" ${portrait?'':`role="img" aria-label="Profile initials ${esc(profileInitials(name))}"`}>${portrait?`<img src="${esc(portrait)}" alt="Fictional demo applicant portrait"/>`:esc(profileInitials(name))}</div>
+   <div class="identity-holder-name"><p class="identity-label">${String(state.name||'').trim()?'Display name':'Member name'}</p><h3>${esc(name)}</h3><p class="identity-holder-type">${processing?`${book} application`:membershipLabel(state.book)}</p></div>
+  </div>
+  <div class="identity-card-details"><dl class="identity-fields">
+   <div class="identity-reference"><dt>${accepted?'Profile':'Application'} reference</dt><dd>${esc(state.reference||'Not submitted')}</dd></div>
+   <div><dt>${state.book==='vouched'?'Membership basis':'Document'}</dt><dd>${book}</dd></div>
+   <div><dt>Status</dt><dd>${status}</dd></div>
+  </dl>${accepted?'<button class="identity-qr" id="identity-qr" type="button" aria-label="Show membership QR code" disabled><span>Preparing QR…</span></button>':'<div class="identity-qr-placeholder"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3m-4 5v2"/></svg><span>QR available<br/>after verification</span></div>'}</div>
+  <div class="identity-card-bottom"><span>NEW TIBET IDENTITY</span><span>${accepted?(demo?'PREVIEW ONLY':'DIGITAL PROFILE'):'AWAITING VERIFICATION'}</span></div>
+ </article>`;
+}
 export function cardControls(demo){
  return `<section class="card-wallet" aria-labelledby="card-wallet-title"><h3 id="card-wallet-title">Use your card in person.</h3><p>Keep your membership card in Apple Wallet or Google Wallet to present at participating physical locations. Staff can scan the QR code to check your membership.</p><p class="card-wallet-note" id="card-wallet-status" role="status">${demo?'Demo previews · Wallet saving is not enabled in this demo.':'Preparing your membership card…'}</p><div class="card-wallet-actions">${['apple','google'].map(provider=>{const platform=provider==='apple'?'Apple Wallet':'Google Wallet';return `<div class="wallet-provider"><button class="wallet-badge" type="button" data-card-provider="${provider}" aria-label="Preview ${platform} membership card"><img src="${new URL(`./assets/wallet/add-to-${provider}-wallet.svg`,import.meta.url).href}" alt="Add to ${platform}"/></button><span class="wallet-provider-note">${demo?'Demo preview':'Preview'}</span></div>`;}).join('')}</div></section><dialog id="card-wallet-dialog"><button class="dialog-close" id="close-card-wallet" aria-label="Close">×</button><div id="card-wallet-dialog-content"></div></dialog>`;
 }

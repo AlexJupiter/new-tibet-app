@@ -214,13 +214,22 @@ function renderBooks(){
  screen.innerHTML=heading('Join New Tibet.','Choose your membership and a display name.')+`<form id="document-form">
   <div class="book-grid membership-options" role="group" aria-label="Choose how to join">${['green','blue','vouched'].map(book=>`<button type="button" class="book-card ${book==='vouched'?'code-choice ':''}${state.book===book?'selected':''}" data-book="${book}" aria-pressed="${state.book===book}"><span class="radio" aria-hidden="true">${state.book===book?'✓':''}</span>${book==='vouched'?`<div class="vouch-symbol" aria-hidden="true">${svg('trust')}</div>`:`<div class="book ${book}" aria-hidden="true">${emblem}</div>`}<h3>${book==='vouched'?'Use a verification code':book==='green'?'Green Book':'Blue Book'}</h3>${book==='vouched'?'<p>Vouched by a member · No book needed</p>':''}</button>`).join('')}</div>
   ${vouched?`<label class="field"><span>Member verification code · Required</span><input id="invite-code" value="${esc(state.inviteCode||'')}" maxlength="64" autocomplete="off" autocapitalize="characters" spellcheck="false" required placeholder="Paste your verification code" aria-describedby="invite-hint"/><small id="invite-hint">Ask a verified member to generate a code using Invite on their profile.${demo?' Use a DEMO-NT code in this demo.':''}</small></label>`:''}
-  <label class="field"><span>Display name · Required</span><input id="name" autocomplete="nickname" value="${esc(state.name)}" maxlength="100" required aria-describedby="name-hint" placeholder="Choose a display name"/><small id="name-hint">You can use a pseudonym instead of your real name. This name appears in the app.</small></label>
-  <div class="helper">${svg('info')}<span>${vouched?'Join with your code, without book photos or a video. The book reward and petition voting require book verification.':'Next: four book photos and a short video. Verification information is deleted after 60 days.'}</span></div><div class="actions"><button class="primary" id="continue" type="submit" ${!documentReady()?'disabled':''}>${vouched?'Join New Tibet':'Continue to book photos'}</button></div></form>
+  <label class="field"><span>Display name · Required</span><input id="name" autocomplete="nickname" value="${esc(state.name)}" maxlength="100" required aria-describedby="name-hint" placeholder="Choose a display name"/><small id="name-hint">You can use a pseudonym instead of your real name. This name appears in the app.</small><small id="name-error" class="field-error" role="alert" hidden></small></label>
+  <div class="helper">${svg('info')}<span>${vouched?'Join with your code, without book photos or a video. The book reward and petition voting require book verification.':'Next: four book photos and a short video. Verification information is deleted after 60 days.'}</span></div><div class="actions"><button class="primary" id="continue" type="submit" ${vouched&&!state.inviteCode?.trim()?'disabled':''}>${vouched?'Join New Tibet':'Continue to book photos'}</button></div></form>
   <button class="text-button signup-sign-in" id="profile-sign-in" type="button">Already a member? Sign in</button><p id="profile-signin-status" role="status"></p>`;
  screen.querySelectorAll('[data-book]').forEach(button=>button.onclick=()=>{if(busy)return;selectMembershipRoute(button.dataset.book);render();if(state.book==='vouched')document.querySelector('#invite-code').focus();});
- document.querySelector('#name').oninput=event=>{state.name=event.target.value;document.querySelector('#continue').disabled=!documentReady();};
- document.querySelector('#invite-code')?.addEventListener('input',event=>{state.inviteCode=event.target.value;document.querySelector('#continue').disabled=!documentReady();});
- document.querySelector('#document-form').onsubmit=event=>{event.preventDefault();if(documentReady()){state.name=state.name.trim();if(state.book==='vouched')joinWithInvite();else navigate(steps.photos);}};
+ const nameInput=screen.querySelector('#name'),nameError=screen.querySelector('#name-error');
+ const requireName=()=>{
+  nameInput.setAttribute('aria-invalid','true');nameInput.setAttribute('aria-describedby','name-hint name-error');
+  nameError.hidden=false;nameError.textContent='Enter a display name before continuing. A pseudonym is welcome.';nameInput.focus();
+ };
+ nameInput.addEventListener('invalid',event=>{event.preventDefault();requireName();});
+ nameInput.oninput=event=>{
+  state.name=event.target.value;
+  if(nameReady()){nameInput.removeAttribute('aria-invalid');nameInput.setAttribute('aria-describedby','name-hint');nameError.hidden=true;nameError.textContent='';}
+ };
+ document.querySelector('#invite-code')?.addEventListener('input',event=>{state.inviteCode=event.target.value;document.querySelector('#continue').disabled=!state.inviteCode.trim();});
+ document.querySelector('#document-form').onsubmit=event=>{event.preventDefault();if(busy)return;if(!nameReady())return requireName();if(documentReady()){state.name=state.name.trim();if(state.book==='vouched')joinWithInvite();else navigate(steps.photos);}};
  document.querySelector('#profile-sign-in').onclick=signIn;
 }
 async function joinWithInvite(){

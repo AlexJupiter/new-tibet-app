@@ -186,7 +186,7 @@ input::placeholder, textarea::placeholder { color: var(--ink); opacity: 1; }
 .field input[aria-invalid='true'] { border: 2px solid #b42318; }
 .field input[aria-invalid='true']:focus-visible { outline-color: #b4231840; }
 .field .field-error { color: #b42318; font-weight: 500; }
-.prototype-setup { display: flex; align-items: center; gap: 14px; padding: 14px; margin: 0 0 24px; border: 1px solid #cbd2e2; border-radius: 12px; background: #f5f7fb; }
+.prototype-setup { display: flex; align-items: center; gap: 14px; padding: 14px; margin: 24px 0 0; border: 1px solid #cbd2e2; border-radius: 12px; background: #f5f7fb; }
 .prototype-setup > div { flex: 1; min-width: 0; }
 .prototype-setup strong { color: var(--lapis); font-size: 12px; }
 .prototype-setup p { color: var(--ink); font-size: 12px; line-height: 1.5; margin: 4px 0 0; }

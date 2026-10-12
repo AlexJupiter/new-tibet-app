@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {onboardingRewards,onboardingRewardTotal,rememberDemoOnboardingStages,securityComplete,eligibleOnboardingRewards} from '../public/onboarding-rewards.js';
+import {onboardingRewards,onboardingRewardTotal,rememberDemoOnboardingStages,securityComplete,eligibleOnboardingRewards,simulateDemoSetup} from '../public/onboarding-rewards.js';
 import {verificationProgress,rewardLadder} from '../public/profile-progress.js';
 import {applyDemoOnboardingRewards,applyDemoVerificationReward,applyDemoPassportReward,initialDemoBalances,walletRewardUnread,quoteDemoSend,sendDemoBalance} from '../public/member-model.js';
 import {saveDemoInbox,restoreDemoInbox} from '../public/inbox-model.js';
@@ -15,6 +15,26 @@ test('every onboarding stage has a reward and ledger credits match the ladder wi
  const spent=sendDemoBalance(wallet,quoteDemoSend(wallet,'sonam.tsering','25'),'stage-reward-send');assert.equal(applyDemoOnboardingRewards(spent,state),spent);
  assert.equal(verificationProgress({...state,walletDemo:spent}).earned,onboardingRewardTotal);
  assert(!rewardLadder({...state,demoMode:true}).includes('No coin reward'));
+});
+test('prototype setup requires explicit demo mode and simulates completion without keys, proofs or verified contacts',()=>{
+ const empty=initialDemoBalances(),state={...member(),status:'pending',email:'private@example.org',verified:{},wallet:null,passkey:null,passport:null,onboardingSkipped:['security','passport','contacts']};
+ const before=structuredClone(state);
+ for(const stage of ['security','passport','contacts'])assert.equal(simulateDemoSetup(state,stage),false);
+ assert.deepEqual(state,before);
+ for(const status of ['guest','declined'])assert.equal(simulateDemoSetup({...state,status},'security',{demo:true}),false);
+ assert.equal(simulateDemoSetup({...state,reference:''},'security',{demo:true}),false);
+ assert.equal(simulateDemoSetup(state,'unknown',{demo:true}),false);
+ for(const stage of ['security','passport','contacts'])assert.equal(simulateDemoSetup(state,stage,{demo:true}),true);
+ assert.equal(state.wallet,null);assert.equal(state.passkey,null);assert.equal(state.passport,null);assert.equal(state.email,before.email);assert.deepEqual(state.verified,{});
+ assert.deepEqual(state.demoSimulatedStages,['security','passport','contacts']);assert.deepEqual(state.onboardingSkipped,[]);
+ const dates=structuredClone(state.demoOnboardingStages),passportAt=state.passportTierAt;
+ assert.equal(applyDemoOnboardingRewards(empty,state),empty);
+ for(const stage of ['security','passport','contacts'])simulateDemoSetup(state,stage,{demo:true});
+ assert.deepEqual(state.demoOnboardingStages,dates);assert.equal(state.passportTierAt,passportAt);assert.equal(state.demoSimulatedStages.length,3);
+ state.status='accepted';const wallet=applyDemoOnboardingRewards(empty,state);assert.equal(wallet.tibetUnits,23000);assert.equal(wallet.transactions.length,5);assert.equal(applyDemoOnboardingRewards(wallet,state),wallet);
+ const map=new Map(),storage={setItem:(key,value)=>map.set(key,value),getItem:key=>map.get(key)};
+ state.demoSimulatedStages.push('private@example.org');saveDemoInbox(storage,state);assert(![...map.values()][0].includes('private@example.org'));
+ const restored=restoreDemoInbox(storage);assert.deepEqual(restored.demoSimulatedStages,['security','passport','contacts']);assert.equal(applyDemoOnboardingRewards(initialDemoBalances(),restored).tibetUnits,23000);
 });
 test('unfinished and skipped stages earn nothing; membership acceptance gates all credits',()=>{
  const empty=initialDemoBalances(),state=member();

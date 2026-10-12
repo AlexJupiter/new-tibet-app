@@ -5,7 +5,7 @@ import {passportDiagram,walletDiagram} from './diagrams.js';
 import {renderAccountTabs,renderPetitions,renderChat} from './account.js';
 import {renderWallet} from './wallet.js';
 import {initialDemoBalances,applyDemoOnboardingRewards,walletRewardUnread} from './member-model.js';
-import {onboardingRewards,rememberDemoOnboardingStages,securityComplete,contactsComplete} from './onboarding-rewards.js';
+import {onboardingRewards,rememberDemoOnboardingStages,securityComplete,contactsComplete,simulateDemoSetup} from './onboarding-rewards.js';
 import {claimStageCelebration,claimApprovalCelebration,claimMembershipCelebration,claimWalletCelebration,showRewardCelebration} from './reward-celebration.js';
 import {renderAnnouncements} from './announcements.js';
 import {renderEcosystem} from './ecosystem.js';
@@ -19,7 +19,7 @@ const showcaseTab=new URLSearchParams(location.search).get('showcase');
 const showcase=['profile','wallet','petitions','chat','ecosystem','announcements'].includes(showcaseTab);
 const demo = showcase || config.mode !== 'live';
 const steps=Object.freeze({document:0,photos:1,video:2,passport:3,security:4,contacts:5,account:6});
-const initialState = () => ({step:-1,book:'green',name:'',email:'',whatsapp:'',country:'',countryConsent:false,countryStatsCounted:false,verified:{},codes:{},photo:null,photos:{},photoKind:'front',evidenceView:'photos',demoPassportTier:false,passportTierAt:'',rewardDays:{},challenge:null,video:null,videoURL:'',passport:null,passportRequest:null,passkey:null,consent:false,reference:'',status:'pending',messages:[],demoSkipped:{contacts:false,passport:false},demoSampleApplicant:false,demoVideo:false,appTab:'announcements',lastAppTab:'profile',applicationCreatedAt:'',inboxEvents:[],inboxItems:[],inboxRead:[],inboxExpanded:'',inboxLoading:false,inboxError:'',petitionSignatures:[],createdPetitions:[],petitionView:'list',petitionDraft:{title:'',body:'',goal:'1000'},chatMessages:[],chatDrafts:{},chatConversation:'community',chatOpen:false,chatSearch:'',wallet:null,walletMethod:'passkey',recoveryStage:'',walletPrfSalt:'',walletDemo:null,walletRewardRead:false,walletView:'home',walletQuote:null,walletReceipt:null,walletSwapInput:'',walletWithdrawInput:'',walletSendInput:'',walletSendSearch:'',walletSendRecipient:''});
+const initialState = () => ({step:-1,book:'green',name:'',email:'',whatsapp:'',country:'',countryConsent:false,countryStatsCounted:false,verified:{},codes:{},photo:null,photos:{},photoKind:'front',evidenceView:'photos',demoPassportTier:false,demoSimulatedStages:[],passportTierAt:'',rewardDays:{},challenge:null,video:null,videoURL:'',passport:null,passportRequest:null,passkey:null,consent:false,reference:'',status:'pending',messages:[],demoSkipped:{contacts:false,passport:false},demoSampleApplicant:false,demoVideo:false,appTab:'announcements',lastAppTab:'profile',applicationCreatedAt:'',inboxEvents:[],inboxItems:[],inboxRead:[],inboxExpanded:'',inboxLoading:false,inboxError:'',petitionSignatures:[],createdPetitions:[],petitionView:'list',petitionDraft:{title:'',body:'',goal:'1000'},chatMessages:[],chatDrafts:{},chatConversation:'community',chatOpen:false,chatSearch:'',wallet:null,walletMethod:'passkey',recoveryStage:'',walletPrfSalt:'',walletDemo:null,walletRewardRead:false,walletView:'home',walletQuote:null,walletReceipt:null,walletSwapInput:'',walletWithdrawInput:'',walletSendInput:'',walletSendSearch:'',walletSendRecipient:''});
 const state = initialState();
 state.inviteCode='';state.invitation=null;
 state.guest=false;state.profileSetup=false;state.profileSetupStep=null;
@@ -66,7 +66,7 @@ function startProfileSetup(step){if(busy)return;state.appTab='profile';state.pro
 function presentReward(reward,continuation){
  if(!reward||showcase){continuation?.();return;}
  if(demo){rememberDemoOnboardingStages(state);state.walletDemo=applyDemoOnboardingRewards(state.walletDemo||initialDemoBalances(),state);}
- persistInbox();showRewardCelebration(reward,{demo,onContinue:reward.accepted&&!reward.walletReady?continueAfterVerification:continuation});
+ persistInbox();showRewardCelebration(reward,{demo,onContinue:reward.accepted&&!reward.walletReady&&!reward.simulated?continueAfterVerification:continuation});
 }
 function celebrateStage(stage,continuation){if(showcase){continuation?.();return;}presentReward(claimStageCelebration(state,stage),continuation);}
 function celebrateMembership(continuation){if(showcase){continuation?.();return;}presentReward(claimMembershipCelebration(state),continuation);}
@@ -90,9 +90,39 @@ function processingNextAction(){
 }
 function closeProfileSetup(){if(busy)return;state.profileSetupStep=state.step;state.appTab='profile';navigate(steps.account);}
 function setSetupSkipped(id,skipped){state.onboardingSkipped=(state.onboardingSkipped||[]).filter(item=>item!==id);if(skipped)state.onboardingSkipped.push(id);persistInbox();}
+function mountPrototypeSetup(stage){
+ if(!demo||showcase||!stage||screen.querySelector('[data-simulate-setup]'))return;
+ const notes={membership:'Use fictional sample details, book photos and video.',security:'Preview wallet setup without creating a passkey or recovery words.',passport:'Preview the NFC tier without tapping a passport or creating a proof.',contacts:'Preview contact verification without entering details or sending messages.'};
+ const id=stage==='passport'?'demo-passport-upgrade':'simulate-setup';
+ screen.querySelector('.description')?.insertAdjacentHTML('afterend',`<div class="prototype-setup"><div><strong>Prototype</strong><p>${notes[stage]}</p></div><button class="secondary" id="${id}" type="button" data-simulate-setup="${stage}" ${busy?'disabled':''}>Simulate setup</button></div>`);
+ screen.querySelector('[data-simulate-setup]')?.addEventListener('click',()=>simulateSetup(stage));
+}
+async function simulateSetup(stage){
+ if(!demo||showcase||busy)return;
+ if(stage==='membership'){
+  if(state.reference||![steps.document,steps.photos,steps.video].includes(state.step))return;
+  state.name=state.name.trim()||sampleApplicant.name;
+  if(state.book==='vouched'){
+   busy=true;
+   try{state.inviteCode=(await createDemoInvite({status:'accepted',book:'green'})).code;busy=false;render();await joinWithInvite();}catch(error){notice(error.message);}finally{busy=false;}
+   return;
+  }
+  state.consent=true;navigate(steps.photos);
+  if(!photoKinds.every(kind=>state.photos[kind]))await uploadDemoSamples();
+  if(state.step!==steps.photos||!photoKinds.every(kind=>state.photos[kind]))return;
+  if(!state.video)await uploadDemoSamples('video');
+  if(state.step===steps.photos&&state.video)await submit();
+  return;
+ }
+ if(state.step!==({security:steps.security,passport:steps.passport,contacts:steps.contacts})[stage]||!simulateDemoSetup(state,stage,{demo}))return;
+ const reward=stage==='security'?claimWalletCelebration(state):claimStageCelebration(state,stage);
+ persistInbox();
+ presentReward(reward?{...reward,simulated:true}:null,()=>{state.appTab='profile';navigate(stage==='security'?steps.passport:stage==='passport'?steps.contacts:steps.account);});
+}
 function showProfileSetup(){
  state.profileSetupStep=state.step;
  if(state.step===steps.document)renderBooks();else if(state.step===steps.photos)renderPhoto();else if(state.step===steps.passport)renderPassport();else if(state.step===steps.security)renderSecurity();else if(state.step===steps.contacts)renderContacts();
+ mountPrototypeSetup(({0:'membership',1:'membership',3:'passport',4:'security',5:'contacts'})[state.step]);
  screen.querySelector('#screen-title')?.remove();
  const form=document.createDocumentFragment();while(screen.firstChild)form.appendChild(screen.firstChild);
  const currentStage=({0:'membership',1:'membership',3:'passport',4:'security',5:'contacts'})[state.step];
@@ -128,6 +158,7 @@ function render(){
  document.querySelector('#step-label').textContent=state.step===6?'Complete':state.reference?'Optional setup':state.book==='vouched'?'Join with an invitation':`Step ${state.step+1} of 2`;document.querySelector('#progress').hidden=Boolean(state.reference)||state.book==='vouched';
  const completed=Math.min(state.step,2);document.querySelector('#progress').setAttribute('aria-valuemax','2');document.querySelector('#progress').setAttribute('aria-valuenow',String(completed));document.querySelector('#progress').setAttribute('aria-valuetext',state.step===6?'Application complete':`Step ${state.step+1} of 2`);document.querySelector('#progress-fill').style.width=`${completed/2*100}%`;
  if(state.step===0)renderBooks();if(state.step===1)renderPhoto();if(state.step===2)renderVideo();if(state.step===steps.passport)renderPassport();if(state.step===steps.security)renderSecurity();if(state.step===steps.contacts)renderContacts();if(state.step===6)renderSuccess();
+ mountPrototypeSetup(({0:'membership',1:'membership',2:'membership',3:'passport',4:'security',5:'contacts'})[state.step]);
 }
 function heading(title,desc){return `<h2 id="screen-title" tabindex="-1">${title}</h2><p class="description">${desc}</p>`;}
 function renderDemoFooter(){
@@ -199,7 +230,7 @@ async function uploadDemoSamples(kind){
    if(state.step===step&&state.video){state.demoVideo=true;render();notice('Narrated fictional sample added. Its example code is '+sampleApplicant.challengeCode+'.');}
   }
  }catch(error){notice(error.message||'Unable to load the sample. Please try again.');}
- finally{busy=false;renderDemoFooter();const sampleButton=screen.querySelector('#sample-video');if(sampleButton){sampleButton.disabled=false;sampleButton.textContent=state.demoVideo?'Replace with sample video':'Upload sample video';if(focusVideoUpload){sampleButton.scrollIntoView({block:'center'});sampleButton.focus({preventScroll:true});}}}
+ finally{busy=false;renderDemoFooter();screen.querySelector('[data-simulate-setup]')?.removeAttribute('disabled');const sampleButton=screen.querySelector('#sample-video');if(sampleButton){sampleButton.disabled=false;sampleButton.textContent=state.demoVideo?'Replace with sample video':'Upload sample video';if(focusVideoUpload){sampleButton.scrollIntoView({block:'center'});sampleButton.focus({preventScroll:true});}}}
 }
 function selectMembershipRoute(book){
  if(state.book!==book){
@@ -284,12 +315,10 @@ function renderPassport(){
  ${verified?`<span class="tag">✓ ${demo?'NFC tier preview · Not a verified proof':'Passport proof verified'}</span>`:''}
  ${state.passportRequest?`<div class="passport-qr"><img src="${state.passportRequest.qr}" alt="Scan to open ZKPassport" width="256" height="256"/><p id="passport-progress" role="status">Open the link on your phone or scan this code with ZKPassport.</p><a class="primary" href="${esc(state.passportRequest.url)}" target="_blank" rel="noopener">Open ZKPassport ↗</a></div>`:''}
  ${!verified?`<div class="actions"><button class="primary" id="start-passport">${state.passportRequest?'Start a new passport check':'Verify with ZKPassport'}</button></div>`:''}
- ${demo&&!verified?'<button class="secondary" id="demo-passport-upgrade" type="button">Simulate NFC upgrade · +100 $TIBET</button><p class="under-button">Simulation only. No cryptographic proof is verified.</p>':''}
  <div class="actions"><button class="secondary" id="back">Back</button><button class="${verified?'primary':'secondary'}" id="passport-next">${verified?'Continue to contacts':'Skip for now'}</button></div>`;
  document.querySelector('#back').onclick=()=>navigate(steps.security);
  if(!verified)document.querySelector('#start-passport').onclick=startPassport;
  document.querySelector('#passport-next').onclick=()=>{if(busy)return;setSetupSkipped('passport',!verified);navigate(steps.contacts);};
- document.querySelector('#demo-passport-upgrade')?.addEventListener('click',()=>{if(!demo||!state.reference)return;state.demoPassportTier=true;state.passportTierAt=new Date().toISOString();persistInbox();render();notice(state.status==='accepted'?'Another 100 $TIBET credited in the demo. No real passport proof or token transfer occurred.':'NFC preview completed. The extra 100 $TIBET will be credited after membership approval.');celebrateStage('passport',()=>{setSetupSkipped('passport',false);navigate(steps.contacts);});});
 }
 async function startPassport(){if(busy)return;busy=true;notice();const generation=++passportGeneration;const button=document.querySelector('#start-passport');button.disabled=true;button.textContent='Preparing secure request…';try{const {ZKPassport,NullifierType,qr}=await import('./passport-sdk.js');let challenge;if(demo)challenge={nonce:crypto.randomUUID(),domain:location.hostname,scope:'new-tibet-identity-v1'};else{await session();challenge=await api('passport/challenge',{});}if(generation!==passportGeneration||state.step!==steps.passport)return;passportClient?.clearAllRequests();passportClient=new ZKPassport(challenge.domain);const builder=await passportClient.request({name:'New Tibet Identity',logo:new URL('./assets/new-tibet-symbol.svg',import.meta.url).href,purpose:'Prove age 18+ and prevent duplicate passport registration. No passport details are disclosed.',scope:challenge.scope,devMode:false,validity:3600,uniqueIdentifierType:NullifierType.NON_SALTED});const request=builder.gte('age',18).bind('custom_data',challenge.nonce).facematch('strict').done();const image=await qr(request.url);if(generation!==passportGeneration||state.step!==steps.passport){passportClient.clearAllRequests();return;}state.passportRequest={url:request.url,qr:image};render();const progress=text=>{if(generation===passportGeneration&&state.step===steps.passport){const p=document.querySelector('#passport-progress');if(p)p.textContent=text;}};request.onRequestReceived(()=>progress('Request opened. Follow the instructions on your phone.'));request.onGeneratingProof(()=>progress('Generating your private proofs on your phone…'));request.onReject(()=>progress('You declined the request. Start a new check when ready.'));request.onError(()=>progress('The passport check could not complete. Start a new check and try again.'));request.onSuccess(async({proofs,result})=>{if(generation!==passportGeneration||state.step!==steps.passport)return false;if(demo){progress('Proofs received. This preview has no backend to verify them; your passport is still unverified. Nothing has been stored.');return false;}try{progress('Checking cryptographic proofs and duplicate-passport protection…');await api('passport/verify',{proofs,result});if(generation!==passportGeneration||state.step!==steps.passport)return false;state.passport={verified:true};render();notice('Your age and passport proofs were verified.');celebrateStage('passport',()=>{setSetupSkipped('passport',false);navigate(steps.contacts);});return true;}catch(e){progress(e.message);return false;}});}catch(e){notice('Unable to start ZKPassport. '+e.message);}finally{busy=false;if(state.step===steps.passport)document.querySelector('#start-passport')?.removeAttribute('disabled');}}
 const countryOptions={DE:'Germany',IN:'India',NP:'Nepal',BT:'Bhutan',GB:'United Kingdom',US:'United States',CA:'Canada',AU:'Australia',FR:'France',CH:'Switzerland',AT:'Austria',IT:'Italy',SE:'Sweden',ZZ:'Other'};
@@ -595,9 +624,9 @@ function renderProfile(){
   <dl>
    <div><dt>Email</dt><dd>${esc(state.email||'Not provided')}</dd></div>
    <div><dt>WhatsApp</dt><dd>${esc(state.whatsapp||'Not provided')}</dd></div>
-   <div><dt>Contact verification</dt><dd>${providedContacts.length===0?'Not provided · In-app updates':contactsVerified?(demo?'Verified in demo':'Verified'):'Not verified'}</dd></div>
+   <div><dt>Contact verification</dt><dd>${state.demoSimulatedStages?.includes('contacts')?'Simulated · No contact details verified':providedContacts.length===0?'Not provided · In-app updates':contactsVerified?(demo?'Verified in demo':'Verified'):'Not verified'}</dd></div>
    <div><dt>Passport check</dt><dd>${esc(passportText)}</dd></div>
-   <div><dt>Account security</dt><dd>${state.passkey?(demo?'Demo passkey':'Passkey'):state.demoOnboardingStages?.security?'Completed in demo · Reconnect wallet':contactsVerified?'Verified optional contact':'Not set up'}</dd></div>
+   <div><dt>Account security</dt><dd>${state.demoSimulatedStages?.includes('security')&&!state.wallet?.ready?'Simulated wallet setup':state.passkey?(demo?'Demo passkey':'Passkey'):state.demoOnboardingStages?.security?'Completed in demo · Reconnect wallet':contactsVerified?'Verified optional contact':'Not set up'}</dd></div>
   </dl>
  </section>
  <p class="retention-note">Verification information is deleted 60 days after submission. Account details used to provide membership and sign-in remain until your account is deleted.</p>${reviewPreviewControls()}`;

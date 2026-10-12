@@ -27,3 +27,16 @@ export function eligibleOnboardingRewards(state){
  });
 }
 export const creditableOnboardingRewards=state=>securityComplete(state)?eligibleOnboardingRewards(state):[];
+export const demoSetupStages=Object.freeze(['security','passport','contacts']);
+export function simulateDemoSetup(state,stage,{demo=false}={}){
+ if(!demo||!demoSetupStages.includes(stage)||!['pending','accepted'].includes(state.status)||!/^NT-[A-Z0-9-]{4,60}$/.test(state.reference||''))return false;
+ const done=stage==='security'?securityComplete(state):stage==='contacts'?contactsComplete(state):state.demoPassportTier===true||state.passport?.verified===true;
+ if(!done){
+  const now=new Date().toISOString();
+  if(stage==='passport'){state.demoPassportTier=true;state.passportTierAt=now;}
+  else{state.demoOnboardingStages||={};state.demoOnboardingStages[stage]=now;}
+  state.demoSimulatedStages=[...new Set([...(state.demoSimulatedStages||[]),stage])];
+ }
+ state.onboardingSkipped=(state.onboardingSkipped||[]).filter(id=>id!==stage);
+ return true;
+}

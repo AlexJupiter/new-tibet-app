@@ -92,7 +92,7 @@ function closeProfileSetup(){if(busy)return;state.profileSetupStep=state.step;st
 function setSetupSkipped(id,skipped){state.onboardingSkipped=(state.onboardingSkipped||[]).filter(item=>item!==id);if(skipped)state.onboardingSkipped.push(id);persistInbox();}
 function mountPrototypeSetup(stage){
  if(!demo||showcase||!stage||screen.querySelector('[data-simulate-setup]'))return;
- const notes={membership:'Use fictional sample details, book photos and video.',security:'Preview wallet setup without creating a passkey or recovery words.',passport:'Preview the NFC tier without tapping a passport or creating a proof.',contacts:'Preview contact verification without entering details or sending messages.'};
+ const notes={membership:state.book==='vouched'?'Use a sample member invitation to preview joining.':'Use fictional sample details, book photos and video.',security:'Preview wallet setup without creating a passkey or recovery words.',passport:'Preview the NFC tier without tapping a passport or creating a proof.',contacts:'Preview contact verification without entering details or sending messages.'};
  const id=stage==='passport'?'demo-passport-upgrade':'simulate-setup';
  screen.querySelector('.description')?.insertAdjacentHTML('afterend',`<div class="prototype-setup"><div><strong>Prototype</strong><p>${notes[stage]}</p></div><button class="secondary" id="${id}" type="button" data-simulate-setup="${stage}" ${busy?'disabled':''}>Simulate setup</button></div>`);
  screen.querySelector('[data-simulate-setup]')?.addEventListener('click',()=>simulateSetup(stage));

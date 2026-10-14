@@ -2,9 +2,11 @@ import {sampleApplicant} from './demo-profile.js';
 import {loadImage} from './images.js';
 import {cardControls,mountProfileCard,profileIdentityCard} from './card.js';
 import {passportDiagram,walletDiagram} from './diagrams.js';
-import {renderAccountTabs,renderPetitions,renderChat} from './account.js';
+import {renderAccountTabs,renderPetitions,renderChat,profileNavigationIcon} from './account.js';
 import {renderWallet} from './wallet.js';
-import {initialDemoBalances,applyDemoOnboardingRewards,walletRewardUnread} from './member-model.js';
+import {initialDemoBalances,applyDemoOnboardingRewards,walletRewardUnread,demoRewardTypes} from './member-model.js';
+import {renderLibrary} from './library.js';
+import {applyDemoLibraryRewards} from './library-model.js';
 import {onboardingRewards,rememberDemoOnboardingStages,securityComplete,contactsComplete,simulateDemoSetup} from './onboarding-rewards.js';
 import {claimStageCelebration,claimApprovalCelebration,claimMembershipCelebration,claimWalletCelebration,showRewardCelebration} from './reward-celebration.js';
 import {renderAnnouncements} from './announcements.js';
@@ -16,10 +18,10 @@ import {renderRestricted} from './restricted.js';
 import {recordApplicationEvent,inboxItems,unreadCount,saveDemoInbox,restoreDemoInbox,clearDemoInbox} from './inbox-model.js';
 const config = window.NEW_TIBET_CONFIG || {mode:'demo',apiBase:''};
 const showcaseTab=new URLSearchParams(location.search).get('showcase');
-const showcase=['profile','wallet','petitions','chat','ecosystem','announcements'].includes(showcaseTab);
+const showcase=['profile','wallet','petitions','chat','library','ecosystem','announcements'].includes(showcaseTab);
 const demo = showcase || config.mode !== 'live';
 const steps=Object.freeze({document:0,photos:1,video:2,passport:3,security:4,contacts:5,account:6});
-const initialState = () => ({step:-1,book:'green',name:'',email:'',whatsapp:'',country:'',countryConsent:false,countryStatsCounted:false,verified:{},codes:{},photo:null,photos:{},photoKind:'front',evidenceView:'photos',demoPassportTier:false,demoSimulatedStages:[],passportTierAt:'',rewardDays:{},challenge:null,video:null,videoURL:'',passport:null,passportRequest:null,passkey:null,consent:false,reference:'',status:'pending',messages:[],demoSkipped:{contacts:false,passport:false},demoSampleApplicant:false,demoVideo:false,appTab:'announcements',lastAppTab:'profile',applicationCreatedAt:'',inboxEvents:[],inboxItems:[],inboxRead:[],inboxExpanded:'',inboxLoading:false,inboxError:'',petitionSignatures:[],createdPetitions:[],petitionView:'list',petitionDraft:{title:'',body:'',goal:'1000'},chatMessages:[],chatDrafts:{},chatConversation:'community',chatOpen:false,chatSearch:'',wallet:null,walletMethod:'passkey',recoveryStage:'',walletPrfSalt:'',walletDemo:null,walletRewardRead:false,walletView:'home',walletQuote:null,walletReceipt:null,walletSwapInput:'',walletWithdrawInput:'',walletSendInput:'',walletSendSearch:'',walletSendRecipient:''});
+const initialState = () => ({step:-1,book:'green',name:'',email:'',whatsapp:'',country:'',countryConsent:false,countryStatsCounted:false,verified:{},codes:{},photo:null,photos:{},photoKind:'front',evidenceView:'photos',demoPassportTier:false,demoSimulatedStages:[],passportTierAt:'',rewardDays:{},challenge:null,video:null,videoURL:'',passport:null,passportRequest:null,passkey:null,consent:false,reference:'',status:'pending',messages:[],demoSkipped:{contacts:false,passport:false},demoSampleApplicant:false,demoVideo:false,appTab:'announcements',lastAppTab:'profile',applicationCreatedAt:'',inboxEvents:[],inboxItems:[],inboxRead:[],inboxExpanded:'',inboxLoading:false,inboxError:'',petitionSignatures:[],createdPetitions:[],petitionView:'list',petitionDraft:{title:'',body:'',goal:'1000'},chatMessages:[],chatDrafts:{},chatConversation:'community',chatOpen:false,chatSearch:'',wallet:null,walletMethod:'passkey',recoveryStage:'',walletPrfSalt:'',walletDemo:null,walletRewardRead:false,walletView:'home',walletQuote:null,walletReceipt:null,walletSwapInput:'',walletWithdrawInput:'',walletSendInput:'',walletSendSearch:'',walletSendRecipient:'',libraryContributions:[],libraryRewards:[],librarySearch:'',libraryCategory:'',libraryDraft:null,libraryFile:null});
 const state = initialState();
 state.inviteCode='';state.invitation=null;
 state.guest=false;state.profileSetup=false;state.profileSetupStep=null;
@@ -65,7 +67,7 @@ function explore(startJoining=false){
 function startProfileSetup(step){if(busy)return;state.appTab='profile';state.profileSetup=true;state.profileSetupStep=step;navigate(step);}
 function presentReward(reward,continuation){
  if(!reward||showcase){continuation?.();return;}
- if(demo){rememberDemoOnboardingStages(state);state.walletDemo=applyDemoOnboardingRewards(state.walletDemo||initialDemoBalances(),state);}
+ if(demo){rememberDemoOnboardingStages(state);state.walletDemo=applyDemoLibraryRewards(applyDemoOnboardingRewards(state.walletDemo||initialDemoBalances(),state),state);}
  persistInbox();showRewardCelebration(reward,{demo,onContinue:reward.accepted&&!reward.walletReady&&!reward.simulated?continueAfterVerification:continuation});
 }
 function celebrateStage(stage,continuation){if(showcase){continuation?.();return;}presentReward(claimStageCelebration(state,stage),continuation);}
@@ -143,6 +145,7 @@ function render(){
  document.body.classList.toggle('showing-account',inApp);
  document.body.classList.toggle('exploring',state.guest);
  document.querySelector('#announcements-button').hidden=!inApp;
+ updateHeaderProfile();
  document.body.classList.toggle('showing-onboarding',!state.profileSetup&&state.step>=0&&state.step<=1&&!state.reference);
  document.body.dataset.appTab=state.appTab;
  if(state.step===-1&&!showcase){welcomeSlideshow||=mountWelcomeSlideshow(document.querySelector('#welcome-slideshow'));welcomeSlideshow.setActive(true);}else welcomeSlideshow?.setActive(false);
@@ -479,6 +482,7 @@ function renderApplicationDetails(){
 function persistInbox(){if(demo&&!showcase)try{saveDemoInbox(localStorage,state);}catch{}}
 function selectAppTab(tab){if(busy)return;if(tab!=='announcements')state.lastAppTab=tab;state.appTab=tab;if(state.profileSetup){state.profileSetupStep=state.step;return navigate(steps.account);}notice();renderAcceptedAccount();window.scrollTo(0,0);screen.querySelector('#screen-title')?.focus({preventScroll:true});}
 function closeAnnouncements(){selectAppTab(state.lastAppTab||'profile');document.querySelector('#announcements-button').focus({preventScroll:true});}
+document.querySelector('#profile-button').onclick=()=>{if(state.step===steps.account||state.profileSetup)selectAppTab('profile');};
 document.querySelector('#announcements-button').onclick=()=>{if(state.step!==steps.account&&!state.profileSetup)return;if(state.appTab==='announcements')closeAnnouncements();else selectAppTab('announcements');};
 document.addEventListener('keydown',event=>{if(event.key==='Escape'&&state.step===steps.account&&state.appTab==='announcements'&&!document.querySelector('dialog[open]')){event.preventDefault();closeAnnouncements();}});
 function applyInboxData(data){
@@ -494,7 +498,16 @@ async function refreshInbox(){
  try{applyInboxData(await api('notifications'));}catch(error){state.inboxError=error.message;}
  finally{state.inboxLoading=false;if(state.step===steps.account){if(previousStatus!==state.status&&state.status==='accepted')celebrateApproval(()=>{if(!securityComplete(state))continueAfterVerification();else render();});else if(state.appTab==='announcements'||state.appTab==='profile'&&state.status!==previousStatus)render();else updateInboxBadge();}}
 }
+function updateHeaderProfile(){
+ const button=document.querySelector('#profile-button');
+ button.hidden=!(state.step===steps.account||state.profileSetup);
+ if(state.appTab==='profile')button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');
+ const portrait=demo&&state.demoSampleApplicant&&state.name.trim()===sampleApplicant.name?sampleApplicant.portrait:'';
+ button.innerHTML=portrait?`<img src="${portrait}" width="32" height="32" alt=""/>`:profileNavigationIcon;
+ button.querySelector('img')?.addEventListener('error',()=>{button.innerHTML=profileNavigationIcon;},{once:true});
+}
 function updateInboxBadge(){
+ updateHeaderProfile();
  const button=document.querySelector('#announcements-button');
  const count=unreadCount(state,demo);button.querySelector('.notification-unread')?.remove();
  button.setAttribute('aria-label',count?`Announcements, ${count} unread`:'Announcements');button.setAttribute('aria-expanded',String(state.appTab==='announcements'));
@@ -554,10 +567,10 @@ function renderAcceptedAccount(){
  if(demo){
   const completed=rememberDemoOnboardingStages(state);
   if(!Array.isArray(state.walletRewardReadIds))state.walletRewardReadIds=state.walletRewardRead?[state.reference+':verification-reward',state.reference+':passport-reward']:[];
-  const previous=state.walletDemo||initialDemoBalances();state.walletDemo=applyDemoOnboardingRewards(previous,state);
+  const previous=state.walletDemo||initialDemoBalances();state.walletDemo=applyDemoLibraryRewards(applyDemoOnboardingRewards(previous,state),state);
   if(completed||state.walletDemo!==previous)persistInbox();
   if(state.appTab==='wallet'&&!document.hidden&&walletRewardUnread(state)){
-   state.walletRewardRead=true;state.walletRewardReadIds=state.walletDemo.transactions.filter(tx=>['reward','passport-reward','onboarding-reward'].includes(tx.type)).map(tx=>tx.id);persistInbox();
+   state.walletRewardRead=true;state.walletRewardReadIds=state.walletDemo.transactions.filter(tx=>demoRewardTypes.includes(tx.type)).map(tx=>tx.id);persistInbox();
   }
  }
  readOpenInbox();
@@ -567,12 +580,13 @@ function renderAcceptedAccount(){
  else if(state.appTab==='petitions')renderPetitions(screen,state,demo,notice,renderAcceptedAccount);
  else if(state.appTab==='chat')renderChat(screen,state,demo,renderAcceptedAccount);
  else if(state.appTab==='wallet')renderWallet(screen,state,demo,notice,renderAcceptedAccount,()=>startProfileSetup(steps.security));
+ else if(state.appTab==='library')renderLibrary(screen,state,{demo,showcase,rerender:renderAcceptedAccount,notice,openProfile:()=>selectAppTab('profile'),setupWallet:()=>startProfileSetup(steps.security),persist:persistInbox});
  else if(state.appTab==='ecosystem')renderEcosystem(screen,state,demo,renderAcceptedAccount,notice);
  else if(hasMemberAccess(state))renderProfile();else renderUnverifiedProfile();
  const meshControl=screen.querySelector('.chat-technology-header');
  if(meshControl)document.querySelector('.header-actions').before(meshControl);
  document.body.dataset.appTab=state.appTab;
- const panel=document.createElement('section');panel.id='account-panel';panel.setAttribute('role',state.appTab==='announcements'?'region':'tabpanel');panel.setAttribute('aria-labelledby',state.appTab==='announcements'?'screen-title':'tab-'+state.appTab);
+ const panel=document.createElement('section');panel.id='account-panel';panel.setAttribute('role',['profile','announcements'].includes(state.appTab)?'region':'tabpanel');panel.setAttribute('aria-labelledby',state.appTab==='profile'?'profile-button':state.appTab==='announcements'?'screen-title':'tab-'+state.appTab);
  while(screen.firstChild)panel.appendChild(screen.firstChild);
  screen.appendChild(panel);screen.insertAdjacentHTML('beforeend',renderAccountTabs(state.appTab,demo?walletRewardUnread(state):0));
  updateInboxBadge();

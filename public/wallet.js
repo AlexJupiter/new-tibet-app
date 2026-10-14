@@ -1,4 +1,5 @@
-import {initialDemoBalances,demoSendGasUnits,formatTokens,formatDollars,parseAmount,quoteDemoSwap,swapDemoBalance,withdrawDemoBalance} from './member-model.js';
+import {initialDemoBalances,demoRewardTypes,demoSendGasUnits,formatTokens,formatDollars,parseAmount,quoteDemoSwap,swapDemoBalance,withdrawDemoBalance} from './member-model.js';
+import {libraryReward,libraryRewardRecords} from './library-model.js';
 import {renderWalletSend} from './wallet-send.js';
 import {onboardingRewards,onboardingRewardTotal,eligibleOnboardingRewards,securityComplete} from './onboarding-rewards.js';
 import {walletExplainerNotice,walletExplainerDialog,bindWalletExplainer} from './wallet-explainer.js';
@@ -9,9 +10,9 @@ const note='<p class="section-note">Demo balances and transactions. No tokens or
 const transactionTime=new Intl.DateTimeFormat('en-US',{dateStyle:'medium',timeStyle:'short'});
 function activityTimeline(wallet,state){
  const entries=[...wallet.transactions].sort((a,b)=>(Date.parse(b.createdAt)||0)-(Date.parse(a.createdAt)||0)).map(tx=>{
-  const incoming=['reward','allocation','passport-reward','partner-reward','onboarding-reward'].includes(tx.type);
-  const sender=['reward','passport-reward','onboarding-reward'].includes(tx.type)?'<span class="activity-sender">From New Tibet Foundation</span>':'';
-  const detail=tx.type==='onboarding-reward'?'Onboarding stage reward · Demo':tx.type==='passport-reward'?'Optional passport upgrade · Demo':tx.type==='partner-reward'?'Example learning campaign · Demo':tx.type==='reward'?'Book verification reward · Demo':tx.type==='send'?'Gas '+formatTokens(tx.gasUnits)+' $TIBET · Demo':tx.bank?'Sample bank '+tx.bank:'Demo · No money moved';
+  const incoming=[...demoRewardTypes,'allocation','partner-reward'].includes(tx.type);
+  const sender=demoRewardTypes.includes(tx.type)?'<span class="activity-sender">From New Tibet Foundation</span>':'';
+  const detail=tx.type==='library-reward'?'Approved Library contribution · Demo':tx.type==='onboarding-reward'?'Onboarding stage reward · Demo':tx.type==='passport-reward'?'Optional passport upgrade · Demo':tx.type==='partner-reward'?'Example learning campaign · Demo':tx.type==='reward'?'Book verification reward · Demo':tx.type==='send'?'Gas '+formatTokens(tx.gasUnits)+' $TIBET · Demo':tx.bank?'Sample bank '+tx.bank:'Demo · No money moved';
   const amount=incoming?'+'+formatTokens(tx.tibetUnits)+' $TIBET':tx.type==='swap'?'+'+formatDollars(tx.usdCents):tx.type==='send'?'−'+formatTokens(tx.totalUnits)+' $TIBET':'−'+formatDollars(tx.usdCents);
   const time=Number.isFinite(Date.parse(tx.createdAt))?`<time datetime="${esc(tx.createdAt)}">${transactionTime.format(new Date(tx.createdAt))}</time>`:'';
   return `<li data-wallet-transaction="${esc(tx.id)}"><span class="activity-icon ${incoming?'incoming':''}" aria-hidden="true">${incoming?'+':tx.type==='swap'?'⇄':'↗'}</span><div><strong>${esc(tx.label)}</strong>${sender}<span>${detail}</span>${time}</div><strong class="${incoming?'incoming-amount':''}">${amount}</strong></li>`;
@@ -21,7 +22,7 @@ function activityTimeline(wallet,state){
 function switchView(state,view,rerender){state.walletView=view;rerender();window.scrollTo(0,0);document.querySelector('#screen-title')?.focus({preventScroll:true});}
 export function renderWallet(screen,state,demo,notice,rerender,setupWallet){
  if(!securityComplete(state)){
-  const pending=eligibleOnboardingRewards(state).reduce((sum,reward)=>sum+reward.amount,0);
+  const pending=eligibleOnboardingRewards(state).reduce((sum,reward)=>sum+reward.amount,0)+libraryRewardRecords(state.libraryRewards).length*libraryReward;
   screen.innerHTML=title('Wallet','Your membership is verified. Set up your wallet to receive your free $TIBET.')+walletExplainerNotice()+`<section class="access-card wallet-pending" aria-labelledby="wallet-pending-title"><span class="tag">Wallet setup required</span><h3 id="wallet-pending-title">${pending} free $TIBET waiting for your wallet</h3><p>From the New Tibet Foundation. These rewards have not been received yet. Create your wallet with a passkey or a confirmed 12-word backup to receive them, plus ${onboardingRewards.security} free $TIBET for completing wallet setup.</p><button class="primary" type="button" id="wallet-setup">Set up wallet to receive $TIBET</button><p class="section-note">You can keep exploring. Sending, swapping and withdrawals become available after wallet setup.${demo?' Demo rewards only; no real tokens are issued.':' Token distribution is planned and wallet activation is not available yet.'}</p></section>`+walletExplainerDialog();
   screen.querySelector('#wallet-setup').onclick=setupWallet;bindWalletExplainer(screen);return;
  }

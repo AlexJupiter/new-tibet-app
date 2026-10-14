@@ -1,5 +1,6 @@
 import {onboardingRewards,creditableOnboardingRewards,securityComplete} from './onboarding-rewards.js';
-export const memberTabs=['profile','wallet','chat','petitions','ecosystem','announcements'];
+export const memberTabs=['wallet','chat','petitions','library','ecosystem','profile','announcements'];
+export const demoRewardTypes=Object.freeze(['reward','passport-reward','onboarding-reward','library-reward']);
 export const samplePetitions=Object.freeze([
  {id:'english-access',category:'Accessibility',title:'English access to CTA documents and sessions',summary:'Guarantee English access to official documents and parliamentary sessions through translations and subtitles.',body:'Do you think the CTA should guarantee that all official documents and parliamentary sessions are accessible in English, for example by providing translations and subtitles?',supporters:1842,goal:2500},
  {id:'charter-reform',category:'Governance',title:'Clarify the separation of powers in the Tibetan Charter',summary:'Revise the Tibetan Charter to clearly define the separation of powers and introduce conflict resolution mechanisms.',body:'Do you think the Tibetan Charter should be revised to more clearly define the separation of powers and to introduce conflict resolution mechanisms?',supporters:936,goal:1500},
@@ -66,7 +67,7 @@ export function advanceDemoCampaign(state,id){
  return day;
 }
 export const walletRewardUnread=state=>state.status==='accepted'&&state.walletDemo?.transactions.some(tx=>
- ['reward','passport-reward','onboarding-reward'].includes(tx.type)&&tx.id.startsWith(state.reference+':')&&
+ demoRewardTypes.includes(tx.type)&&tx.id.startsWith(state.reference+':')&&
  (Array.isArray(state.walletRewardReadIds)?!state.walletRewardReadIds.includes(tx.id):!state.walletRewardRead))?1:0;
 export const formatTokens=units=>new Intl.NumberFormat('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}).format(units/100);
 export const formatDollars=cents=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(cents/100);

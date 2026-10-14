@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {canContribute,libraryReward,sampleLibrary,searchLibrary,librarySource,validateLibraryFile,submitDemoContribution,approveDemoContribution,applyDemoLibraryRewards,libraryRewardRecords} from '../public/library-model.js';
+import {canContribute,libraryReward,sampleLibrary,searchLibrary,librarySource,validateLibraryFile,submitDemoContribution,approveDemoContribution,applyDemoLibraryRewards,libraryRewardRecords,librarySocial,toggleLibraryLike,addLibraryComment} from '../public/library-model.js';
+import {readFile} from 'node:fs/promises';
+import {createApp} from '../backend/server.mjs';
 import {initialDemoBalances,walletRewardUnread,quoteDemoSend,sendDemoBalance} from '../public/member-model.js';
 import {saveDemoInbox,restoreDemoInbox,recordApplicationEvent} from '../public/inbox-model.js';
 
@@ -52,4 +54,41 @@ test('Malformed and repeated reward receipts are filtered before creating wallet
  const id=crypto.randomUUID(),createdAt='2026-10-14T10:00:00Z';
  const records=libraryRewardRecords([{id,createdAt,title:'Private title'},{id,createdAt},{id:'bad',createdAt},{id:crypto.randomUUID(),createdAt:'bad'}]);assert.deepEqual(records,[{id,createdAt}]);
  const wallet=applyDemoLibraryRewards(initialDemoBalances(),{...member(),libraryRewards:records});assert.equal(wallet.transactions.length,1);assert.equal(wallet.tibetUnits,10000);
+});
+test('Initial documents have locally hosted originals, real page images, Foundation upload credits and distinct original authors',async()=>{
+ for(const item of sampleLibrary){
+  assert.equal(item.uploader,'New Tibet Foundation');assert.notEqual(item.credit,item.uploader);assert(item.pages>0);
+  assert.match((await readFile(new URL('../public/'+item.document.slice(2),import.meta.url))).subarray(0,5).toString(),/^%PDF-/);
+  const image=await readFile(new URL('../public/'+item.image.slice(2),import.meta.url));assert.equal(image[0],255);assert.equal(image[1],216);
+ }
+ assert.equal(searchLibrary({},'New Tibet Foundation').length,sampleLibrary.length);
+});
+test('Likes toggle once per member session and never change seed community counts',()=>{
+ const state=member(),item=sampleLibrary[0],before=librarySocial(state,item).likes;
+ assert.throws(()=>toggleLibraryLike({status:'guest'},item.id,{demo:true}),/Verify/);assert.throws(()=>toggleLibraryLike(state,item.id),/not connected/);assert.throws(()=>toggleLibraryLike(state,'missing',{demo:true}),/unavailable/);
+ assert.equal(toggleLibraryLike(state,item.id,{demo:true}),true);assert.equal(librarySocial(state,item).likes,before+1);assert.equal(librarySocial(state,item).liked,true);
+ assert.equal(toggleLibraryLike(state,item.id,{demo:true}),false);assert.equal(librarySocial(state,item).likes,before);assert.equal(item.likes,before);
+});
+test('Comments require verified membership, valid document and bounded nonempty text, and retain display names',()=>{
+ const state={...member(),name:'A private pseudonym'},item=sampleLibrary[0],before=librarySocial(state,item).comments.length;
+ assert.throws(()=>addLibraryComment({status:'guest'},item.id,'Hello',{demo:true}),/Verify/);assert.throws(()=>addLibraryComment(state,item.id,'Hello'),/not connected/);assert.throws(()=>addLibraryComment(state,'missing','Hello',{demo:true}),/unavailable/);
+ for(const text of ['   ','x'.repeat(1501)])assert.throws(()=>addLibraryComment(state,item.id,text,{demo:true}),/1,500/);
+ const comment=addLibraryComment(state,item.id,'  <img src=x onerror=alert(1)> A useful reference.  ',{demo:true});assert.equal(comment.author,state.name);assert.equal(comment.body,'<img src=x onerror=alert(1)> A useful reference.');assert.equal(librarySocial(state,item).comments.length,before+1);assert.equal(item.comments.length,before);
+ const storage={setItem:(key,value)=>{storage.value=value;}};saveDemoInbox(storage,state);assert(!storage.value.includes(state.name));assert(!storage.value.includes('A useful reference'));assert(!storage.value.includes('libraryComments'));
+});
+test('Only approved uploads can receive community activity and uploaded files retain their uploader',()=>{
+ const state={...member(),name:'Tenzin'},item=submitDemoContribution(state,draft(),{demo:true});assert.equal(item.uploader,'Tenzin');
+ assert.throws(()=>toggleLibraryLike(state,item.id,{demo:true}),/unavailable/);assert.throws(()=>addLibraryComment(state,item.id,'Not approved',{demo:true}),/unavailable/);
+ approveDemoContribution(state,item.id,{demo:true});toggleLibraryLike(state,item.id,{demo:true});addLibraryComment(state,item.id,'Thanks for sharing.',{demo:true});assert.equal(librarySocial(state,item).likes,1);assert.equal(librarySocial(state,item).comments.length,1);
+});
+test('PDF originals support byte-range reading and the local viewer can load embedded fonts and its worker',async()=>{
+ const app=createApp({APP_MODE:'demo',DATA_DIR:'/private/tmp/new-tibet-library-tests'},{database:':memory:'});await new Promise(resolve=>app.server.listen(0,'127.0.0.1',resolve));
+ const base='http://127.0.0.1:'+app.server.address().port;
+ try{
+  const source=await readFile('public/assets/library/charter.pdf'),response=await fetch(base+'/assets/library/charter.pdf',{headers:{Range:'bytes=0-31'}});
+  assert.equal(response.status,206);assert.equal(response.headers.get('content-type'),'application/pdf');assert.equal(response.headers.get('accept-ranges'),'bytes');assert.deepEqual(Buffer.from(await response.arrayBuffer()),source.subarray(0,32));
+  const bad=await fetch(base+'/assets/library/charter.pdf',{headers:{Range:'bytes=40-10'}});assert.equal(bad.status,416);
+  const worker=await fetch(base+'/pdf-worker.js');assert.equal(worker.status,200);assert.match(worker.headers.get('content-type'),/javascript/);await worker.arrayBuffer();
+  const html=await fetch(base+'/');assert.match(html.headers.get('content-security-policy'),/font-src 'self' data: blob:/);assert.match(html.headers.get('content-security-policy'),/worker-src 'self'/);
+ }finally{await new Promise(resolve=>app.server.close(resolve));}
 });

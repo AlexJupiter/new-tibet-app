@@ -1,6 +1,7 @@
 import './build-passport.mjs';
 import './build-wallet.mjs';
 import './build-card.mjs';
+import './build-library.mjs';
 import {mkdir,cp,rm,readFile,writeFile} from 'node:fs/promises';
 await rm('dist',{recursive:true,force:true});await mkdir('dist');await cp('public','dist',{recursive:true});
 // Keep branch-based Pages compatible if a repository administrator selects it.

@@ -42,9 +42,9 @@ export function createApp(env=process.env,adapters={}){
  if(!path.startsWith('/api/')){
   if(req.method!=='GET')throw new Problem('Method not allowed.',405);
   const file=resolve('public','.'+decodeURIComponent(path==='/'?'/index.html':path));if(!file.startsWith(resolve('public')+'/')||!existsSync(file))throw new Problem('Not found.',404);
-  const content=readFileSync(file),video=extname(file)==='.mp4';
-  const headers={'Content-Type':({'.html':'text/html; charset=utf-8','.css':'text/css','.js':'text/javascript','.svg':'image/svg+xml','.jpg':'image/jpeg','.png':'image/png','.mp4':'video/mp4','.woff2':'font/woff2','.vtt':'text/vtt; charset=utf-8','.txt':'text/plain; charset=utf-8'})[extname(file)]||'application/octet-stream','Content-Length':content.length,'X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','Permissions-Policy':'camera=(self), microphone=(self)','Content-Security-Policy':"default-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' https://*.zkpassport.id wss://*.zkpassport.id https://*.obsidion.xyz wss://*.obsidion.xyz "+(env.FRONTEND_ORIGIN||'')};
-  if(video){
+  const content=readFileSync(file),rangeReadable=['.mp4','.pdf'].includes(extname(file));
+  const headers={'Content-Type':({'.html':'text/html; charset=utf-8','.css':'text/css','.js':'text/javascript','.svg':'image/svg+xml','.jpg':'image/jpeg','.png':'image/png','.mp4':'video/mp4','.pdf':'application/pdf','.woff2':'font/woff2','.vtt':'text/vtt; charset=utf-8','.txt':'text/plain; charset=utf-8'})[extname(file)]||'application/octet-stream','Content-Length':content.length,'X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','Permissions-Policy':'camera=(self), microphone=(self)','Content-Security-Policy':"default-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; font-src 'self' data: blob:; worker-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' https://*.zkpassport.id wss://*.zkpassport.id https://*.obsidion.xyz wss://*.obsidion.xyz "+(env.FRONTEND_ORIGIN||'')};
+  if(rangeReadable){
    headers['Accept-Ranges']='bytes';
    if(req.headers.range){
     const range=/^bytes=(\d*)-(\d*)$/.exec(req.headers.range);

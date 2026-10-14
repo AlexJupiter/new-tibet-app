@@ -1,0 +1,68 @@
+[
+  {
+    "id": "charter",
+    "title": "Charter of the Tibetans in Exile",
+    "uploader": "New Tibet Foundation",
+    "credit": "Tibetan Parliament-in-Exile",
+    "source": "https://tibet.net/about-cta/charter/",
+    "rights": "Official publication of the Tibetan Parliament-in-Exile",
+    "pages": 45,
+    "pdf": "assets/library/charter.pdf",
+    "sha256": "780323e69009100e868c153c426ff2248b9f549b2c8d54fedee71c7327841e74"
+  },
+  {
+    "id": "folk-tales",
+    "title": "Folk Tales from Tibet",
+    "uploader": "New Tibet Foundation",
+    "credit": "W. F. O’Connor · Illustrations by a Tibetan artist",
+    "source": "https://commons.wikimedia.org/wiki/File:Folk_Tales_from_Tibet_(1906).djvu",
+    "rights": "Public domain · Original historical text and illustrations",
+    "pages": 224,
+    "pdf": "assets/library/folk-tales.pdf",
+    "sha256": "7c973acbf6c78fee6a59fecf5b1395a0cabfdbf5d1a35608e3c1ff60aaa01bfb"
+  },
+  {
+    "id": "journey",
+    "title": "Journey to Lhasa and Central Tibet",
+    "uploader": "New Tibet Foundation",
+    "credit": "Sarat Chandra Das · Edited by W. W. Rockhill",
+    "source": "https://archive.org/details/journeytolhasace00dass",
+    "rights": "Public domain · Authors died in 1917 and 1914",
+    "pages": 332,
+    "pdf": "assets/library/journey.pdf",
+    "sha256": "d45f0e6ed70954025959c6f856ef0384abd29cbeae4c301d69fd5759bc51ea03"
+  },
+  {
+    "id": "dictionary",
+    "title": "An English–Tibetan Dictionary",
+    "uploader": "New Tibet Foundation",
+    "credit": "Lama Kazi Dawa Samdup · University of Calcutta",
+    "source": "https://commons.wikimedia.org/wiki/File:An_English-Tibetan_dictionary,_containing_a_vocabulary_of_approximately_twenty_thousand_words_with_their_Tibetan_equivalents_(IA_englishtibetandi00zlabrich).pdf",
+    "rights": "Public domain · Kazi Dawa Samdup, 1868–1922",
+    "pages": 1012,
+    "pdf": "assets/library/dictionary.pdf",
+    "sha256": "5f291343fd42af2cb336464782c493abf2f02bfde8d6907c2f78bc4e4a57c465"
+  },
+  {
+    "id": "grammar",
+    "title": "Tibetan Grammar",
+    "uploader": "New Tibet Foundation",
+    "credit": "H. A. Jäschke · Second edition prepared by H. Wenzel",
+    "source": "https://commons.wikimedia.org/wiki/File:Tibetan_grammar_(IA_b30094161).pdf",
+    "rights": "Public domain · Wellcome Library scan",
+    "pages": 124,
+    "pdf": "assets/library/grammar.pdf",
+    "sha256": "8bec6dd6169389f0e9ed7576a9ec956e7740c71e66a624aeab84246575e22fc0"
+  },
+  {
+    "id": "language-hearing",
+    "title": "Teaching and Learning Tibetan",
+    "uploader": "New Tibet Foundation",
+    "credit": "Congressional-Executive Commission on China",
+    "source": "https://www.govinfo.gov/content/pkg/CHRG-108jhrg87398/pdf/CHRG-108jhrg87398.pdf",
+    "rights": "Public-domain U.S. government publication",
+    "pages": 44,
+    "pdf": "assets/library/language-hearing.pdf",
+    "sha256": "0d2ac4ac3961e00ff9e6816cdf14c31bfea65531c66a81cd4a58651d6fbdaa36"
+  }
+]

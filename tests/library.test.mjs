@@ -1,7 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {canContribute,libraryReward,sampleLibrary,searchLibrary,librarySource,validateLibraryFile,submitDemoContribution,approveDemoContribution,applyDemoLibraryRewards,libraryRewardRecords,librarySocial,toggleLibraryLike,addLibraryComment} from '../public/library-model.js';
-import {readFile} from 'node:fs/promises';
+import {readFile,mkdtemp,rm} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
 import {createApp} from '../backend/server.mjs';
 import {initialDemoBalances,walletRewardUnread,quoteDemoSend,sendDemoBalance} from '../public/member-model.js';
 import {saveDemoInbox,restoreDemoInbox,recordApplicationEvent} from '../public/inbox-model.js';
@@ -82,7 +84,8 @@ test('Only approved uploads can receive community activity and uploaded files re
  approveDemoContribution(state,item.id,{demo:true});toggleLibraryLike(state,item.id,{demo:true});addLibraryComment(state,item.id,'Thanks for sharing.',{demo:true});assert.equal(librarySocial(state,item).likes,1);assert.equal(librarySocial(state,item).comments.length,1);
 });
 test('PDF originals support byte-range reading and the local viewer can load embedded fonts and its worker',async()=>{
- const app=createApp({APP_MODE:'demo',DATA_DIR:'/private/tmp/new-tibet-library-tests'},{database:':memory:'});await new Promise(resolve=>app.server.listen(0,'127.0.0.1',resolve));
+ const directory=await mkdtemp(join(tmpdir(),'new-tibet-library-tests-'));
+ const app=createApp({APP_MODE:'demo',DATA_DIR:directory},{database:':memory:'});await new Promise(resolve=>app.server.listen(0,'127.0.0.1',resolve));
  const base='http://127.0.0.1:'+app.server.address().port;
  try{
   const source=await readFile('public/assets/library/charter.pdf'),response=await fetch(base+'/assets/library/charter.pdf',{headers:{Range:'bytes=0-31'}});
@@ -90,5 +93,5 @@ test('PDF originals support byte-range reading and the local viewer can load emb
   const bad=await fetch(base+'/assets/library/charter.pdf',{headers:{Range:'bytes=40-10'}});assert.equal(bad.status,416);
   const worker=await fetch(base+'/pdf-worker.js');assert.equal(worker.status,200);assert.match(worker.headers.get('content-type'),/javascript/);await worker.arrayBuffer();
   const html=await fetch(base+'/');assert.match(html.headers.get('content-security-policy'),/font-src 'self' data: blob:/);assert.match(html.headers.get('content-security-policy'),/worker-src 'self'/);
- }finally{await new Promise(resolve=>app.server.close(resolve));}
+ }finally{await new Promise(resolve=>app.server.close(resolve));await rm(directory,{recursive:true,force:true});}
 });

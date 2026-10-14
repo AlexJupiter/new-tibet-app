@@ -30,6 +30,13 @@ export function signupStages(state){
  const detail=joined?(vouched?'You joined through a member’s invitation. No book photos or video are required.':book.detail):vouched?'Choose a display name or pseudonym and redeem a verified member’s invitation code.':'Choose your Green or Blue Book and a display name, then provide four book photos and a short video. Verification information is deleted after 60 days.';
  return [{id:'membership',title:'Join New Tibet',detail,done,reward,label,action:done?null:joined?'status':evidence?'evidence':'join'},...progress.stages.filter(stage=>!['join','book'].includes(stage.id))];
 }
+export function profileSetupStatus(state){
+ const stages=signupStages(state),optional=['passport','contacts'];
+ const completed=stages.filter(stage=>stage.done||optional.includes(stage.id)&&state.onboardingSkipped?.includes(stage.id)).length;
+ const needsSetup=completed<stages.length;
+ const waiting=Boolean(state.reference)&&state.status==='pending'&&nextSetupAction(state)===null;
+ return {completed,total:stages.length,needsSetup,prompt:state.status==='declined'?'View status':waiting?'In review':'Finish setup'};
+}
 export function rewardLadder(state,{currentStage,expandNext=true}={}){
  const progress=verificationProgress(state),stageId=id=>['join','book','evidence'].includes(id)?'membership':id;
  currentStage=stageId(currentStage);const expanded=currentStage||(expandNext?stageId(nextSetupAction(state)):null);

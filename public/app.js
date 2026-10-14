@@ -13,7 +13,7 @@ import {renderAnnouncements} from './announcements.js';
 import {renderEcosystem} from './ecosystem.js';
 import {mountWelcomeSlideshow} from './welcome.js';
 import {canInvite,membershipLabel,createDemoInvite,redeemDemoInvite,clearDemoInvites,invitationMessage} from './invites.js';
-import {hasMemberAccess,nextSetupAction,rewardLadder,rememberExplorer,restoreExplorer,clearExplorer} from './profile-progress.js';
+import {hasMemberAccess,nextSetupAction,rewardLadder,profileSetupStatus,rememberExplorer,restoreExplorer,clearExplorer} from './profile-progress.js';
 import {renderRestricted} from './restricted.js';
 import {recordApplicationEvent,inboxItems,unreadCount,saveDemoInbox,restoreDemoInbox,clearDemoInbox} from './inbox-model.js';
 const config = window.NEW_TIBET_CONFIG || {mode:'demo',apiBase:''};
@@ -502,9 +502,14 @@ function updateHeaderProfile(){
  const button=document.querySelector('#profile-button');
  button.hidden=!(state.step===steps.account||state.profileSetup);
  if(state.appTab==='profile')button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');
+ const progress=profileSetupStatus(state),attention=!button.hidden&&progress.needsSetup;
+ button.classList.toggle('needs-setup',attention);document.body.classList.toggle('profile-needs-setup',attention);
+ button.setAttribute('aria-label',attention?`Profile, ${progress.prompt.toLowerCase()}, ${progress.completed} of ${progress.total} steps finished`:'Profile');
+ button.title=attention?`Profile · ${progress.prompt} · ${progress.completed} of ${progress.total} steps finished`:'Profile';
  const portrait=demo&&state.demoSampleApplicant&&state.name.trim()===sampleApplicant.name?sampleApplicant.portrait:'';
- button.innerHTML=portrait?`<img src="${portrait}" width="32" height="32" alt=""/>`:profileNavigationIcon;
- button.querySelector('img')?.addEventListener('error',()=>{button.innerHTML=profileNavigationIcon;},{once:true});
+ const avatar=portrait?`<img src="${portrait}" width="32" height="32" alt=""/>`:profileNavigationIcon;
+ button.innerHTML=`<span class="header-profile-avatar">${attention?`<svg class="profile-setup-ring" viewBox="0 0 40 40" width="40" height="40" aria-hidden="true"><circle class="profile-ring-track" cx="20" cy="20" r="18"/><circle class="profile-ring-progress" cx="20" cy="20" r="18" pathLength="100" stroke-dasharray="${progress.completed/progress.total*100} 100"/></svg>`:''}<span class="header-profile-portrait">${avatar}</span></span>${attention?`<span class="header-profile-copy"><strong>Profile <span class="profile-setup-count">${progress.completed}/${progress.total}</span></strong><span>${progress.prompt} <span aria-hidden="true">›</span></span></span>`:''}`;
+ button.querySelector('img')?.addEventListener('error',()=>{button.querySelector('.header-profile-portrait').innerHTML=profileNavigationIcon;},{once:true});
 }
 function updateInboxBadge(){
  updateHeaderProfile();

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {hasMemberAccess,verificationProgress,nextSetupAction,signupStages,rewardLadder,rememberExplorer,restoreExplorer,clearExplorer} from '../public/profile-progress.js';
+import {hasMemberAccess,verificationProgress,nextSetupAction,signupStages,rewardLadder,profileSetupStatus,rememberExplorer,restoreExplorer,clearExplorer} from '../public/profile-progress.js';
 import {inboxItems,unreadCount} from '../public/inbox-model.js';
 import {applyDemoVerificationReward,applyDemoPassportReward,initialDemoBalances,canUsePetitions} from '../public/member-model.js';
 
@@ -80,4 +80,19 @@ test('exploration persists only a preference, without identity details, and hand
  assert.equal(restoreExplorer(storage),false);rememberExplorer(storage);assert.equal(restoreExplorer(storage),true);assert.deepEqual([...values.values()],['1']);clearExplorer(storage);assert.equal(restoreExplorer(storage),false);
  const blocked={getItem:()=>{throw Error('blocked');},setItem:()=>{throw Error('blocked');},removeItem:()=>{throw Error('blocked');}};
  rememberExplorer(blocked);assert.equal(restoreExplorer(blocked),false);clearExplorer(blocked);
+});
+test('Profile setup prompts track completed and skipped optional steps, while membership and wallet remain required',()=>{
+ assert.deepEqual(profileSetupStatus(visitor),{completed:0,total:4,needsSetup:true,prompt:'Finish setup'});
+ const accepted={...visitor,reference:'NT-SETUP-1234',status:'accepted'};
+ assert.equal(profileSetupStatus(accepted).completed,1);
+ assert.equal(profileSetupStatus({...accepted,book:'vouched'}).completed,1);
+ const wallet={...accepted,wallet:{ready:true}};
+ assert.equal(profileSetupStatus(wallet).completed,2);
+ assert.equal(profileSetupStatus({...wallet,demoPassportTier:true}).completed,3);
+ assert.deepEqual(profileSetupStatus({...wallet,demoPassportTier:true,demoOnboardingStages:{contacts:'2026-10-14T10:00:00Z'}}),{completed:4,total:4,needsSetup:false,prompt:'Finish setup'});
+ assert.equal(profileSetupStatus({...wallet,onboardingSkipped:['passport','contacts']}).needsSetup,false);
+ assert.equal(profileSetupStatus({...accepted,onboardingSkipped:['security','passport','contacts']}).needsSetup,true);
+ const pending={...wallet,status:'pending',onboardingSkipped:['passport','contacts']};
+ assert.deepEqual(profileSetupStatus(pending),{completed:3,total:4,needsSetup:true,prompt:'In review'});
+ assert.equal(profileSetupStatus({...pending,status:'declined'}).prompt,'View status');
 });

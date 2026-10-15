@@ -1,6 +1,7 @@
 import {sampleApplicant} from './demo-profile.js';
 import {loadImage} from './images.js';
 import {cardControls,mountProfileCard,profileIdentityCard} from './card.js';
+import {placesSection,mountPlaces} from './places.js';
 import {passportDiagram,walletDiagram} from './diagrams.js';
 import {renderAccountTabs,renderPetitions,renderChat,profileNavigationIcon} from './account.js';
 import {renderWallet} from './wallet.js';
@@ -642,6 +643,7 @@ function renderProfile(){
  ${profileIdentityCard(state,{demo,portrait:portrait?sampleApplicant.portrait:''})}
  ${demo?'<p class="identity-preview-note">Demo profile · No identity document has been issued.</p>':''}
  ${cardControls(demo)}
+ ${placesSection()}
  <section class="profile-details" aria-labelledby="profile-details-title">
   <h3 id="profile-details-title">Profile details</h3>
   <dl>
@@ -657,6 +659,7 @@ function renderProfile(){
  bindProfileLadder();
  screen.querySelector('#profile-invite')?.addEventListener('click',openInvite);
  mountProfileCard({root:screen,state,demo,api,config});
+ mountPlaces(screen);
 }
 async function openInvite(){
  if(!canInvite(state)||showcase)return;

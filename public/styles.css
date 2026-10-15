@@ -347,6 +347,62 @@ input::placeholder, textarea::placeholder { color: var(--ink); opacity: 1; }
 .wallet-badge img { display: block; height: 54px; width: auto; }
 .wallet-provider-note { display: block; margin-top: 10px; font-size: 11px; line-height: 1.5; color: var(--ink); }
 .card-wallet .card-wallet-note, .card-wallet-note { font-size: 12px; line-height: 1.6; color: var(--muted); margin: 12px 0 0; }
+
+/* In-person membership: researched places with illustrative card benefits. */
+.tibet-house-directory { margin-top: 30px; padding-top: 24px; border-top: 1px solid var(--line); }
+.places-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+.places-heading h3 { font-size: 17px; margin: 0; }
+.places-heading > span { font-size: 10px; color: var(--lapis); padding: 5px 8px; border: 1px solid #c9d1e2; border-radius: 6px; }
+.tibet-house-directory > p { font-size: 13px; line-height: 1.7; margin: 12px 0 16px; }
+.tibet-house-directory .places-demo-note { padding: 12px 14px; background: #f2f5fa; border-radius: 10px; font-size: 12px; }
+.places-demo-note strong { color: var(--lapis); }
+.places-regions { display: flex; gap: 6px; margin: 20px 0 16px; overflow-x: auto; padding: 3px; }
+.places-regions button { min-height: 40px; padding: 8px 11px; flex-shrink: 0; background: #fff; border: 1px solid var(--line); border-radius: 20px; color: var(--ink); font-size: 11px; }
+.places-regions button[aria-pressed='true'] { border-color: var(--lapis); color: var(--lapis); box-shadow: inset 0 0 0 1px var(--lapis); font-weight: 600; }
+.places-location-label { display: block; font-size: 12px; font-weight: 500; margin-bottom: 8px; }
+.tibet-house-directory select { display: block; width: 100%; max-width: 100%; min-width: 0; min-height: 48px; padding: 10px 30px 10px 12px; border: 1px solid #adb8cc; border-radius: 10px; background: #fff; color: var(--ink); font-family: var(--font-sans); font-size: 13px; text-overflow: ellipsis; }
+.places-map-shell { position: relative; isolation: isolate; z-index: 0; overflow: hidden; border: 1px solid #cbd5e2; border-radius: 14px; margin-top: 14px; background: #f6f8fb; }
+.tibet-house-directory .places-map { width: 100%; height: 340px; background: #f6f8fb; font-family: var(--font-sans); }
+.tibet-house-directory .places-map.leaflet-container { touch-action: pan-y; }
+.tibet-house-directory .places-map.is-moving { touch-action: none; }
+.places-loading { margin: 0; padding: 70px 24px; text-align: center; font-size: 13px; line-height: 1.7; }
+.places-map-shell > button { position: absolute; z-index: 650; background: #fff; color: var(--lapis); border: 1px solid #bcc7d9; border-radius: 8px; font-size: 11px; font-weight: 500; min-height: 36px; padding: 8px 10px; box-shadow: 0 2px 5px #1b2a5b12; }
+.places-world-button { top: 12px; right: 12px; }
+.places-move-button { bottom: 28px; left: 12px; }
+.places-move-button[aria-pressed='true'] { outline: 2px solid var(--lapis); outline-offset: 1px; }
+.places-map .leaflet-control-zoom { border: 1px solid #bcc7d9; box-shadow: 0 2px 5px #1b2a5b12; border-radius: 8px; overflow: hidden; }
+.places-map .leaflet-control-zoom a { width: 36px; height: 36px; line-height: 36px; color: var(--lapis); font-size: 22px; }
+.places-map .leaflet-control-attribution { font-size: 9px; color: var(--ink); background: #ffffffed; padding: 3px 6px; }
+.places-map .leaflet-control-attribution a { color: var(--lapis); }
+.places-map .places-pin { display: grid; place-items: center; background: transparent; border: 0; color: var(--lapis); }
+.places-map .places-pin:hover, .places-map .places-pin:focus-visible { color: #ba5c1c; }
+.places-map .places-cluster { display: grid; place-items: center; border: 3px solid #fff; border-radius: 50%; background: var(--lapis); box-shadow: 0 0 0 5px #1b2a5b18; color: #fff; font-family: var(--font-sans); font-size: 13px; font-weight: 600; }
+.places-map .leaflet-popup-content-wrapper { border: 1px solid #cbd5e2; border-radius: 12px; box-shadow: 0 8px 24px #1b2a5b24; }
+.places-map .leaflet-popup-content { margin: 14px 24px 14px 14px; font-size: 12px; line-height: 1.6; }
+.places-pin-popup { display: grid; gap: 4px; }
+.places-pin-popup strong { font-size: 13px; color: var(--lapis); }
+.places-pin-popup > span { font-size: 11px; color: var(--ink); }
+.places-map .leaflet-popup-close-button { color: var(--lapis); width: 26px; height: 26px; font-size: 20px; }
+.tibet-house-directory .places-map-help { margin: 10px 0 0; font-size: 11px; }
+.places-selected { margin-top: 18px; padding: 20px; border: 1px solid #c7d1e3; border-radius: 14px; background: #fff; }
+.places-detail-heading { display: flex; align-items: flex-start; gap: 12px; }
+.places-detail-heading > div { flex: 1; min-width: 0; }
+.places-detail-heading span { font-size: 11px; color: var(--lapis); }
+.places-detail-heading h4 { font-size: 18px; line-height: 1.4; margin: 5px 0 0; letter-spacing: -.3px; }
+.places-detail-icon { width: 32px; flex-shrink: 0; }
+.places-place-kind { color: var(--lapis); font-size: 11px; margin: 10px 0 0; }
+.places-address { font-size: 12px; line-height: 1.6; margin: 10px 0 20px; }
+.places-visit-note { font-size: 12px; line-height: 1.6; padding: 12px; background: #f8f1e9; border-radius: 9px; }
+.places-selected h5 { font-size: 13px; line-height: 1.5; margin: 0 0 8px; color: var(--lapis); }
+.places-services { list-style: none; padding: 0; margin: 0; }
+.places-services li { display: flex; justify-content: space-between; gap: 16px; padding: 13px 0; border-top: 1px solid var(--line); font-size: 12px; line-height: 1.6; }
+.places-services strong { font-weight: 500; }
+.places-services li > span { color: var(--lapis); text-align: right; }
+.places-benefits-note { font-size: 11px; line-height: 1.6; margin: 12px 0 4px; }
+.places-source-links { display: flex; flex-wrap: wrap; gap: 0 20px; }
+.places-source-links a { display: inline-flex; align-items: center; min-height: 44px; font-size: 12px; }
+.tibet-house-directory .places-source-note { margin: 16px 0 0; font-size: 11px; }
+@media (max-width: 370px) { .places-selected { padding: 16px; } .places-services li { display: grid; gap: 2px; } .places-services li > span { text-align: left; } }
 .card-qr-expanded { display: block; width: min(100%, 320px); height: auto; margin: 16px auto; }
 .wallet-pass-preview { padding: 24px; margin: 24px 0; border: 1px solid #d6ddeb; border-radius: 18px; background: #edf1f7; color: var(--lapis); }
 .wallet-pass-preview.apple { border-top: 5px solid var(--lapis); }

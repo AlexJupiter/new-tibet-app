@@ -42,6 +42,7 @@ const icons = {
 const svg=(name)=>`<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name]}</svg>`;
 const esc=(value)=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const bookLabel=()=>state.book==='vouched'?'Vouched by a member':state.book==='green'?'Green Book':'Blue Book';
+const profilePortrait=()=>demo&&(state.reference||state.demoSampleApplicant)?sampleApplicant.portrait:'';
 const notice=(message='')=>{document.querySelector('#notice').textContent=message;};
 const b64=(bytes)=>btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
 const from64=(str)=>Uint8Array.from(atob(str.replace(/-/g,'+').replace(/_/g,'/')+'='.repeat((4-str.length%4)%4)),c=>c.charCodeAt(0));
@@ -84,8 +85,7 @@ function continueAfterVerification(){
 }
 function continueAfterBookSubmission(){state.appTab='profile';navigate(steps.account);}
 function processingIdentityPreview(){
- const portrait=demo&&state.demoSampleApplicant?sampleApplicant.portrait:'';
- return profileIdentityCard(state,{demo,portrait})+'<p class="identity-processing-note" role="status">Your ID becomes active once your book is verified.</p>';
+ return profileIdentityCard(state,{demo,portrait:profilePortrait()})+'<p class="identity-processing-note" role="status">Your ID becomes active once your book is verified.</p>';
 }
 function processingNextAction(){
  const action=nextSetupAction(state),labels={security:'Set up your wallet',passport:'Verify a passport',contacts:'Add contact details'};
@@ -507,7 +507,7 @@ function updateHeaderProfile(){
  button.classList.toggle('needs-setup',attention);document.body.classList.toggle('profile-needs-setup',attention);
  button.setAttribute('aria-label',attention?`Profile, ${progress.prompt.toLowerCase()}, ${progress.completed} of ${progress.total} steps finished`:'Profile');
  button.title=attention?`Profile · ${progress.prompt} · ${progress.completed} of ${progress.total} steps finished`:'Profile';
- const portrait=demo&&state.demoSampleApplicant&&state.name.trim()===sampleApplicant.name?sampleApplicant.portrait:'';
+ const portrait=profilePortrait();
  const avatar=portrait?`<img src="${portrait}" width="32" height="32" alt=""/>`:profileNavigationIcon;
  button.innerHTML=`<span class="header-profile-avatar">${attention?`<svg class="profile-setup-ring" viewBox="0 0 40 40" width="40" height="40" aria-hidden="true"><circle class="profile-ring-track" cx="20" cy="20" r="18"/><circle class="profile-ring-progress" cx="20" cy="20" r="18" pathLength="100" stroke-dasharray="${progress.completed/progress.total*100} 100"/></svg>`:''}<span class="header-profile-portrait">${avatar}</span></span>${attention?`<span class="header-profile-copy"><strong>Profile <span class="profile-setup-count">${progress.completed}/${progress.total}</span></strong><span>${progress.prompt} <span aria-hidden="true">›</span></span></span>`:''}`;
  button.querySelector('img')?.addEventListener('error',()=>{button.querySelector('.header-profile-portrait').innerHTML=profileNavigationIcon;},{once:true});
@@ -633,14 +633,12 @@ function renderUnverifiedProfile(){
  bindProfileLadder();bindReviewControls();
 }
 function renderProfile(){
- const name=state.name.trim()||'Member '+state.reference.slice(-6);
- const portrait=demo&&state.demoSampleApplicant&&name===sampleApplicant.name;
  const providedContacts=['email','whatsapp'].filter(factor=>state[factor].trim());
  const contactsVerified=providedContacts.length>0&&providedContacts.every(factor=>state.verified[factor]===normalize(factor,state[factor]));
  const passportText=state.demoPassportTier?'Enhanced tier · Demo preview':state.passport?.verified?'Verified · 18+':demo&&state.demoSkipped.passport?'Skipped in demo':demo?'Not verified in this demo':'Not verified';
  screen.innerHTML=`<div class="profile-status">${svg('check')}<span>${demo?'Acceptance preview':'Application accepted'}</span></div>`+
  heading('Identity profile.',!securityComplete(state)?'Your membership is verified. Set up your wallet to receive your free $TIBET.':state.book==='vouched'?'You joined through a member’s invitation.':demo?'Example of an accepted New Tibet application.':'Your application has been approved.')+`${canInvite(state)?'<button class="secondary profile-invite" id="profile-invite" type="button" aria-haspopup="dialog">Invite</button>':''}
- ${profileIdentityCard(state,{demo,portrait:portrait?sampleApplicant.portrait:''})}
+ ${profileIdentityCard(state,{demo,portrait:profilePortrait()})}
  ${demo?'<p class="identity-preview-note">Demo profile · No identity document has been issued.</p>':''}
  ${cardControls(demo)}
  ${placesSection()}

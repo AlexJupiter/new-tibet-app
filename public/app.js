@@ -637,7 +637,7 @@ function renderProfile(){
  const contactsVerified=providedContacts.length>0&&providedContacts.every(factor=>state.verified[factor]===normalize(factor,state[factor]));
  const passportText=state.demoPassportTier?'Enhanced tier · Demo preview':state.passport?.verified?'Verified · 18+':demo&&state.demoSkipped.passport?'Skipped in demo':demo?'Not verified in this demo':'Not verified';
  screen.innerHTML=`<div class="profile-status">${svg('check')}<span>${demo?'Acceptance preview':'Application accepted'}</span></div>`+
- heading('Identity profile.',!securityComplete(state)?'Your membership is verified. Set up your wallet to receive your free $TIBET.':state.book==='vouched'?'You joined through a member’s invitation.':demo?'Example of an accepted New Tibet application.':'Your application has been approved.')+`${canInvite(state)?'<button class="secondary profile-invite" id="profile-invite" type="button" aria-haspopup="dialog">Invite</button>':''}
+ heading('Identity profile.',!securityComplete(state)?'Your membership is verified. Set up your wallet to receive your free $TIBET.':state.book==='vouched'?'You joined through a member’s invitation.':demo?'Example of an accepted New Tibet application.':'Your application has been approved.')+`${canInvite(state)?'<button class="primary profile-invite" id="profile-invite" type="button" aria-haspopup="dialog">Invite</button>':''}
  ${profileIdentityCard(state,{demo,portrait:profilePortrait()})}
  ${demo?'<p class="identity-preview-note">Demo profile · No identity document has been issued.</p>':''}
  ${cardControls(demo)}

@@ -6,6 +6,7 @@ import {passportDiagram,walletDiagram} from './diagrams.js';
 import {renderAccountTabs,renderPetitions,renderChat,profileNavigationIcon} from './account.js';
 import {renderWallet} from './wallet.js';
 import {renderAI} from './ai.js';
+import {mountNavigationUtilities} from './navigation-utilities.js';
 import {initialDemoBalances,applyDemoOnboardingRewards,walletRewardUnread,demoRewardTypes} from './member-model.js';
 import {renderLibrary} from './library.js';
 import {applyDemoLibraryRewards} from './library-model.js';
@@ -35,6 +36,7 @@ const accountLayout=matchMedia('(min-width: 900px)');
 accountLayout.addEventListener('change',()=>document.querySelector('.app-tabs')?.setAttribute('aria-orientation',accountLayout.matches?'vertical':'horizontal'));
 let recorder, recordingTimer, passportClient, passportGeneration=0,welcomeSlideshow;
 let stream, busy = false, sessionToken = '';
+const navigationUtilities=mountNavigationUtilities({demo,onRestart:restartDemo});
 const screen = document.querySelector('#screen');
 const icons = {
  trust:'<circle cx="12" cy="12" r="3"/><circle cx="4" cy="4" r="2"/><circle cx="20" cy="4" r="2"/><circle cx="4" cy="20" r="2"/><circle cx="20" cy="20" r="2"/><path d="m5.5 5.5 4.4 4.4m4.2 0 4.4-4.4m-13 13 4.4-4.4m4.2 0 4.4 4.4M6 4h12M4 6v12m2 2h12M20 6v12"/>',
@@ -145,6 +147,7 @@ function render(){
  document.body.classList.toggle('demo-mode',demo);
  const inApp=state.step===steps.account||state.profileSetup;
  document.body.classList.toggle('showing-account',inApp);
+ navigationUtilities.update({inApp,showShortcut:state.profileSetup&&state.step>=0&&state.step<steps.account});
  document.body.classList.toggle('exploring',state.guest);
  document.querySelector('#announcements-button').hidden=!inApp;
  updateHeaderProfile();
@@ -599,6 +602,7 @@ function renderAcceptedAccount(){
  while(screen.firstChild)panel.appendChild(screen.firstChild);
  screen.appendChild(panel);screen.insertAdjacentHTML('beforeend',renderAccountTabs(state.appTab,demo?walletRewardUnread(state):0));
  updateInboxBadge();
+ navigationUtilities.update({inApp:true,showShortcut:state.profileSetup&&state.appTab==='profile'&&state.step>=0&&state.step<steps.account});
  const tabs=[...screen.querySelectorAll('[data-app-tab]')];
  screen.querySelector('.app-tabs').setAttribute('aria-orientation',accountLayout.matches?'vertical':'horizontal');
  const select=selectAppTab;

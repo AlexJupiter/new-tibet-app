@@ -1,5 +1,5 @@
 import {onboardingRewards,creditableOnboardingRewards,securityComplete} from './onboarding-rewards.js';
-export const memberTabs=['wallet','chat','petitions','library','ecosystem','profile','announcements'];
+export const memberTabs=['wallet','chat','ai','petitions','library','ecosystem','profile','announcements'];
 export const demoRewardTypes=Object.freeze(['reward','passport-reward','onboarding-reward','library-reward']);
 export const samplePetitions=Object.freeze([
  {id:'english-access',category:'Accessibility',title:'English access to CTA documents and sessions',summary:'Guarantee English access to official documents and parliamentary sessions through translations and subtitles.',body:'Do you think the CTA should guarantee that all official documents and parliamentary sessions are accessible in English, for example by providing translations and subtitles?',supporters:1842,goal:2500},

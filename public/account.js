@@ -4,6 +4,7 @@ import {confirmPetitionSignature} from './petition-signing.js';
 const esc=value=>String(value).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const icon=paths=>`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
 const tabIcons={
+ ai:icon('<path class="tab-icon-fill" d="m12 2 2.8 6.7L22 12l-7.2 3.3L12 22l-2.8-6.7L2 12l7.2-3.3Z"/>'),
  petitions:icon('<path class="tab-icon-fill" d="M7 3h9l4 4v14H4V3Z"/><path class="tab-icon-detail" d="M15 3v5h5M8 12h8m-8 4h5"/>'),
  chat:icon('<path class="tab-icon-fill" d="M21 11a9 9 0 0 1-9 9 10 10 0 0 1-4-1l-5 2 2-5a9 9 0 1 1 16-5Z"/><path class="tab-icon-detail" d="M8 10h8m-8 4h5"/>'),
  profile:icon('<rect class="tab-icon-fill" x="2" y="4" width="20" height="16" rx="3"/><circle class="tab-icon-detail tab-icon-dot" cx="8" cy="10" r="2"/><path class="tab-icon-detail" d="M5 16v-1a3 3 0 0 1 6 0v1m4-7h4m-4 4h4"/>'),
@@ -14,7 +15,7 @@ export const profileNavigationIcon=tabIcons.profile;
 tabIcons.library=icon('<path class="tab-icon-fill" d="M3 3h5v18H3zM10 3h5v18h-5zM17 5l4-1 2 16-4 1z"/><path class="tab-icon-detail" d="M4 7h3m4 0h3M4 17h3m4 0h3"/>');
 export function renderAccountTabs(selected,walletUnread=0){
  const primary=memberTabs.filter(tab=>!['profile','announcements'].includes(tab)),focusTab=primary.includes(selected)?selected:primary[0];
- return `<nav class="app-tabs" role="tablist" aria-label="New Tibet app"><a class="sidebar-brand" href="./" data-demo-home aria-label="New Tibet home"><img src="${new URL('./assets/new-tibet-logo-blue.svg',import.meta.url).href}" alt=""/><span>New Tibet</span></a>${primary.map(tab=>`<button type="button" role="tab" id="tab-${tab}" data-app-tab="${tab}" aria-selected="${selected===tab}" aria-controls="account-panel" tabindex="${focusTab===tab?'0':'-1'}" ${tab==='wallet'&&walletUnread?`aria-label="Wallet, ${walletUnread} unread transaction"`:''}>${tabIcons[tab]}<span class="tab-label">${{petitions:'Petitions',chat:'Chat',library:'Library',wallet:'Wallet',ecosystem:'Ecosystem'}[tab]}</span>${tab==='wallet'&&walletUnread?`<span class="tab-unread" aria-hidden="true">${walletUnread}</span>`:''}</button>`).join('')}<span class="sidebar-note">Your New Tibet account</span></nav>`;
+ return `<nav class="app-tabs" style="--app-tab-count:${primary.length}" role="tablist" aria-label="New Tibet app"><a class="sidebar-brand" href="./" data-demo-home aria-label="New Tibet home"><img src="${new URL('./assets/new-tibet-logo-blue.svg',import.meta.url).href}" alt=""/><span>New Tibet</span></a>${primary.map(tab=>`<button type="button" role="tab" id="tab-${tab}" data-app-tab="${tab}" aria-selected="${selected===tab}" aria-controls="account-panel" tabindex="${focusTab===tab?'0':'-1'}" ${tab==='wallet'&&walletUnread?`aria-label="Wallet, ${walletUnread} unread transaction"`:''}>${tabIcons[tab]}<span class="tab-label">${{ai:'AI',petitions:'Petitions',chat:'Chat',library:'Library',wallet:'Wallet',ecosystem:'Ecosystem'}[tab]}</span>${tab==='wallet'&&walletUnread?`<span class="tab-unread" aria-hidden="true">${walletUnread}</span>`:''}</button>`).join('')}<span class="sidebar-note">Your New Tibet account</span></nav>`;
 }
 
 export function renderPetitions(screen,state,demo,notice,rerender){

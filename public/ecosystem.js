@@ -4,10 +4,10 @@ const icon=paths=>`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" s
 const external=icon('<path d="M14 3h7v7m0-7L10 14M10 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5"/>');
 const guide=new URL('./developers.html',import.meta.url).href;
 const partners=[
- {name:'Monlam AI',url:'https://monlam.ai/',domain:'monlam.ai',image:'monlam-logo.png',className:'monlam',alt:'Monlam AI logo',description:'Tibetan language tools for translation, speech and text recognition.',earn:'100 free $TIBET for a 7-day learning streak.',use:'Unlock premium language tools with $TIBET.',campaign:'monlam'},
+ {name:'Monlam AI',url:'https://monlam.ai/',domain:'monlam.ai',image:'monlam-logo.png',className:'monlam',alt:'Monlam AI logo',description:'Tibetan language tools for translation, speech and text recognition.',earn:'Earn 100 $TIBET by completing a 7-day learning streak.',use:'Unlock premium language tools with $TIBET.',campaign:'monlam'},
  {name:'Tibet Zomsa',url:'https://www.tibetzomsa.com/',domain:'tibetzomsa.com',image:'zomsa-community.png',className:'zomsa',alt:'A group of friends pictured on Tibet Zomsa’s website',description:'Meet Tibetans, make connections and stay close to your culture.',earn:'Community participation rewards in $TIBET.',use:'Access community features with $TIBET.'},
  {name:'smartvote Tibet',url:'https://tibet.smartvote.org/en/home',domain:'tibet.smartvote.org',image:'smartvote-tibet.png',className:'smartvote',alt:'smartvote Tibet: find candidates who share your opinions',description:'Compare your views with candidates in Tibetan elections.',earn:'Explore rewards for learning about civic participation.',use:'Support civic tools with $TIBET.'},
- {name:'Dzongsar',className:'dzongsar',description:'An example of how a Tibetan learning app could join the ecosystem.',earn:'100 free $TIBET for a 7-day learning streak.',use:'Access learning features with $TIBET.',campaign:'dzongsar'}
+ {name:'Dzongsar',className:'dzongsar',description:'An example of how a Tibetan learning app could join the ecosystem.',earn:'Earn 100 $TIBET by completing a 7-day learning streak.',use:'Access learning features with $TIBET.',campaign:'dzongsar'}
 ];
 
 export function renderEcosystem(screen,state,demo,rerender,notice){

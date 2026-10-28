@@ -301,6 +301,10 @@ input::placeholder, textarea::placeholder { color: var(--ink); opacity: 1; }
 .profile-view { max-width: 560px; }
 .profile-status { display: inline-flex; align-items: center; gap: 6px; color: var(--green); font-size: 12px; font-weight: 500; margin-bottom: 18px; }
 .profile-status svg { width: 16px; height: 16px; }
+.profile-session-bar { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px; margin: 0 0 18px; font-size: 12px; line-height: 1.5; }
+.profile-session-bar > span { flex: 1; min-width: 0; }
+.profile-logout { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; gap: 6px; min-height: 44px; margin-left: auto; padding: 8px 10px; border: 1px solid #cbd2e2; border-radius: 12px; background: #fff; color: var(--lapis); font-size: 13px; font-weight: 500; }
+.profile-logout:hover { background: #f1f4fa; border-color: var(--lapis); }
 .profile-view h2 { max-width: 360px; }
 .profile-view p.description { margin-bottom: 26px; font-size: 15px; }
 .identity-card { position: relative; isolation: isolate; overflow: hidden; padding: 24px; border: 1px solid #d6ddeb; border-radius: 18px; background: linear-gradient(120deg, #fbfcfe, #edf1f7); box-shadow: 0 10px 30px #1b2a5b09, 0 1px 2px #1b2a5b05; color: var(--lapis); }

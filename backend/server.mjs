@@ -90,7 +90,15 @@ export function createApp(env=process.env,adapters={}){
   db.prepare('INSERT OR IGNORE INTO interest_subscriptions VALUES(?,?,?)').run(digest(secret,'interest:'+email),email,new Date().toISOString());return json(res,201,{saved:true},allowedOrigin);
  }
  if(path==='/api/session'&&req.method==='POST'){rate(digest(secret,'session:'+ip),20,3600000);const bearer=token(),id=digest(secret,bearer);db.prepare('INSERT INTO sessions VALUES(?,?,?)').run(id,JSON.stringify({verified:{},challenges:{},createdAt:Date.now()}),Date.now()+86400000);return json(res,201,{token:bearer},allowedOrigin);}
- const bearer=String(req.headers.authorization||'').replace(/^Bearer /,'');if(!bearer)throw new Problem('Start a verification session first.',401);const id=digest(secret,bearer),s=readSession(id);const data=req.method==='POST'&&path!=='/api/media/upload'?await body(req):{};if(req.method==='POST'&&path!=='/api/applications'&&s.submitting&&s.submittingAt>Date.now()-120000)throw new Problem('Your application is being submitted. Please wait.',409);
+ const bearer=String(req.headers.authorization||'').replace(/^Bearer /,'');if(!bearer)throw new Problem('Start a verification session first.',401);const id=digest(secret,bearer);
+ if(path==='/api/auth/logout'&&req.method==='POST'){
+  await body(req);
+  // Revoke the bearer/challenges, retaining only references needed to clean up uploads.
+  const row=db.prepare('SELECT data FROM sessions WHERE id=?').get(id);
+  if(row){const previous=JSON.parse(row.data),cleanup=Object.fromEntries(['reference','submissionReference','media'].filter(key=>previous[key]!==undefined).map(key=>[key,previous[key]]));db.prepare('UPDATE sessions SET data=?,expires=0 WHERE id=?').run(JSON.stringify(cleanup),id);}
+  return json(res,200,{loggedOut:true},allowedOrigin);
+ }
+ const s=readSession(id);const data=req.method==='POST'&&path!=='/api/media/upload'?await body(req):{};if(req.method==='POST'&&path!=='/api/applications'&&s.submitting&&s.submittingAt>Date.now()-120000)throw new Problem('Your application is being submitted. Please wait.',409);
  if(path==='/api/invites'&&req.method==='POST')return json(res,201,invites.issue(s),allowedOrigin);
  if(path==='/api/invites/redeem'&&req.method==='POST'){
   rate(digest(secret,'invite-redemption:'+ip),30,3600000);

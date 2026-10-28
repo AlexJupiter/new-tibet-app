@@ -71,7 +71,7 @@ test('wallet setup is the required next step after verification, even when defer
  const stages=signupStages(state),wallet=stages.find(stage=>stage.id==='security'),html=rewardLadder({...state,demoMode:true});
  assert.equal(stages[0].done,true);assert.match(stages[0].label,/Coins waiting for wallet/);
  assert.equal(wallet.done,false);assert.equal(wallet.action,'security');assert.match(wallet.label,/Required to receive/);assert.doesNotMatch(wallet.title,/Optional/);
- assert.equal(nextSetupAction(state),'security');assert.match(html,/110 free \$TIBET waiting for wallet setup/);assert.match(html,/Set up wallet to receive \$TIBET/);
+ assert.equal(nextSetupAction(state),'security');assert.match(html,/110 \$TIBET in setup rewards waiting for wallet setup/);assert.match(html,/Set up wallet to receive \$TIBET/);
  assert.doesNotMatch(html,/Optional · Required to receive/);
  assert.equal(nextSetupAction({...state,passkey:{id:'account-only'}}),'security');
 });

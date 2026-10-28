@@ -16,7 +16,7 @@ export function createNotifications(db){
    if(existing){const item=JSON.parse(existing.data);if(item.title!==title||item.body!==text)throw new Problem('This announcement ID was already used for different content.',409);return item;}
    const item={id:key,kind:'announcement',title,body:text,createdAt:new Date().toISOString()};insert(item,null);return item;
   },
-  list(owner){return db.prepare('SELECT n.data,r.read_at FROM notifications n LEFT JOIN notification_reads r ON r.notification_id=n.id AND r.session_id=? WHERE n.recipient IS NULL OR n.recipient=? ORDER BY n.created_at DESC,n.id LIMIT 200').all(owner,owner).map(row=>({...JSON.parse(row.data),read:Boolean(row.read_at)}));},
+  list(owner){return db.prepare('SELECT n.data,r.read_at FROM notifications n LEFT JOIN notification_reads r ON r.notification_id=n.id AND r.session_id=? WHERE n.recipient IS NULL OR n.recipient=? ORDER BY n.created_at DESC,n.id LIMIT 200').all(owner,owner).map(row=>{const stored=JSON.parse(row.data),item=stored.kind==='application'?applicationEvent(stored.reference,stored.status,stored.book,stored.createdAt):stored;return {...item,read:Boolean(row.read_at)};});},
   markRead(owner,ids){
    if(!Array.isArray(ids)||ids.length>200||ids.some(id=>typeof id!=='string'||id.length>160))throw new Problem('Provide up to 200 notification IDs.');
    const allowed=ids.filter(id=>db.prepare('SELECT id FROM notifications WHERE id=? AND (recipient IS NULL OR recipient=?)').get(id,owner));

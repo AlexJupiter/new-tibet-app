@@ -3,7 +3,7 @@
 ## Notification navigation and splash update — 9 October 2026
 
 - Chrome at 390px and 1440px and WebKit at 320px pass the five-item primary navigation, 44px top-right notification button, compact sticky header, unread clearing/restoration, close/toggle/Escape actions and return to the previous screen with chat drafts intact.
-- The mesh diagram is hidden until the explanation dialog opens. The welcome hero removes the three-word tagline and displays “Upon book verification you receive 100 free $TIBET coins”. All six live-rendered showcase frames remain available.
+- The mesh diagram is hidden until the explanation dialog opens. The welcome hero removes the three-word tagline and displays “Earn 100 $TIBET by verifying your book”. All six live-rendered showcase frames remain available.
 - Mocked live announcements in Chrome and WebKit update the header badge without resetting chat, and opening the notification channel submits the correct read receipt. No real announcements are sent.
 - Syntax checks and the production static build pass. Mobile and desktop screenshots were inspected for overflow and compact layouts.
 
